@@ -32,6 +32,9 @@ MAX_PLACES_PER_SEARCH = 60  # Google Places API limit
 # Výstupní soubory
 CSV_EXPORT_PATH = "businesses_without_website.csv"
 
+# Adresářová struktura
+BUSINESS_DATA_DIR = "businesses_data"
+
 # Debug nastavení
 DEBUG_MODE = True
 LOG_LEVEL = "INFO"
