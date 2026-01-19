@@ -1,0 +1,3 @@
+id,name,address,phone,rating,review_count,lat,lng,place_id,website,email,status,created_at
+1,Dahlia Inn,"20, Lípová 1444, Nové Město, 120 00 Praha-Praha 2, Czechia",776 686 719,4.5,216,50.0752362,14.4241479,ChIJTy-fqoyUC0cRgETCDITMtk4,,,no_website,2026-01-19 14:18:22
+2,Caffe Jungmann,"2, Jungmannovo nám. 762, Můstek, 110 00 Praha-Praha 1, Czechia",224 219 501,4.4,113,50.0831674,14.4225152,ChIJBSxpyu2UC0cRWGm07rDVt7o,,,no_website,2026-01-19 14:18:58
