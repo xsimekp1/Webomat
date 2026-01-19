@@ -38,3 +38,7 @@ BUSINESS_DATA_DIR = "businesses_data"
 # Debug nastavení
 DEBUG_MODE = True
 LOG_LEVEL = "INFO"
+
+# Bezpečnostní nastavení
+DEFAULT_API_BUDGET = 10.0  # $10 default budget
+MAX_CELLS_PER_SEARCH = 10  # Maximum cells per search operation

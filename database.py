@@ -56,6 +56,49 @@ class DatabaseManager:
                 "CREATE INDEX IF NOT EXISTS idx_status ON businesses(status)"
             )
 
+            # Tabulka pro grid buňky
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS grid_cells (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    lat_center REAL NOT NULL,
+                    lng_center REAL NOT NULL,
+                    lat_min REAL NOT NULL,
+                    lng_min REAL NOT NULL,
+                    lat_max REAL NOT NULL,
+                    lng_max REAL NOT NULL,
+                    searched INTEGER DEFAULT 0,
+                    last_searched TIMESTAMP,
+                    business_count INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+            # Index pro grid buňky
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_grid_center ON grid_cells(lat_center, lng_center)"
+            )
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_grid_searched ON grid_cells(searched)"
+            )
+
+            # Tabulka pro spojení grid buněk a podniků
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS grid_cell_businesses (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    cell_id INTEGER NOT NULL,
+                    place_id TEXT NOT NULL,
+                    discovered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (cell_id) REFERENCES grid_cells (id),
+                    FOREIGN KEY (place_id) REFERENCES businesses (place_id),
+                    UNIQUE(cell_id, place_id)
+                )
+            """)
+
+            # Index pro grid cell businesses
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_cell_business ON grid_cell_businesses(cell_id)"
+            )
+
             conn.commit()
 
     def business_exists(self, place_id: str) -> bool:
@@ -461,4 +504,141 @@ class DatabaseManager:
                 "with_website": total_businesses - without_website,
                 "avg_rating": round(avg_rating, 2),
                 "avg_reviews": round(avg_reviews, 2),
+            }
+
+    # Grid management metody
+    def insert_grid_cell(
+        self,
+        lat_center: float,
+        lng_center: float,
+        lat_min: float,
+        lng_min: float,
+        lat_max: float,
+        lng_max: float,
+    ) -> int:
+        """Vloží novou grid buňku a vrátí ID"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                INSERT OR IGNORE INTO grid_cells
+                (lat_center, lng_center, lat_min, lng_min, lat_max, lng_max)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """,
+                (lat_center, lng_center, lat_min, lng_min, lat_max, lng_max),
+            )
+            conn.commit()
+            return cursor.lastrowid
+
+    def get_grid_cell_by_center(
+        self, lat_center: float, lng_center: float
+    ) -> Optional[Dict]:
+        """Najde grid buňku podle centra"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT * FROM grid_cells
+                WHERE lat_center = ? AND lng_center = ?
+                LIMIT 1
+            """,
+                (lat_center, lng_center),
+            )
+            row = cursor.fetchone()
+            if row:
+                columns = [desc[0] for desc in cursor.description]
+                return dict(zip(columns, row))
+            return None
+
+    def update_grid_cell_searched(self, cell_id: int, business_count: int):
+        """Aktualizuje status prohledanosti buňky"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                UPDATE grid_cells
+                SET searched = 1, last_searched = CURRENT_TIMESTAMP, business_count = ?
+                WHERE id = ?
+            """,
+                (business_count, cell_id),
+            )
+            conn.commit()
+
+    def get_unsearched_grid_cells(self, limit: int = 10) -> List[Dict]:
+        """Vrátí neprohledané grid buňky"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT * FROM grid_cells
+                WHERE searched = 0
+                ORDER BY RANDOM()
+                LIMIT ?
+            """,
+                (limit,),
+            )
+            columns = [desc[0] for desc in cursor.description]
+            return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+    def get_all_grid_cells(self) -> List[Dict]:
+        """Vrátí všechny grid buňky"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM grid_cells ORDER BY lat_center, lng_center")
+            columns = [desc[0] for desc in cursor.description]
+            return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+    def get_grid_cell_business_count(self, cell_id: int) -> int:
+        """Vrátí počet podniků v buňce"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT COUNT(*) FROM grid_cell_businesses WHERE cell_id = ?",
+                (cell_id,),
+            )
+            return cursor.fetchone()[0]
+
+    def add_business_to_grid_cell(self, cell_id: int, place_id: str):
+        """Přidá podnik do grid buňky"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    """
+                    INSERT OR IGNORE INTO grid_cell_businesses (cell_id, place_id)
+                    VALUES (?, ?)
+                """,
+                    (cell_id, place_id),
+                )
+                conn.commit()
+        except sqlite3.Error as e:
+            print(f"Chyba při přidávání podniku do grid buňky: {e}")
+
+    def get_grid_coverage_stats(self) -> Dict:
+        """Vrátí statistiky pokrytí gridu"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+
+            # Celkový počet buněk
+            cursor.execute("SELECT COUNT(*) FROM grid_cells")
+            total_cells = cursor.fetchone()[0]
+
+            # Prohledané buňky
+            cursor.execute("SELECT COUNT(*) FROM grid_cells WHERE searched = 1")
+            searched_cells = cursor.fetchone()[0]
+
+            # Celkový počet podniků v gridu
+            cursor.execute("SELECT COUNT(*) FROM grid_cell_businesses")
+            total_businesses_in_grid = cursor.fetchone()[0]
+
+            coverage_percentage = (
+                (searched_cells / total_cells * 100) if total_cells > 0 else 0
+            )
+
+            return {
+                "total_cells": total_cells,
+                "searched_cells": searched_cells,
+                "unsearched_cells": total_cells - searched_cells,
+                "coverage_percentage": round(coverage_percentage, 2),
+                "total_businesses_in_grid": total_businesses_in_grid,
             }
