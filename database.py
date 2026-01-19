@@ -56,6 +56,27 @@ class DatabaseManager:
                 "CREATE INDEX IF NOT EXISTS idx_status ON businesses(status)"
             )
 
+            # Přidat sloupce pro reviews a photos pokud neexistují
+            try:
+                cursor.execute("ALTER TABLE businesses ADD COLUMN reviews TEXT")
+            except sqlite3.OperationalError:
+                pass  # Sloupec už existuje
+
+            try:
+                cursor.execute("ALTER TABLE businesses ADD COLUMN photos TEXT")
+            except sqlite3.OperationalError:
+                pass  # Sloupec už existuje
+
+            try:
+                cursor.execute("ALTER TABLE businesses ADD COLUMN opening_hours TEXT")
+            except sqlite3.OperationalError:
+                pass  # Sloupec už existuje
+
+            try:
+                cursor.execute("ALTER TABLE businesses ADD COLUMN types TEXT")
+            except sqlite3.OperationalError:
+                pass  # Sloupec už existuje
+
             # Tabulka pro grid buňky
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS grid_cells (
@@ -119,21 +140,25 @@ class DatabaseManager:
                 cursor.execute(
                     """
                     INSERT OR REPLACE INTO businesses
-                    (name, address, phone, rating, review_count, lat, lng, place_id, website, email, status)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
+                    (name, address, phone, rating, review_count, lat, lng, place_id, website, email, status, reviews, photos, opening_hours, types)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
                     (
                         business_data.get("name"),
                         business_data.get("address"),
                         business_data.get("phone"),
-                        business_data.get("rating"),
-                        business_data.get("review_count"),
-                        business_data.get("lat"),
-                        business_data.get("lng"),
+                        business_data.get("rating", 0),
+                        business_data.get("review_count", 0),
+                        business_data.get("lat", 0),
+                        business_data.get("lng", 0),
                         business_data.get("place_id"),
                         business_data.get("website"),
                         business_data.get("email"),
                         business_data.get("status", "new"),
+                        json.dumps(business_data.get("reviews", [])),
+                        json.dumps(business_data.get("photos", [])),
+                        json.dumps(business_data.get("opening_hours", {})),
+                        json.dumps(business_data.get("types", [])),
                     ),
                 )
 
@@ -155,7 +180,30 @@ class DatabaseManager:
             """)
 
             columns = [desc[0] for desc in cursor.description]
-            return [dict(zip(columns, row)) for row in cursor.fetchall()]
+            businesses = []
+            for row in cursor.fetchall():
+                business = dict(zip(columns, row))
+                # Parsovat JSON sloupce
+                try:
+                    business["reviews"] = json.loads(business.get("reviews", "[]"))
+                except:
+                    business["reviews"] = []
+                try:
+                    business["photos"] = json.loads(business.get("photos", "[]"))
+                except:
+                    business["photos"] = []
+                try:
+                    business["opening_hours"] = json.loads(
+                        business.get("opening_hours", "{}")
+                    )
+                except:
+                    business["opening_hours"] = {}
+                try:
+                    business["types"] = json.loads(business.get("types", "[]"))
+                except:
+                    business["types"] = []
+                businesses.append(business)
+            return businesses
 
     def get_all_businesses(self) -> List[Dict]:
         """Vrátí všechny podniky"""
@@ -164,7 +212,30 @@ class DatabaseManager:
             cursor.execute("SELECT * FROM businesses ORDER BY created_at DESC")
 
             columns = [desc[0] for desc in cursor.description]
-            return [dict(zip(columns, row)) for row in cursor.fetchall()]
+            businesses = []
+            for row in cursor.fetchall():
+                business = dict(zip(columns, row))
+                # Parsovat JSON sloupce
+                try:
+                    business["reviews"] = json.loads(business.get("reviews", "[]"))
+                except:
+                    business["reviews"] = []
+                try:
+                    business["photos"] = json.loads(business.get("photos", "[]"))
+                except:
+                    business["photos"] = []
+                try:
+                    business["opening_hours"] = json.loads(
+                        business.get("opening_hours", "{}")
+                    )
+                except:
+                    business["opening_hours"] = {}
+                try:
+                    business["types"] = json.loads(business.get("types", "[]"))
+                except:
+                    business["types"] = []
+                businesses.append(business)
+            return businesses
 
     def get_business_by_place_id(self, place_id: str) -> Optional[Dict]:
         """Vrátí podnik podle place_id"""
@@ -175,7 +246,27 @@ class DatabaseManager:
             row = cursor.fetchone()
             if row:
                 columns = [desc[0] for desc in cursor.description]
-                return dict(zip(columns, row))
+                business = dict(zip(columns, row))
+                # Parsovat JSON sloupce
+                try:
+                    business["reviews"] = json.loads(business.get("reviews", "[]"))
+                except:
+                    business["reviews"] = []
+                try:
+                    business["photos"] = json.loads(business.get("photos", "[]"))
+                except:
+                    business["photos"] = []
+                try:
+                    business["opening_hours"] = json.loads(
+                        business.get("opening_hours", "{}")
+                    )
+                except:
+                    business["opening_hours"] = {}
+                try:
+                    business["types"] = json.loads(business.get("types", "[]"))
+                except:
+                    business["types"] = []
+                return business
             return None
 
     def search_businesses(self, keyword: str) -> List[Dict]:
@@ -193,7 +284,30 @@ class DatabaseManager:
             )
 
             columns = [desc[0] for desc in cursor.description]
-            return [dict(zip(columns, row)) for row in cursor.fetchall()]
+            businesses = []
+            for row in cursor.fetchall():
+                business = dict(zip(columns, row))
+                # Parsovat JSON sloupce
+                try:
+                    business["reviews"] = json.loads(business.get("reviews", "[]"))
+                except:
+                    business["reviews"] = []
+                try:
+                    business["photos"] = json.loads(business.get("photos", "[]"))
+                except:
+                    business["photos"] = []
+                try:
+                    business["opening_hours"] = json.loads(
+                        business.get("opening_hours", "{}")
+                    )
+                except:
+                    business["opening_hours"] = {}
+                try:
+                    business["types"] = json.loads(business.get("types", "[]"))
+                except:
+                    business["types"] = []
+                businesses.append(business)
+            return businesses
 
     def update_business_status(self, place_id: str, status: str) -> bool:
         """Aktualizuje status podniku"""
@@ -578,7 +692,30 @@ class DatabaseManager:
                 (limit,),
             )
             columns = [desc[0] for desc in cursor.description]
-            return [dict(zip(columns, row)) for row in cursor.fetchall()]
+            businesses = []
+            for row in cursor.fetchall():
+                business = dict(zip(columns, row))
+                # Parsovat JSON sloupce
+                try:
+                    business["reviews"] = json.loads(business.get("reviews", "[]"))
+                except:
+                    business["reviews"] = []
+                try:
+                    business["photos"] = json.loads(business.get("photos", "[]"))
+                except:
+                    business["photos"] = []
+                try:
+                    business["opening_hours"] = json.loads(
+                        business.get("opening_hours", "{}")
+                    )
+                except:
+                    business["opening_hours"] = {}
+                try:
+                    business["types"] = json.loads(business.get("types", "[]"))
+                except:
+                    business["types"] = []
+                businesses.append(business)
+            return businesses
 
     def get_all_grid_cells(self) -> List[Dict]:
         """Vrátí všechny grid buňky"""
@@ -586,7 +723,30 @@ class DatabaseManager:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM grid_cells ORDER BY lat_center, lng_center")
             columns = [desc[0] for desc in cursor.description]
-            return [dict(zip(columns, row)) for row in cursor.fetchall()]
+            businesses = []
+            for row in cursor.fetchall():
+                business = dict(zip(columns, row))
+                # Parsovat JSON sloupce
+                try:
+                    business["reviews"] = json.loads(business.get("reviews", "[]"))
+                except:
+                    business["reviews"] = []
+                try:
+                    business["photos"] = json.loads(business.get("photos", "[]"))
+                except:
+                    business["photos"] = []
+                try:
+                    business["opening_hours"] = json.loads(
+                        business.get("opening_hours", "{}")
+                    )
+                except:
+                    business["opening_hours"] = {}
+                try:
+                    business["types"] = json.loads(business.get("types", "[]"))
+                except:
+                    business["types"] = []
+                businesses.append(business)
+            return businesses
 
     def get_grid_cell_business_count(self, cell_id: int) -> int:
         """Vrátí počet podniků v buňce"""

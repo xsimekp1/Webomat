@@ -213,7 +213,7 @@ class Webomat:
                 fields=[
                     "name",
                     "formatted_address",
-                    "address_components",
+                    "address_component",  # Opraveno z address_components
                     "formatted_phone_number",
                     "international_phone_number",
                     "rating",
@@ -223,11 +223,10 @@ class Webomat:
                     "opening_hours",
                     "current_opening_hours",
                     "editorial_summary",
-                    "reviews",
-                    "photos",
-                    "types",
+                    "reviews",  # Posledních 5 reviews
+                    "photo",  # Opraveno z photos
+                    "type",  # Opraveno z types
                     "price_level",
-                    "user_rating_count",
                 ],
             )
             self.stats["api_requests"] += 1
@@ -240,28 +239,25 @@ class Webomat:
                     "place_id": place_id,
                     "name": result.get("name", ""),
                     "address": result.get("formatted_address", ""),
-                    "address_components": result.get("address_components", []),
+                    "address_components": result.get("address_component", []),
                     "phone": result.get("formatted_phone_number", ""),
                     "international_phone_number": result.get(
                         "international_phone_number", ""
                     ),
                     "rating": result.get("rating", 0),
                     "review_count": result.get("user_ratings_total", 0),
-                    "user_rating_count": result.get("user_rating_count", 0),
                     "website": result.get("website", ""),
                     "lat": result.get("geometry", {}).get("location", {}).get("lat", 0),
                     "lng": result.get("geometry", {}).get("location", {}).get("lng", 0),
                     "email": self.extract_email_from_components(
-                        result.get("address_components", [])
+                        result.get("address_component", [])
                     ),
                     "opening_hours": result.get("opening_hours", {}),
                     "current_opening_hours": result.get("current_opening_hours", {}),
-                    "editorial_summary": result.get("editorial_summary", {}).get(
-                        "text", ""
-                    ),
-                    "reviews": result.get("reviews", []),
-                    "photos": result.get("photos", []),
-                    "types": result.get("types", []),
+                    "editorial_summary": result.get("editorial_summary", ""),
+                    "reviews": result.get("reviews", [])[:5],  # Posledních 5 reviews
+                    "photos": result.get("photo", []),
+                    "types": result.get("type", []),
                     "price_level": result.get("price_level", 0),
                 }
 
@@ -789,6 +785,8 @@ Prumer recenzii:    {stats["avg_reviews"]}
             "phone": business.get("phone", ""),
             "website": business.get("website", ""),
             "rating": business.get("rating", 0),
+            "review_count": business.get("review_count", 0),
+            "reviews": business.get("reviews", []),
             "types": business.get("types", []),
             "description": business.get("editorial_summary", ""),
         }
@@ -851,6 +849,44 @@ Prumer recenzii:    {stats["avg_reviews"]}
                 index_file.rename(archive_file)
                 print(f"Starý web archivován jako {archive_file.name}")
 
+            # Připravit reviews sekci
+            reviews_html = ""
+            if business_data.get("reviews"):
+                reviews_html = """
+                <section id="reviews" class="py-5">
+                    <div class="container">
+                        <h2 class="text-center mb-5">Recenze našich zákazníků</h2>
+                        <div class="row">
+                """
+
+                for i, review in enumerate(
+                    business_data["reviews"][:3]
+                ):  # Zobrazit max 3 reviews
+                    stars = "★" * int(review.get("rating", 0)) + "☆" * (
+                        5 - int(review.get("rating", 0))
+                    )
+                    reviews_html += f"""
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="rating-stars mb-2">
+                                    {stars} {review.get("rating", 0)}/5
+                                </div>
+                                <p class="card-text">"{review.get("text", "")[:150]}{"..." if len(review.get("text", "")) > 150 else ""}"</p>
+                                <footer class="blockquote-footer mt-2">
+                                    {review.get("author_name", "Anonymous")}
+                                </footer>
+                            </div>
+                        </div>
+                    </div>
+                    """
+
+                reviews_html += """
+                        </div>
+                    </div>
+                </section>
+                """
+
             # Dummy HTML - v reálném použití by to bylo z opencode
             html_content = f"""
             <!DOCTYPE html>
@@ -868,6 +904,10 @@ Prumer recenzii:    {stats["avg_reviews"]}
                     }}
                     .rating-stars {{
                         color: #ffc107;
+                        font-size: 1.2em;
+                    }}
+                    .card {{
+                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
                     }}
                 </style>
             </head>
@@ -881,6 +921,7 @@ Prumer recenzii:    {stats["avg_reviews"]}
                         <div class="collapse navbar-collapse" id="navbarNav">
                             <ul class="navbar-nav ms-auto">
                                 <li class="nav-item"><a class="nav-link" href="#about">O nás</a></li>
+                                <li class="nav-item"><a class="nav-link" href="#reviews">Recenze</a></li>
                                 <li class="nav-item"><a class="nav-link" href="#contact">Kontakt</a></li>
                             </ul>
                         </div>
@@ -894,6 +935,7 @@ Prumer recenzii:    {stats["avg_reviews"]}
                         <div class="rating-stars fs-5">
                             {"★" * int(business_data["rating"])}{"☆" * (5 - int(business_data["rating"]))} {business_data["rating"]}/5
                         </div>
+                        <p class="mt-3">Na základě {business_data["review_count"]} recenzí</p>
                     </div>
                 </section>
 
@@ -921,6 +963,8 @@ Prumer recenzii:    {stats["avg_reviews"]}
                         </div>
                     </div>
                 </section>
+
+                {reviews_html}
 
                 <section id="contact" class="py-5">
                     <div class="container">
