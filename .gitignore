@@ -49,3 +49,7 @@ Thumbs.db
 businesses_without_website.csv
 *.xlsx
 *.json
+
+# Generated files
+grid_coverage.html
+businesses_data/
