@@ -53,3 +53,15 @@ businesses_without_website.csv
 # Generated files
 grid_coverage.html
 businesses_data/
+
+# Node.js / Next.js
+node_modules/
+.next/
+out/
+.turbo/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Windows artifacts
+nul
