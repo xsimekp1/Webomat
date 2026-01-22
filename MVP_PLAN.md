@@ -74,6 +74,8 @@ Grouped by logical categories and dependencies for focused development: Auth/Use
 
 30. **mvp-27 (Low)**: Implement help page based on [HELP_PAGE_ASSIGNMENT.md](./HELP_PAGE_ASSIGNMENT.md)
 
+31. **mvp-30 (Low)**: Add profile photo upload for sales representatives: Allow upload of profile image, display in thumbnails and top right UI elements.
+
 ## Current State
 - Platform is visible and login works.  
 - Now adding first real value through iterative implementation.
