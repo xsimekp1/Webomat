@@ -71,6 +71,8 @@ Starts with foundation, then alternates between sales focus (CRM, deals, payment
 
 29. **mvp-28 (Low)**: Implement commission invoicing based on [COMMISSION_INVOICING_ASSIGNMENT.md](./COMMISSION_INVOICING_ASSIGNMENT.md)
 
+30. **mvp-29 (Medium)**: Implement sales representative management based on [SALES_MANAGEMENT_ASSIGNMENT.md](./SALES_MANAGEMENT_ASSIGNMENT.md)
+
 ## Current State
 - Platform is visible and login works.  
 - Now adding first real value through iterative implementation.
