@@ -11,9 +11,7 @@ Starts with foundation, then alternates between sales focus (CRM, deals, payment
 
 ## Todo List
 
-1. **mvp-0 (High)**: Implement authentication and roles: Login/logout, Admin (Pavel) and Sales (Andrea + others) roles with RBAC permissions  
-   - Sales see only their leads/deals  
-   - Admin sees everything + can edit pricing/commissions/templates
+1. **mvp-0 (High)**: Implement detailed authentication and roles: Login/logout (email/password, forgot password reset, change password), session handling (token/cookie with expiration, optional remember me), basic protections (rate limit, account lock). RBAC: Admin (Pavel) sees all + edits global settings; Sales (Andrea + others) see only own entities. Guardrails for sales (select packages, discounts up to limit, exceptions require approval). Admin user management: Create/deactivate users, reset passwords, invites, overview. Data model: users table with roles/permissions. UI: Role-based dashboards/menus. Audit: Log login/logout, role changes, deactivations, reassignments.
 
 2. **mvp-1 (Medium)**: Build CRM minimum: Lead list with filters/search, detail page (name, address, phone, email, notes, status pipeline, assigned sales, next follow-up, communication log)  
    - Pipeline: New → Calling → Interested → Offer sent → Won/Lost/DNC  
@@ -68,6 +66,8 @@ Starts with foundation, then alternates between sales focus (CRM, deals, payment
 22. **mvp-21 (Medium)**: Implement payment status and reminders: 'Waiting for payment' + auto reminders for sales/admin
 
 23. **mvp-22 (Medium)**: Set up unified pricing rules: Package pricing in admin + simple exceptions (discounts), clear commission calculation
+
+24. **mvp-23 (Medium)**: Implement advanced audit logging: Track all user actions (login/logout, role/deactivation changes, lead/deal reassignments), with timestamps and user IDs for disputes and oversight
 
 ## Current State
 - Platform is visible and login works.  
