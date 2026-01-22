@@ -39,6 +39,36 @@ Starts with foundation, then alternates between sales focus (CRM, deals, payment
 8. **mvp-7 (Medium)**: Implement commission invoicing workflow: Generate invoice for period, draft from un-invoiced earned, statuses draft → pending_approval → approved/rejected → paid, PDF export  
    - Result: Close the commission cycle
 
+9. **mvp-8 (Medium)**: Add onboarding flow for sales: First login -> profile setup, commission %, bank details (filled/not filled)
+
+10. **mvp-9 (Medium)**: Implement tasks/follow-up for leads: 'Call tomorrow', 'Send offer' + simple 'what to do today' list
+
+11. **mvp-10 (Medium)**: Add notifications: Internal changes (status, new request, deal waiting, invoice approval) - email or in-app badge
+
+12. **mvp-11 (Medium)**: Create simple offer templates: Generate offer text from deal + price summary
+
+13. **mvp-12 (Medium)**: Implement attachments/documents: Upload photos, logo, texts, PDF pricing to company/deal/change request
+
+14. **mvp-13 (Medium)**: Add basic audit log: Who changed status, deployed, approved invoice
+
+15. **mvp-14 (Medium)**: Implement rollback/versions for websites: Last 2 deploys + rollback button
+
+16. **mvp-15 (Medium)**: Build user management for admin: Create/disable sales, reset password, set roles, default commission
+
+17. **mvp-16 (Medium)**: Add Kanban view for pipeline + bulk actions: Drag&drop statuses + bulk mark DNC/move/assign
+
+18. **mvp-17 (Medium)**: Implement lead deduplication: By place_id/phone/website: 'already in system'
+
+19. **mvp-18 (Medium)**: Add lead import: CSV or from scraper (Google Maps) + field mapping
+
+20. **mvp-19 (Medium)**: Record domains & hosting evidence: Owner, DNS, hosting, access/notes, expiry (alerts)
+
+21. **mvp-20 (Medium)**: Add basic handoff to production: Deal checklist: logo ✓, photos ✓, text ✓, content approval ✓ -> then Generate
+
+22. **mvp-21 (Medium)**: Implement payment status and reminders: 'Waiting for payment' + auto reminders for sales/admin
+
+23. **mvp-22 (Medium)**: Set up unified pricing rules: Package pricing in admin + simple exceptions (discounts), clear commission calculation
+
 ## Current State
 - Platform is visible and login works.  
 - Now adding first real value through iterative implementation.
