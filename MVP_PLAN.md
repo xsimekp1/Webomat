@@ -67,6 +67,8 @@ Starts with foundation, then alternates between sales focus (CRM, deals, payment
 
 27. **mvp-25 (Medium)**: Implement new contact page based on [NEW_CONTACT_ASSIGNMENT.md](./NEW_CONTACT_ASSIGNMENT.md)
 
+28. **mvp-27 (Low)**: Implement help page based on [HELP_PAGE_ASSIGNMENT.md](./HELP_PAGE_ASSIGNMENT.md)
+
 ## Current State
 - Platform is visible and login works.  
 - Now adding first real value through iterative implementation.
