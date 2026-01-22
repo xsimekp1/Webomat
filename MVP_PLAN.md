@@ -69,6 +69,8 @@ Starts with foundation, then alternates between sales focus (CRM, deals, payment
 
 28. **mvp-27 (Low)**: Implement help page based on [HELP_PAGE_ASSIGNMENT.md](./HELP_PAGE_ASSIGNMENT.md)
 
+29. **mvp-28 (Low)**: Implement commission invoicing based on [COMMISSION_INVOICING_ASSIGNMENT.md](./COMMISSION_INVOICING_ASSIGNMENT.md)
+
 ## Current State
 - Platform is visible and login works.  
 - Now adding first real value through iterative implementation.
