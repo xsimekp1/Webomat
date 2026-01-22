@@ -76,6 +76,8 @@ Grouped by logical categories and dependencies for focused development: Auth/Use
 
 31. **mvp-30 (Low)**: Add profile photo upload for sales representatives: Allow upload of profile image, display in thumbnails and top right UI elements.
 
+32. **mvp-31 (Low)**: Add dark/light mode toggle in user profile settings: Store preference, apply theme via CSS.
+
 ## Current State
 - Platform is visible and login works.  
 - Now adding first real value through iterative implementation.
