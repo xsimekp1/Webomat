@@ -69,6 +69,8 @@ Starts with foundation, then alternates between sales focus (CRM, deals, payment
 
 24. **mvp-23 (Medium)**: Implement advanced audit logging: Track all user actions (login/logout, role/deactivation changes, lead/deal reassignments), with timestamps and user IDs for disputes and oversight
 
+25. **mvp-24 (Medium)**: Implement AI website generation based on [WEBSITE_GENERATION_ASSIGNMENT.md](./WEBSITE_GENERATION_ASSIGNMENT.md)
+
 ## Current State
 - Platform is visible and login works.  
 - Now adding first real value through iterative implementation.
