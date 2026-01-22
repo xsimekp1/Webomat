@@ -71,6 +71,8 @@ Starts with foundation, then alternates between sales focus (CRM, deals, payment
 
 25. **mvp-24 (Medium)**: Implement AI website generation based on [WEBSITE_GENERATION_ASSIGNMENT.md](./WEBSITE_GENERATION_ASSIGNMENT.md)
 
+26. **mvp-25 (Medium)**: Implement new contact page based on [NEW_CONTACT_ASSIGNMENT.md](./NEW_CONTACT_ASSIGNMENT.md)
+
 ## Current State
 - Platform is visible and login works.  
 - Now adding first real value through iterative implementation.
