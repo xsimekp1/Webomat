@@ -1,8 +1,0 @@
-# Webomat Minimal Requirements
-
-# Core requirements
-streamlit>=1.29.0
-pandas>=2.0.0
-
-# Optional: uncomment if needed for advanced features
-# requests>=2.25.0
