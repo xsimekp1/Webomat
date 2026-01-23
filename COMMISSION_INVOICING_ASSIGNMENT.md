@@ -289,6 +289,13 @@ Karta s:
 - Graf týdenních odměn.
 - Pod tím seznam fakturovaných faktur (včetně nezaplacených).
 
+## Automatizace zasílání faktur účetní
+- Měsíční automatické generování emailu s přijatými fakturami (PDF přílohy).
+- Text: "Dobrý den, posíláme přijaté faktury za [měsíc/rok]."
+- Příznak u faktur: "zasláno účetní" (boolean).
+- Workflow: Před odesláním schválení adminem (pending approval).
+- Nástroj: Email service (SendGrid/Mailgun) pro generování mailu.
+
 ## Admin přístup: Tabulka faktur
 V admin sekci: Tabulka faktur (přijaté + vydané) s:
 - Jména klientů/sales.
