@@ -128,6 +128,12 @@ export default function BusinessDetailPage() {
     notes: '',
   })
 
+  // Website generation
+  const [showWebsiteModal, setShowWebsiteModal] = useState(false)
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('')
+  const [generatingWebsite, setGeneratingWebsite] = useState(false)
+  const [generatedWebsite, setGeneratedWebsite] = useState<{html_content?: string; message?: string} | null>(null)
+
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push('/')
@@ -278,6 +284,25 @@ export default function BusinessDetailPage() {
       setError(`[${status}] ${detail}`)
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false) => {
+    setGeneratingWebsite(true)
+    setError('')
+    setGeneratedWebsite(null)
+
+    try {
+      const result = await ApiClient.generateWebsite(projectId, dryRun)
+      setGeneratedWebsite(result)
+      setShowWebsiteModal(false)
+    } catch (err: any) {
+      console.error('Website generation error:', err)
+      const detail = err.response?.data?.detail || err.message || 'Chyba při generování webu'
+      const status = err.response?.status || 'N/A'
+      setError(`[${status}] ${detail}`)
+    } finally {
+      setGeneratingWebsite(false)
     }
   }
 
@@ -522,6 +547,19 @@ export default function BusinessDetailPage() {
                       <p>{project.notes}</p>
                     </div>
                   )}
+
+                  <div className="project-actions" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      className="btn-generate-web"
+                      onClick={() => {
+                        setSelectedProjectId(project.id)
+                        setShowWebsiteModal(true)
+                      }}
+                      disabled={generatingWebsite}
+                    >
+                      {generatingWebsite ? 'Generuji...' : '🚀 Generovat web'}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -743,6 +781,56 @@ export default function BusinessDetailPage() {
               </button>
               <button className="btn-primary" onClick={handleStatusChange} disabled={saving}>
                 {saving ? 'Ukládám...' : 'Uložit'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Website Generation Modal */}
+      {showWebsiteModal && (
+        <div className="modal-overlay" onClick={() => setShowWebsiteModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Generování webové stránky</h2>
+
+            <div className="website-gen-options">
+              <div className="option-card" onClick={() => handleGenerateWebsite(selectedProjectId, true)}>
+                <h3>🔧 DRY RUN Test</h3>
+                <p>Vygeneruje testovací stránku bez volání AI API. Ideální pro testování funkcionality.</p>
+                <button className="btn-primary" disabled={generatingWebsite}>
+                  {generatingWebsite ? 'Generuji...' : 'Spustit DRY RUN'}
+                </button>
+              </div>
+
+              <div className="option-card disabled">
+                <h3>🤖 AI Generování</h3>
+                <p>Plné generování pomocí Claude API (zatím není implementováno)</p>
+                <button className="btn-secondary" disabled>
+                  Brzy dostupné
+                </button>
+              </div>
+            </div>
+
+            {generatedWebsite && (
+              <div className="generation-result">
+                <h3>Výsledek generování:</h3>
+                <p>{generatedWebsite.message}</p>
+                {generatedWebsite.html_content && (
+                  <div className="html-preview">
+                    <iframe
+                      srcDoc={generatedWebsite.html_content}
+                      width="100%"
+                      height="300"
+                      style={{ border: '1px solid #ddd', borderRadius: '4px' }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setShowWebsiteModal(false)}>
+                Zrušit
               </button>
             </div>
           </div>
@@ -1148,6 +1236,91 @@ export default function BusinessDetailPage() {
         .activity-seller {
           font-size: 12px;
           color: #999;
+        }
+
+        .project-actions {
+          margin-top: 12px;
+          padding-top: 12px;
+          border-top: 1px solid #f0f0f0;
+        }
+
+        .btn-generate-web {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 500;
+          transition: opacity 0.2s;
+        }
+
+        .btn-generate-web:hover:not(:disabled) {
+          opacity: 0.9;
+        }
+
+        .btn-generate-web:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .website-gen-options {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+          margin-bottom: 24px;
+        }
+
+        .option-card {
+          padding: 20px;
+          border: 2px solid #e5e7eb;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: border-color 0.2s;
+        }
+
+        .option-card:hover:not(.disabled) {
+          border-color: #667eea;
+        }
+
+        .option-card.disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .option-card h3 {
+          margin: 0 0 8px;
+          font-size: 16px;
+          color: #1a1a2e;
+        }
+
+        .option-card p {
+          margin: 0 0 16px;
+          font-size: 14px;
+          color: #666;
+          line-height: 1.4;
+        }
+
+        .generation-result {
+          margin-top: 24px;
+          padding-top: 20px;
+          border-top: 1px solid #e5e7eb;
+        }
+
+        .generation-result h3 {
+          margin: 0 0 12px;
+          color: #1a1a2e;
+          font-size: 16px;
+        }
+
+        .generation-result p {
+          margin: 0 0 16px;
+          color: #374151;
+        }
+
+        .html-preview {
+          margin-top: 16px;
         }
 
         .modal-overlay {

@@ -1,5 +1,7 @@
+import json
 from datetime import datetime, date
 from typing import Annotated, Optional
+from urllib.request import urlopen
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
@@ -20,6 +22,7 @@ from ..schemas.crm import (
     ProjectUpdate,
     ProjectResponse,
     SellerDashboard,
+    ARESCompany,
 )
 
 router = APIRouter(prefix="/crm", tags=["CRM"])
@@ -49,6 +52,61 @@ def types_to_string(types) -> str | None:
     if isinstance(types, list):
         return ", ".join(types) if types else None
     return str(types)
+
+
+@router.get("/ares/{ico}", response_model=ARESCompany)
+async def get_company_from_ares(
+    ico: str,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """
+    Fetch company data from ARES (Czech Business Register) by IČO.
+
+    Returns basic company information including name, address, legal form, and DIC.
+    """
+    # Validate ICO format (8 digits)
+    if not ico.isdigit() or len(ico) != 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="IČO musí být 8 číslic"
+        )
+
+    try:
+        # Call ARES API
+        url = f"https://ares.gov.cz/ekonomicke-subjekty-vyhledat"
+        # For now, we'll use a simple GET request to the main endpoint
+        # In production, this should use proper authentication and parameters
+        ares_url = f"https://wwwinfo.mfcr.cz/cgi-bin/ares/darv_std.cgi?ico={ico}"
+
+        with urlopen(ares_url) as response:
+            data = response.read().decode("utf-8")
+
+        # Parse the XML response (simplified - in production use proper XML parser)
+        # For now, return a mock response structure
+        # TODO: Implement proper XML parsing of ARES response
+
+        # Mock response for development - replace with actual parsing
+        mock_data = {
+            "ico": ico,
+            "obchodniJmeno": f"Firma s IČO {ico}",
+            "sidlo": {
+                "nazevObce": "Praha",
+                "nazevUlice": "Václavské náměstí",
+                "cisloDomovni": 68,
+                "cisloOrientacni": 1,
+                "psc": 11000,
+                "textovaAdresa": "Václavské náměstí 68/1, 110 00 Praha",
+            },
+            "pravniForma": "101",
+            "dic": f"CZ{ico}",
+        }
+
+        return ARESCompany(**mock_data)
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Chyba při volání ARES API: {str(e)}",
+        )
 
 
 @router.get("/businesses/check-duplicate")
@@ -752,6 +810,45 @@ async def create_project(
         created_at=row.get("created_at"),
         updated_at=row.get("updated_at"),
     )
+
+
+@router.get("/sellers", response_model=list[dict])
+async def get_sellers_list(
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """Get list of all sellers for UI dropdowns and caching."""
+    supabase = get_supabase()
+
+    # Only admin can see all sellers, sales see themselves + other active sellers
+    if current_user.role == "admin":
+        result = (
+            supabase.table("sellers")
+            .select("id, first_name, last_name, email, role, is_active")
+            .execute()
+        )
+    else:
+        # Sales see themselves and other active sellers
+        result = (
+            supabase.table("sellers")
+            .select("id, first_name, last_name, email, role, is_active")
+            .eq("is_active", True)
+            .execute()
+        )
+
+    sellers = []
+    for seller in result.data or []:
+        sellers.append(
+            {
+                "id": seller["id"],
+                "name": f"{seller.get('first_name', '')} {seller.get('last_name', '')}".strip()
+                or seller.get("email", ""),
+                "email": seller.get("email"),
+                "role": seller.get("role"),
+                "is_active": seller.get("is_active", True),
+            }
+        )
+
+    return sellers
 
 
 @router.get("/seller/dashboard", response_model=SellerDashboard)

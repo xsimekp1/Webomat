@@ -66,6 +66,15 @@ class ApiClient {
     return response.data;
   }
 
+  // CRM - ARES API
+  static async getCompanyFromARES(ico: string) {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/ares/${ico}`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
   // CRM endpointy - Businesses
   static async getBusinesses(params?: {
     status_crm?: string;
@@ -282,6 +291,25 @@ class ApiClient {
     const response = await axios.post(
       `${API_BASE_URL}/admin/users/${userId}/toggle-active`,
       {},
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  // Website Generation endpointy
+  static async generateWebsite(projectId: string, dryRun: boolean = false) {
+    const response = await axios.post(
+      `${API_BASE_URL}/website/generate`,
+      { project_id: projectId, dry_run: dryRun },
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  // Sellers endpointy
+  static async getSellersList() {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/sellers`,
       { headers: ApiClient.getAuthHeaders() }
     );
     return response.data;

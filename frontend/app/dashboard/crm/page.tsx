@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
 import ApiClient from '../../lib/api'
+import { toast } from 'react-hot-toast'
 
 interface Business {
   id: string
@@ -64,6 +65,7 @@ export default function CRMPage() {
   const [showEditModal, setShowEditModal] = useState<Business | null>(null)
   const [formData, setFormData] = useState({
     name: '',
+    ico: '',
     phone: '',
     email: '',
     address: '',
@@ -72,6 +74,7 @@ export default function CRMPage() {
     next_follow_up_at: '',
   })
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -116,6 +119,7 @@ export default function CRMPage() {
   const openNewModal = () => {
     setFormData({
       name: '',
+      ico: '',
       phone: '',
       email: '',
       address: '',
@@ -129,6 +133,7 @@ export default function CRMPage() {
   const openEditModal = (business: Business) => {
     setFormData({
       name: business.name,
+      ico: (business as any).ico || '',
       phone: business.phone || '',
       email: business.email || '',
       address: business.address || '',
@@ -137,6 +142,33 @@ export default function CRMPage() {
       next_follow_up_at: business.next_follow_up_at ? business.next_follow_up_at.split('T')[0] : '',
     })
     setShowEditModal(business)
+  }
+
+  const handleFillFromARES = async () => {
+    if (!formData.ico || formData.ico.length !== 8) {
+      alert('Zadejte platné IČO (8 číslic)')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const aresData = await ApiClient.getCompanyFromARES(formData.ico)
+
+      // Fill form with ARES data
+      setFormData(prev => ({
+        ...prev,
+        name: aresData.obchodniJmeno || prev.name,
+        address: aresData.sidlo?.textovaAdresa || prev.address,
+        // You can add more fields here as needed
+      }))
+
+      alert('Data z ARES byla načtena')
+    } catch (error: any) {
+      console.error('ARES API error:', error)
+      alert('Chyba při načítání dat z ARES: ' + (error.response?.data?.detail || error.message))
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSave = async () => {
@@ -151,6 +183,7 @@ export default function CRMPage() {
     try {
       const data = {
         ...formData,
+        ico: formData.ico || null,
         next_follow_up_at: formData.next_follow_up_at || null,
       }
 
@@ -355,15 +388,46 @@ export default function CRMPage() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>{showEditModal ? 'Upravit lead' : 'Nový lead'}</h2>
 
-            <div className="form-group">
-              <label>Název firmy *</label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="ABC s.r.o."
-              />
-            </div>
+             <div className="form-row">
+               <div className="form-group">
+                 <label>IČO</label>
+                 <div style={{ display: 'flex', gap: '8px' }}>
+                   <input
+                     type="text"
+                     value={formData.ico}
+                     onChange={(e) => setFormData({ ...formData, ico: e.target.value })}
+                     placeholder="12345678"
+                     maxLength={8}
+                     style={{ flex: 1 }}
+                   />
+                   <button
+                     type="button"
+                     onClick={handleFillFromARES}
+                     disabled={!formData.ico || loading}
+                     style={{
+                       padding: '10px 16px',
+                       background: '#667eea',
+                       color: 'white',
+                       border: 'none',
+                       borderRadius: '6px',
+                       cursor: formData.ico && !loading ? 'pointer' : 'not-allowed',
+                       opacity: formData.ico && !loading ? 1 : 0.6
+                     }}
+                   >
+                     {loading ? 'Načítám...' : 'Vyplnit z ARES'}
+                   </button>
+                 </div>
+               </div>
+               <div className="form-group">
+                 <label>Název firmy *</label>
+                 <input
+                   type="text"
+                   value={formData.name}
+                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                   placeholder="ABC s.r.o."
+                 />
+               </div>
+             </div>
 
             <div className="form-row">
               <div className="form-group">

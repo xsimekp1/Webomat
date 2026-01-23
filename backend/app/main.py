@@ -2,14 +2,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
-from .routers import auth, admin, crm, upload
+from .routers import auth, admin, crm, upload, website
 
 settings = get_settings()
 
 app = FastAPI(
     title="Webomat API",
     description="CRM & Business Discovery System API",
-    version="0.1.0"
+    version="0.1.0",
 )
 
 # CORS middleware
@@ -26,6 +26,7 @@ app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(crm.router)
 app.include_router(upload.router)
+app.include_router(website.router)
 
 
 @app.get("/")

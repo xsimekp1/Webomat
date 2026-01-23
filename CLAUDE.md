@@ -345,6 +345,14 @@ Při vytváření leadu se kontroluje:
 
 Endpoint: `GET /crm/businesses/check-duplicate?phone=&website=&name=`
 
+## DRY RUN Mode (implementováno)
+- Endpoint: POST /website/generate
+- Parametr: dry_run (boolean)
+- Pokud dry_run=true: vrátí dummy HTML stránku místo volání Claude API
+- Dummy stránka: kompletní HTML s "Dry run test web" obsahem, gradient background, stylizované tělo
+- Umožňuje testovat printscreen a thumbnail funkcionality bez nákladů
+- UI: Modal s možností výběru mezi DRY RUN a AI generováním (AI zatím disabled)
+
 ## Project Language
 
 Primary documentation is in Czech. The project serves Czech market businesses.

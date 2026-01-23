@@ -14,14 +14,24 @@ export interface User {
   must_change_password: boolean
 }
 
+export interface Seller {
+  id: string
+  name: string
+  email: string
+  role: 'admin' | 'sales'
+  is_active: boolean
+}
+
 interface AuthContextType {
   user: User | null
   token: string | null
+  sellers: Seller[]
   isLoading: boolean
   isAuthenticated: boolean
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>
   logout: () => void
   refreshUser: () => Promise<void>
+  loadSellers: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -29,6 +39,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
+  const [sellers, setSellers] = useState<Seller[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
@@ -51,6 +62,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [logout])
 
+  const loadSellers = useCallback(async () => {
+    try {
+      const sellersData = await ApiClient.getSellersList()
+      setSellers(sellersData)
+    } catch (error) {
+      console.error('Failed to load sellers:', error)
+      // Don't logout on sellers load failure, just log error
+    }
+  }, [])
+
   // Initialize auth state from localStorage
   useEffect(() => {
     const initAuth = async () => {
@@ -64,6 +85,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const userData = await ApiClient.getUserProfile()
           setUser(userData)
           localStorage.setItem('user', JSON.stringify(userData))
+
+          // Load sellers for UI optimization
+          await loadSellers()
         } catch (error) {
           // Token is invalid, clear auth state
           console.error('Token validation failed:', error)
@@ -90,6 +114,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(userData)
       localStorage.setItem('user', JSON.stringify(userData))
 
+      // Load sellers for UI optimization
+      await loadSellers()
+
       return { success: true }
     } catch (error: any) {
       console.error('Login error:', error)
@@ -101,11 +128,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value: AuthContextType = {
     user,
     token,
+    sellers,
     isLoading,
     isAuthenticated: !!user && !!token,
     login,
     logout,
     refreshUser,
+    loadSellers,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

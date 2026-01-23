@@ -98,5 +98,7 @@ ALTER TABLE profiles ADD COLUMN is_generation_allowed bool DEFAULT true;
 
 ### DRY RUN
 - Checkbox v UI "Dry Run".
-- Worker: Nepovolá API, vrátí dummy HTML "<h1>Testovací stránka</h1>", status done, cost_usd=0.
-- Testuje celý flow bez nákladů.
+- Worker: Nepovolá API, vrátí dummy HTML s kompletní "hello world" style stránkou, cost_usd=0.
+- HTML obsahuje: DOCTYPE, head s meta, title "Dry run test web", stylizované tělo s gradient background, centrovný text "Dry run test web", badge "Webomat DRY RUN".
+- Umožňuje testovat printscreen funkcionality a thumbnail generování bez nákladů.
+- Implementováno jako endpoint POST /website/generate s parametrem dry_run=true.

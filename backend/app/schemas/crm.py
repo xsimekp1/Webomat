@@ -195,3 +195,25 @@ class ProjectResponse(BaseModel):
     notes: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
+
+
+# ARES API schemas
+class ARESAddress(BaseModel):
+    nazevStatu: str | None = None
+    nazevKraje: str | None = None
+    nazevOkresu: str | None = None
+    nazevObce: str | None = None
+    nazevUlice: str | None = None
+    cisloDomovni: int | None = None
+    cisloOrientacni: int | None = None
+    cisloOrientacniPismeno: str | None = None
+    psc: int | None = None
+    textovaAdresa: str | None = None
+
+
+class ARESCompany(BaseModel):
+    ico: str
+    obchodniJmeno: str
+    sidlo: ARESAddress | None = None
+    pravniForma: str | None = None
+    dic: str | None = None

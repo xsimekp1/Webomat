@@ -234,4 +234,12 @@ Preview: server-side (Playwright screenshot), uložit jako website_versions/{dea
 - Seznam verzí pod dealem + možnost otevřít preview a stáhnout zip
 - Bez duplikace assetů mezi verzemi
 
+## DRY RUN Mode (implementováno)
+- Endpoint: POST /website/generate
+- Parametr: dry_run (boolean)
+- Pokud dry_run=true: vrátí dummy HTML stránku místo volání Claude API
+- Dummy stránka: kompletní HTML s "Dry run test web" obsahem, gradient background, stylizované tělo
+- Umožňuje testovat printscreen a thumbnail funkcionality bez nákladů
+- UI: Modal s možností výběru mezi DRY RUN a AI generováním (AI zatím disabled)
+
 Aby to bylo v kontextu se současnou architekturou, pravděpodobně bude doplňovat nějaké nové sloupce v databázi, nejspíš i nové tabulky... zatím řešíme tu vrstvu vstupu, nepotřebujeme definovat tu vrstvu posílání zadání do claude code, které vytvoří tu samotnou webovou stránku, případně se mě ptej, kde si nebudeš jistý.
