@@ -72,11 +72,9 @@ Grouped by logical categories and dependencies for focused development: Auth/Use
 
 29. **mvp-13 (Medium)**: Add basic audit log: Who changed status, deployed, approved invoice
 
-30. **mvp-27 (Low)**: Implement help page based on [HELP_PAGE_ASSIGNMENT.md](./HELP_PAGE_ASSIGNMENT.md)
+30. **mvp-28 (Low)**: Implement commission invoicing based on [COMMISSION_INVOICING_ASSIGNMENT.md](./COMMISSION_INVOICING_ASSIGNMENT.md)
 
-31. **mvp-30 (Low)**: Add profile photo upload for sales representatives: Allow upload of profile image, display in thumbnails and top right UI elements.
-
-32. **mvp-31 (Low)**: Add dark/light mode toggle in user profile settings: Store preference, apply theme via CSS.
+31. **mvp-29 (Medium)**: Implement sales representative management based on [SALES_MANAGEMENT_ASSIGNMENT.md](./SALES_MANAGEMENT_ASSIGNMENT.md)
 
 ## Current State
 - Platform is visible and login works.  
