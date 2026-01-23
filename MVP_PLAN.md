@@ -8,7 +8,7 @@ This plan outlines the MVP for the platform, structured into prioritized, implem
 - **Low**: Advanced or nice-to-have features - for post-MVP.
 
 ## Order Rationale
-Grouped by logical categories and dependencies for focused development: Auth/User Mgmt → CRM → Deals/Website → Finance → Misc. This optimizes for category-based sprints while maintaining dependencies (e.g., CRM before deals).
+Grouped by logical categories and dependencies for focused development: Auth/User Mgmt → CRM → Deals/Website → Finance → Misc. Optimized for testability by keeping related features together; large tasks can be split in implementation (e.g., AI backend into subtasks). Merged minor related items where possible.
 
 ## Todo List
 
@@ -79,6 +79,8 @@ Grouped by logical categories and dependencies for focused development: Auth/Use
 32. **mvp-32 (Medium)**: Implement AI backend for website generation based on [AI_BACKEND_GENERATION_ASSIGNMENT.md](./AI_BACKEND_GENERATION_ASSIGNMENT.md)
 
 33. **mvp-33 (Low)**: Implement advanced project features (copy/reassign/request/templates + client comments) based on [ADVANCED_PROJECT_FEATURES_ASSIGNMENT.md](./ADVANCED_PROJECT_FEATURES_ASSIGNMENT.md)
+
+34. **mvp-34 (Medium)**: Implement email communications, revisions, and variants based on [EMAIL_COMMUNICATIONS_ASSIGNMENT.md](./EMAIL_COMMUNICATIONS_ASSIGNMENT.md)
 
 ## Current State
 - Platform is visible and login works.  
