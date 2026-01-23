@@ -3,7 +3,7 @@ from datetime import datetime, date
 from typing import Annotated, Optional
 from urllib.request import urlopen
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, File, UploadFile
 
 from ..database import get_supabase
 from ..dependencies import require_sales_or_admin
@@ -245,6 +245,12 @@ async def list_businesses(
                 next_follow_up_at=row.get("next_follow_up_at"),
                 created_at=row.get("created_at"),
                 updated_at=row.get("updated_at"),
+                ico=row.get("ico"),
+                dic=row.get("dic"),
+                billing_address=row.get("billing_address"),
+                bank_account=row.get("bank_account"),
+                contact_person=row.get("contact_person"),
+                logo_url=row.get("logo_url"),
             )
         )
 
@@ -300,6 +306,12 @@ async def get_business(
         next_follow_up_at=row.get("next_follow_up_at"),
         created_at=row.get("created_at"),
         updated_at=row.get("updated_at"),
+        ico=row.get("ico"),
+        dic=row.get("dic"),
+        billing_address=row.get("billing_address"),
+        bank_account=row.get("bank_account"),
+        contact_person=row.get("contact_person"),
+        logo_url=row.get("logo_url"),
     )
 
 
@@ -490,6 +502,20 @@ async def update_business(
     if data.next_follow_up_at is not None:
         update_data["next_follow_up_at"] = data.next_follow_up_at.isoformat()
 
+    # Fakturační údaje
+    if data.ico is not None:
+        update_data["ico"] = data.ico
+    if data.dic is not None:
+        update_data["dic"] = data.dic
+    if data.billing_address is not None:
+        update_data["billing_address"] = data.billing_address
+    if data.bank_account is not None:
+        update_data["bank_account"] = data.bank_account
+    if data.contact_person is not None:
+        update_data["contact_person"] = data.contact_person
+    if data.logo_url is not None:
+        update_data["logo_url"] = data.logo_url
+
     if not update_data:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="No data to update"
@@ -508,6 +534,133 @@ async def update_business(
 
     # Fetch with seller name
     return await get_business(business_id, current_user)
+
+
+@router.post("/businesses/{business_id}/logo", response_model=dict)
+async def upload_business_logo(
+    business_id: str,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+    file: UploadFile = File(...),
+):
+    """Upload logo for a business. Returns the public URL of the uploaded file."""
+    supabase = get_supabase()
+
+    # Check access and ownership
+    existing = (
+        supabase.table("businesses")
+        .select("id, owner_seller_id")
+        .eq("id", business_id)
+        .limit(1)
+        .execute()
+    )
+
+    if not existing.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Business not found"
+        )
+
+    # RBAC check for sales
+    if current_user.role == "sales":
+        owner = existing.data[0].get("owner_seller_id")
+        if owner and owner != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
+            )
+
+    # Validate file type
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="File must be an image"
+        )
+
+    # Validate file size (max 5MB)
+    if file.size and file.size > 5 * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File size must be less than 5MB",
+        )
+
+    try:
+        # Generate unique filename
+        import uuid
+        import os
+
+        file_extension = os.path.splitext(file.filename or "")[1] or ".jpg"
+        unique_filename = f"business_logos/{business_id}/{uuid.uuid4()}{file_extension}"
+
+        # Upload to Supabase Storage
+        storage_result = supabase.storage.from_("webomat").upload(
+            path=unique_filename,
+            data=await file.read(),
+            file_options={"content-type": file.content_type, "upsert": "true"},
+        )
+
+        if storage_result.data is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to upload file to storage",
+            )
+
+        # Get public URL
+        public_url = supabase.storage.from_("webomat").get_public_url(unique_filename)
+
+        # Update business record with logo URL
+        supabase.table("businesses").update(
+            {"logo_url": public_url, "updated_at": datetime.utcnow().isoformat()}
+        ).eq("id", business_id).execute()
+
+        return {"logo_url": public_url, "message": "Logo uploaded successfully"}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error uploading logo: {str(e)}",
+        )
+
+
+@router.delete("/businesses/{business_id}/logo", response_model=dict)
+async def delete_business_logo(
+    business_id: str,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """Remove logo from a business."""
+    supabase = get_supabase()
+
+    # Check access and ownership
+    existing = (
+        supabase.table("businesses")
+        .select("id, owner_seller_id, logo_url")
+        .eq("id", business_id)
+        .limit(1)
+        .execute()
+    )
+
+    if not existing.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Business not found"
+        )
+
+    # RBAC check for sales
+    if current_user.role == "sales":
+        owner = existing.data[0].get("owner_seller_id")
+        if owner and owner != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
+            )
+
+    try:
+        # Remove logo URL from business record
+        supabase.table("businesses").update(
+            {"logo_url": None, "updated_at": datetime.utcnow().isoformat()}
+        ).eq("id", business_id).execute()
+
+        return {"message": "Logo removed successfully"}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error removing logo: {str(e)}",
+        )
 
 
 @router.delete("/businesses/{business_id}", status_code=status.HTTP_204_NO_CONTENT)

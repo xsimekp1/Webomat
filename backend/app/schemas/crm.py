@@ -36,6 +36,8 @@ class BusinessBase(BaseModel):
     billing_address: str | None = None
     bank_account: str | None = None
     contact_person: str | None = None
+    # Logo firmy
+    logo_url: str | None = None
 
 
 class BusinessCreate(BusinessBase):
@@ -61,6 +63,8 @@ class BusinessUpdate(BaseModel):
     billing_address: str | None = None
     bank_account: str | None = None
     contact_person: str | None = None
+    # Logo firmy
+    logo_url: str | None = None
 
 
 class BusinessResponse(BaseModel):
@@ -84,6 +88,8 @@ class BusinessResponse(BaseModel):
     billing_address: str | None = None
     bank_account: str | None = None
     contact_person: str | None = None
+    # Logo firmy
+    logo_url: str | None = None
 
 
 class BusinessListResponse(BaseModel):

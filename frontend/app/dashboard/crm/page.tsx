@@ -872,6 +872,152 @@ export default function CRMPage() {
           color: #666;
         }
 
+        /* Modern Button Animations - 2026 Best Practices */
+        .ares-button {
+          padding: 10px 16px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 500;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          position: relative;
+          overflow: hidden;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          transform: translateY(0);
+        }
+
+        .ares-button::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+          transition: left 0.5s;
+        }
+
+        .ares-button:hover:not(:disabled)::before {
+          left: 100%;
+        }
+
+        .ares-button:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+          background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+        }
+
+        .ares-button:active:not(:disabled) {
+          transform: translateY(0);
+          transition-duration: 0.1s;
+        }
+
+        .ares-button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        .spinner {
+          width: 16px;
+          height: 16px;
+          border: 2px solid rgba(255,255,255,0.3);
+          border-top: 2px solid white;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+
+        .icon {
+          font-size: 16px;
+          transition: transform 0.3s ease;
+        }
+
+        .ares-button:hover:not(:disabled) .icon {
+          transform: scale(1.1) rotate(5deg);
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        /* Enhanced submit buttons */
+        .btn-primary, .btn-secondary {
+          position: relative;
+          overflow: hidden;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-primary::before {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 0;
+          height: 0;
+          background: rgba(255,255,255,0.2);
+          border-radius: 50%;
+          transform: translate(-50%, -50%);
+          transition: width 0.6s, height 0.6s;
+        }
+
+        .btn-primary:hover:not(:disabled)::before {
+          width: 300px;
+          height: 300px;
+        }
+
+        .btn-secondary:hover {
+          background: #f0f0f0;
+          transform: translateY(-1px);
+        }
+
+        /* Form input focus animations */
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+          transform: scale(1.02);
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+          transition: all 0.3s ease;
+        }
+
+        /* Loading table animation */
+        .loading-table {
+          animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+
+        /* Status badge hover */
+        .status-badge {
+          transition: transform 0.2s ease;
+        }
+
+        .status-badge:hover {
+          transform: scale(1.05);
+        }
+
+        /* Modal entrance animation */
+        .modal {
+          animation: modalSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes modalSlideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-20px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
         @media (max-width: 768px) {
           .crm-header {
             flex-direction: column;
