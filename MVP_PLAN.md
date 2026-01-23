@@ -76,6 +76,8 @@ Grouped by logical categories and dependencies for focused development: Auth/Use
 
 31. **mvp-29 (Medium)**: Implement sales representative management based on [SALES_MANAGEMENT_ASSIGNMENT.md](./SALES_MANAGEMENT_ASSIGNMENT.md)
 
+32. **mvp-32 (Medium)**: Implement AI backend for website generation based on [AI_BACKEND_GENERATION_ASSIGNMENT.md](./AI_BACKEND_GENERATION_ASSIGNMENT.md)
+
 ## Current State
 - Platform is visible and login works.  
 - Now adding first real value through iterative implementation.
