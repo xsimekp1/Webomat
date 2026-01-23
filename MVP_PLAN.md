@@ -82,6 +82,8 @@ Grouped by logical categories and dependencies for focused development: Auth/Use
 
 34. **mvp-34 (Medium)**: Implement email communications, revisions, and variants based on [EMAIL_COMMUNICATIONS_ASSIGNMENT.md](./EMAIL_COMMUNICATIONS_ASSIGNMENT.md)
 
+35. **mvp-35 (Medium)**: Implement updated sales dashboard with "Moje rozdělané projekty" based on [SALES_DASHBOARD_ASSIGNMENT.md](./SALES_DASHBOARD_ASSIGNMENT.md)
+
 ## Current State
 - Platform is visible and login works.  
 - Now adding first real value through iterative implementation.
