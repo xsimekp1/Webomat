@@ -191,6 +191,8 @@ Key MVP patterns:
 
 **DŮLEŽITÉ:** Před vytvářením/úpravou tabulek vždy ověř aktuální strukturu v Supabase!
 
+**POVINNOST:** Při jakékoli změně struktury databáze (CREATE TABLE, ALTER TABLE, nové sloupce) MUSÍŠ aktualizovat tuto dokumentaci!
+
 ### Tabulka `sellers` (obchodníci/uživatelé)
 
 | Sloupec | Typ | Popis |
@@ -336,6 +338,99 @@ Key MVP patterns:
 | ip_address | string? | IP adresa |
 | user_agent | text? | User agent |
 | created_at | datetime | Kdy |
+
+### Tabulka `ledger_entries` (provizní účet obchodníků)
+
+**SQL:** `sql/create_invoices_ledger.sql`
+
+| Sloupec | Typ | Popis |
+|---------|-----|-------|
+| id | uuid | Primární klíč |
+| seller_id | uuid | FK na sellers |
+| entry_type | string | Typ: commission_earned/admin_adjustment/payout_reserved/payout_paid |
+| amount | decimal | Částka (kladné = příjem, záporné = výdaj) |
+| related_invoice_id | uuid? | FK na invoices_received |
+| related_project_id | uuid? | FK na website_projects |
+| related_business_id | uuid? | FK na businesses |
+| description | text? | Popis |
+| notes | text? | Poznámky |
+| is_test | boolean | Testovací záznam |
+| created_at | datetime | Vytvořeno |
+| created_by | uuid? | Kdo vytvořil |
+
+### Tabulka `invoices_issued` (vydané faktury klientům)
+
+Webomat fakturuje klientovi za web.
+
+| Sloupec | Typ | Popis |
+|---------|-----|-------|
+| id | uuid | Primární klíč |
+| business_id | uuid | FK na businesses |
+| project_id | uuid? | FK na website_projects |
+| seller_id | uuid? | FK na sellers (kdo uzavřel deal) |
+| invoice_number | string | Číslo faktury (unique) |
+| issue_date | date | Datum vystavení |
+| due_date | date | Datum splatnosti |
+| paid_date | date? | Datum zaplacení |
+| amount_without_vat | decimal | Částka bez DPH |
+| vat_rate | decimal | Sazba DPH (default 21) |
+| vat_amount | decimal? | Výše DPH |
+| amount_total | decimal | Celková částka |
+| currency | string | Měna (default CZK) |
+| payment_type | string | Typ: setup/monthly/other |
+| status | string | Status: draft/issued/paid/overdue/cancelled |
+| description | text? | Text faktury |
+| pdf_path | text? | Cesta k PDF |
+| variable_symbol | string? | Variabilní symbol |
+| sent_to_accountant | boolean | Odesláno účetní |
+| created_at | datetime | Vytvořeno |
+| updated_at | datetime | Upraveno |
+
+### Tabulka `invoices_received` (přijaté faktury od obchodníků)
+
+Obchodník fakturuje Webomatu za provize.
+
+| Sloupec | Typ | Popis |
+|---------|-----|-------|
+| id | uuid | Primární klíč |
+| seller_id | uuid | FK na sellers |
+| invoice_number | string | Číslo faktury (unique per seller) |
+| issue_date | date | Datum vystavení |
+| due_date | date | Datum splatnosti |
+| period_from | date? | Období od |
+| period_to | date? | Období do |
+| amount_total | decimal | Celková částka |
+| amount_to_payout | decimal? | Částka k vyplacení |
+| currency | string | Měna (default CZK) |
+| status | string | Status: draft/submitted/approved/paid/rejected |
+| rejected_reason | text? | Důvod zamítnutí |
+| description_text | text? | Text faktury |
+| pdf_path | text? | Cesta k PDF |
+| is_test | boolean | Testovací faktura |
+| approved_at | datetime? | Schváleno kdy |
+| approved_by | uuid? | Schváleno kým |
+| paid_at | datetime? | Vyplaceno kdy |
+| created_at | datetime | Vytvořeno |
+| updated_at | datetime | Upraveno |
+
+### Tabulka `platform_settings` (nastavení platformy)
+
+| Sloupec | Typ | Popis |
+|---------|-----|-------|
+| id | uuid | Primární klíč |
+| key | string | Klíč nastavení (unique) |
+| value | jsonb | Hodnota (JSON) |
+| updated_at | datetime | Upraveno |
+| updated_by | uuid? | Kdo upravil |
+
+**Klíče:**
+- `billing_info` - Fakturační údaje Webomatu (company_name, ico, dic, address...)
+- `invoice_settings` - Nastavení faktur (default_due_days, vat_rate, min_payout_threshold...)
+
+### Databázové funkce
+
+- `get_next_issued_invoice_number(year)` - Generuje další číslo vydané faktury (YYYY-NNNN)
+- `get_seller_balance(seller_id, include_test)` - Vypočítá aktuální saldo obchodníka z ledgeru
 
 ### Deduplikace leadů
 
