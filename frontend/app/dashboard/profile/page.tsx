@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
-import { supabase } from '../../lib/supabase'
+import { supabase } from '../../utils/supabase'
 import ApiClient from '../../lib/api'
 
 interface ProfileData {
@@ -205,17 +205,18 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="phone">Telefon</label>
+            {/* <div className="form-group">
+              <label htmlFor="profile_photo">Profilová fotka</label>
               <input
-                type="tel"
-                id="phone"
-                name="phone"
-                value={profile.phone}
-                onChange={handleChange}
-                placeholder="+420 123 456 789"
+                type="file"
+                id="profile_photo"
+                accept="image/*"
+                onChange={handleFileChange}
               />
-            </div>
+              {profile.profile_photo_url && (
+                <img src={profile.profile_photo_url} alt="Profile" width={100} height={100} className="profile-photo" />
+              )}
+            </div> */}
 
             <div className="form-group">
               <label htmlFor="bank_account">Číslo účtu</label>
