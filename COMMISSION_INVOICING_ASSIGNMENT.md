@@ -274,3 +274,10 @@ Po schváleném návrhu: Tlačítko "Fakturovat" v projektu → vygeneruje faktu
 ## Stav faktury a splatnost
 - Přepínání stavu na "splacená".
 - Pokud po splatnosti: Automaticky vytvoří aktivitu "faktura po splatnosti" pro sales, přiřazenou den po splatnosti.
+
+## Admin přístup: Tabulka faktur
+V admin sekci: Tabulka faktur (přijaté + vydané) s:
+- Jména klientů/sales.
+- Stav faktury.
+- Červené zvýraznění pro po splatnosti (overdue).
+- Filtry: Typ (přijaté/vydané), stav, datum.
