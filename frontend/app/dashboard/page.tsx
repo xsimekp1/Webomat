@@ -1,28 +1,35 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { User } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
+import ApiClient from '../lib/api'
+
+interface CRMStats {
+  total_leads: number
+  follow_ups_today: number
+}
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<User | null>(null)
+  const { user, isLoading, isAuthenticated, logout } = useAuth()
   const router = useRouter()
+  const [stats, setStats] = useState<CRMStats | null>(null)
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user')
-    if (savedUser) {
-      setUser(JSON.parse(savedUser))
-    } else {
+    if (!isLoading && !isAuthenticated) {
       router.push('/')
     }
-  }, [router])
+  }, [isLoading, isAuthenticated, router])
 
-  const handleLogout = () => {
-    localStorage.removeItem('user')
-    router.push('/')
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      ApiClient.getCRMStats()
+        .then(setStats)
+        .catch(() => {})
+    }
+  }, [isAuthenticated])
 
-  if (!user) {
+  if (isLoading || !user) {
     return <div className="loading">Načítám...</div>
   }
 
@@ -39,7 +46,7 @@ export default function DashboardPage() {
           <button onClick={() => router.push('/dashboard/profile')} className="btn-profile">
             Můj profil
           </button>
-          <button onClick={handleLogout} className="btn-logout">
+          <button onClick={logout} className="btn-logout">
             Odhlásit
           </button>
         </div>
@@ -55,14 +62,14 @@ export default function DashboardPage() {
           <div className="stat-card">
             <div className="stat-icon">📊</div>
             <h3>Leady</h3>
-            <p className="stat-value">--</p>
+            <p className="stat-value">{stats?.total_leads ?? '--'}</p>
             <p className="stat-label">Celkem v systému</p>
           </div>
 
           <div className="stat-card">
             <div className="stat-icon">📞</div>
             <h3>Dnes volat</h3>
-            <p className="stat-value">--</p>
+            <p className="stat-value">{stats?.follow_ups_today ?? '--'}</p>
             <p className="stat-label">Naplánované hovory</p>
           </div>
 
@@ -90,7 +97,12 @@ export default function DashboardPage() {
               <li>Seznam firem k obvolání</li>
               <li>Historie komunikace</li>
             </ul>
-            <span className="coming-soon">Připravujeme...</span>
+            <button
+              onClick={() => router.push('/dashboard/crm')}
+              className="btn-admin"
+            >
+              Otevřít CRM
+            </button>
           </section>
 
           <section className="section-card">
@@ -117,14 +129,19 @@ export default function DashboardPage() {
 
           {user.role === 'admin' && (
             <section className="section-card admin-card">
-              <h3>⚙️ Administrace</h3>
+              <h3>Administrace</h3>
               <p>Správa systému a uživatelů</p>
               <ul>
                 <li>Správa uživatelů</li>
                 <li>Přehled provizí</li>
                 <li>Nastavení balíčků</li>
               </ul>
-              <span className="coming-soon">Připravujeme...</span>
+              <button
+                onClick={() => router.push('/dashboard/admin')}
+                className="btn-admin"
+              >
+                Spravovat uživatele
+              </button>
             </section>
           )}
         </div>

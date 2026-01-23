@@ -61,7 +61,7 @@ Key MVP patterns:
 
 ## Database Schema
 
-Core tables (see `PROJECT_SUMMARY.md` for details):
+Core tables:
 - `sellers` - Sales representatives
 - `businesses` - Client companies/leads
 - `business_contacts` - Contact persons
@@ -70,6 +70,38 @@ Core tables (see `PROJECT_SUMMARY.md` for details):
 - `website_projects`, `project_assets` - Web development
 - `client_invoices`, `client_invoice_items` - Invoicing
 - `commissions`, `payouts`, `payout_items` - Commission tracking
+
+### Tabulka `businesses` (firmy/leady)
+
+| Sloupec | Typ | Popis |
+|---------|-----|-------|
+| id | uuid | Primární klíč |
+| name | string | Název firmy |
+| address | string? | Adresa sídla |
+| phone | string? | Telefon |
+| email | string? | Email |
+| website | string? | Web |
+| category | string? | Kategorie/obor |
+| notes | string? | Poznámky |
+| status_crm | enum | Status v CRM pipeline (new/calling/interested/offer_sent/won/lost/dnc) |
+| owner_seller_id | uuid? | FK na sellers - přiřazený obchodník |
+| next_follow_up_at | datetime? | Datum příštího follow-upu |
+| **ico** | string? | IČO (identifikační číslo) |
+| **dic** | string? | DIČ (daňové identifikační číslo) |
+| **billing_address** | string? | Fakturační adresa (pokud jiná než sídlo) |
+| **bank_account** | string? | Bankovní účet |
+| **contact_person** | string? | Kontaktní osoba / jednatel |
+| created_at | datetime | Datum vytvoření |
+| updated_at | datetime | Datum poslední úpravy |
+
+### CRM Status hodnoty
+- `new` - Nový lead
+- `calling` - Voláno
+- `interested` - Projevil zájem
+- `offer_sent` - Nabídka odeslána
+- `won` - Vyhráno (klient)
+- `lost` - Ztraceno
+- `dnc` - Do Not Contact
 
 ## Project Language
 

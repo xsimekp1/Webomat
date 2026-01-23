@@ -65,3 +65,5 @@ yarn-error.log*
 
 # Windows artifacts
 nul
+.vercel
+.env*.local

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { loginWithCredentials, User } from './lib/supabase'
+import { useAuth } from './context/AuthContext'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -10,33 +10,30 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const { isAuthenticated, isLoading, login } = useAuth()
 
   // Přesměruj na dashboard pokud je uživatel přihlášen
   useEffect(() => {
-    const savedUser = localStorage.getItem('user')
-    if (savedUser) {
+    if (!isLoading && isAuthenticated) {
       router.push('/dashboard')
     }
-  }, [router])
+  }, [isAuthenticated, isLoading, router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
-    const { user: loggedUser, error: loginError } = await loginWithCredentials(username, password)
+    const result = await login(username, password)
 
     setLoading(false)
 
-    if (loginError) {
-      setError(loginError)
+    if (!result.success) {
+      setError(result.error || 'Nesprávné přihlašovací údaje')
       return
     }
 
-    if (loggedUser) {
-      localStorage.setItem('user', JSON.stringify(loggedUser))
-      router.push('/dashboard')
-    }
+    router.push('/dashboard')
   }
 
   return (

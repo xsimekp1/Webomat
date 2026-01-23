@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { User, supabase } from '../../lib/supabase'
+import { useAuth } from '../../context/AuthContext'
+import { supabase } from '../../lib/supabase'
+import ApiClient from '../../lib/api'
 
 interface ProfileData {
   first_name: string
@@ -10,61 +12,54 @@ interface ProfileData {
   email: string
   phone: string
   bank_account: string
-  profile_photo_url?: string
-  theme: 'light' | 'dark'
 }
 
 export default function ProfilePage() {
-  const [user, setUser] = useState<User | null>(null)
+  const { user, isLoading: authLoading, isAuthenticated, refreshUser } = useAuth()
   const [profile, setProfile] = useState<ProfileData>({
     first_name: '',
     last_name: '',
     email: '',
     phone: '',
-    bank_account: '',
-    profile_photo_url: '',
-    theme: 'light'
+    bank_account: ''
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [showPasswordChange, setShowPasswordChange] = useState(false)
+  const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' })
+  const [changingPassword, setChangingPassword] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user')
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser)
-      setUser(parsedUser)
-      loadProfile(parsedUser.id)
-    } else {
+    if (!authLoading && !isAuthenticated) {
       router.push('/')
     }
+  }, [authLoading, isAuthenticated, router])
 
-    // Apply theme
-    const savedTheme = localStorage.getItem('theme') || 'light'
-    document.documentElement.setAttribute('data-theme', savedTheme)
-  }, [router])
+  useEffect(() => {
+    if (user) {
+      loadProfile(user.id)
+    }
+  }, [user])
 
   const loadProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('sellers')
-        .select('first_name, last_name, email, phone, bank_account, profile_photo_url')
+        .select('first_name, last_name, email, phone, bank_account')
         .eq('id', userId)
         .single()
 
       if (error) throw error
 
       if (data) {
-        const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light'
         setProfile({
           first_name: data.first_name || '',
           last_name: data.last_name || '',
           email: data.email || '',
           phone: data.phone || '',
-          bank_account: data.bank_account || '',
-          profile_photo_url: data.profile_photo_url || '',
-          theme: savedTheme
+          bank_account: data.bank_account || ''
         })
       }
     } catch (err) {
@@ -74,36 +69,9 @@ export default function ProfilePage() {
     }
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setProfile(prev => ({ ...prev, [name]: value }))
-  }
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !user) return
-
-    try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${user.id}_${Date.now()}.${fileExt}`
-      const filePath = `profile-photos/${fileName}`
-
-      const { error: uploadError } = await supabase.storage
-        .from('assets')
-        .upload(filePath, file)
-
-      if (uploadError) throw uploadError
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('assets')
-        .getPublicUrl(filePath)
-
-      setProfile(prev => ({ ...prev, profile_photo_url: publicUrl }))
-      setMessage({ type: 'success', text: 'Fotka byla úspěšně nahrána!' })
-    } catch (err: any) {
-      console.error('Error uploading photo:', err)
-      setMessage({ type: 'error', text: err.message || 'Nepodařilo se nahrát fotku' })
-    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,25 +89,14 @@ export default function ProfilePage() {
           last_name: profile.last_name,
           email: profile.email,
           phone: profile.phone,
-          bank_account: profile.bank_account,
-          profile_photo_url: profile.profile_photo_url
+          bank_account: profile.bank_account
         })
         .eq('id', user.id)
 
-      // Save theme to localStorage and apply
-      localStorage.setItem('theme', profile.theme)
-      document.documentElement.setAttribute('data-theme', profile.theme)
-
       if (error) throw error
 
-      // Update localStorage with new name
-      const updatedUser = {
-        ...user,
-        name: `${profile.first_name} ${profile.last_name}`.trim(),
-        email: profile.email
-      }
-      localStorage.setItem('user', JSON.stringify(updatedUser))
-      setUser(updatedUser)
+      // Refresh user data in AuthContext
+      await refreshUser()
 
       setMessage({ type: 'success', text: 'Profil byl úspěšně uložen!' })
     } catch (err: any) {
@@ -150,7 +107,35 @@ export default function ProfilePage() {
     }
   }
 
-  if (!user || loading) {
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setMessage(null)
+
+    if (passwordData.new !== passwordData.confirm) {
+      setMessage({ type: 'error', text: 'Nová hesla se neshodují' })
+      return
+    }
+
+    if (passwordData.new.length < 6) {
+      setMessage({ type: 'error', text: 'Nové heslo musí mít alespoň 6 znaků' })
+      return
+    }
+
+    setChangingPassword(true)
+
+    try {
+      await ApiClient.changePassword(passwordData.current, passwordData.new)
+      setMessage({ type: 'success', text: 'Heslo bylo úspěšně změněno!' })
+      setPasswordData({ current: '', new: '', confirm: '' })
+      setShowPasswordChange(false)
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.response?.data?.detail || 'Nepodařilo se změnit heslo' })
+    } finally {
+      setChangingPassword(false)
+    }
+  }
+
+  if (authLoading || !user || loading) {
     return <div className="loading">Načítám...</div>
   }
 
@@ -245,38 +230,73 @@ export default function ProfilePage() {
               <span className="form-hint">Pro vyplácení provizí</span>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="profile_photo">Profilová fotka</label>
-              <input
-                type="file"
-                id="profile_photo"
-                accept="image/*"
-                onChange={handleFileChange}
-              />
-              {profile.profile_photo_url && (
-                <img src={profile.profile_photo_url} alt="Profile" width={100} height={100} className="profile-photo" />
-              )}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="theme">Téma</label>
-              <select
-                id="theme"
-                name="theme"
-                value={profile.theme}
-                onChange={handleChange}
-              >
-                <option value="light">Světlé</option>
-                <option value="dark">Tmavé</option>
-              </select>
-            </div>
-
             <div className="form-actions">
               <button type="submit" className="btn-save" disabled={saving}>
                 {saving ? 'Ukládám...' : 'Uložit změny'}
               </button>
             </div>
           </form>
+
+          <div className="password-section">
+            <h3>Změna hesla</h3>
+            {!showPasswordChange ? (
+              <button
+                onClick={() => setShowPasswordChange(true)}
+                className="btn-secondary"
+              >
+                Změnit heslo
+              </button>
+            ) : (
+              <form onSubmit={handlePasswordChange} className="password-form">
+                <div className="form-group">
+                  <label htmlFor="current_password">Aktuální heslo</label>
+                  <input
+                    type="password"
+                    id="current_password"
+                    value={passwordData.current}
+                    onChange={(e) => setPasswordData({ ...passwordData, current: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="new_password">Nové heslo</label>
+                  <input
+                    type="password"
+                    id="new_password"
+                    value={passwordData.new}
+                    onChange={(e) => setPasswordData({ ...passwordData, new: e.target.value })}
+                    required
+                    minLength={6}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="confirm_password">Potvrzení nového hesla</label>
+                  <input
+                    type="password"
+                    id="confirm_password"
+                    value={passwordData.confirm}
+                    onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-actions-row">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPasswordChange(false)
+                      setPasswordData({ current: '', new: '', confirm: '' })
+                    }}
+                    className="btn-cancel"
+                  >
+                    Zrušit
+                  </button>
+                  <button type="submit" className="btn-save" disabled={changingPassword}>
+                    {changingPassword ? 'Měním...' : 'Změnit heslo'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
       </main>
 
@@ -397,6 +417,61 @@ export default function ProfilePage() {
         }
 
         .btn-back:hover {
+          background: #e0e0e0;
+        }
+
+        .password-section {
+          margin-top: 2rem;
+          padding-top: 2rem;
+          border-top: 1px solid #e0e0e0;
+        }
+
+        .password-section h3 {
+          margin: 0 0 1rem 0;
+          color: #1a1a2e;
+        }
+
+        .btn-secondary {
+          padding: 0.75rem 1.5rem;
+          background: #f0f0f0;
+          color: #333;
+          border: none;
+          border-radius: 8px;
+          font-size: 1rem;
+          cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+          background: #e0e0e0;
+        }
+
+        .password-form {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .form-actions-row {
+          display: flex;
+          gap: 1rem;
+          margin-top: 0.5rem;
+        }
+
+        .form-actions-row .btn-save {
+          flex: 1;
+        }
+
+        .btn-cancel {
+          padding: 1rem;
+          background: #f0f0f0;
+          color: #333;
+          border: none;
+          border-radius: 8px;
+          font-size: 1rem;
+          cursor: pointer;
+        }
+
+        .btn-cancel:hover {
           background: #e0e0e0;
         }
 
