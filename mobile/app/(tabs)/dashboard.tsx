@@ -101,7 +101,7 @@ export default function DashboardScreen() {
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Webomat CRM</Text>
           <Text style={styles.headerSubtitle}>
-            {user ? `Ahoj, ${user.name}!` : 'Načítám...'}
+            Ahoj, {user?.name || 'uživateli'}!
           </Text>
         </View>
       </View>
