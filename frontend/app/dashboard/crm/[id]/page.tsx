@@ -274,7 +274,10 @@ export default function BusinessDetailPage() {
       setShowProjectModal(false)
       fetchData()
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Chyba při ukládání projektu')
+      console.error('Project save error:', err)
+      const detail = err.response?.data?.detail || err.message || 'Neznámá chyba'
+      const status = err.response?.status || 'N/A'
+      setError(`[${status}] ${detail}`)
     } finally {
       setSaving(false)
     }
