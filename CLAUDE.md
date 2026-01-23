@@ -4,7 +4,35 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## ⚠️ DŮLEŽITÉ: Produkční prostředí
 
-**Tento projekt běží v produkci!** Při úpravách kódu pracujeme na živém systému. Změny pushnuté do master větve se automaticky deployují.
+**Tento projekt běží v produkci!** Při úpravách kódu pracujeme na živém systému.
+
+## Quick Deploy Commands (pro Claude)
+
+**POSTUP PO ZMĚNÁCH:**
+1. `git add <soubory> && git commit -m "message" && git push origin master`
+2. Redeploy backend (Railway)
+3. Redeploy frontend (Vercel) - pouze pokud změny ve frontend/
+4. Ověřit health check
+
+**Railway Backend Redeploy:**
+```bash
+powershell -ExecutionPolicy Bypass -Command "Invoke-RestMethod -Uri 'https://backboard.railway.app/graphql/v2' -Method Post -Headers @{'Content-Type'='application/json'; 'Authorization'='Bearer 66977604-f06c-4e9c-afd2-0440b57f6150'} -Body '{\"query\": \"mutation { serviceInstanceRedeploy(environmentId: \\\"9afdeb2c-17e7-44d5-bfe9-1258121a59aa\\\", serviceId: \\\"54b194dd-644f-4c26-a806-faabaaeacc7b\\\") }\"}'"
+```
+
+**Vercel Frontend Redeploy:**
+```bash
+powershell -ExecutionPolicy Bypass -File ".\scripts\redeploy_vercel.ps1"
+```
+
+**Health Check:**
+```bash
+curl -s https://webomat-backend-production.up.railway.app/health
+```
+
+**Počkat na deploy (45s) a ověřit:**
+```bash
+powershell -ExecutionPolicy Bypass -Command "Start-Sleep 45; Invoke-RestMethod -Uri 'https://webomat-backend-production.up.railway.app/health'"
+```
 
 ## Production Deployment
 
