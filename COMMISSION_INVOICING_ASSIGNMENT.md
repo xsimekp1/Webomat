@@ -275,6 +275,20 @@ Po schváleném návrhu: Tlačítko "Fakturovat" v projektu → vygeneruje faktu
 - Přepínání stavu na "splacená".
 - Pokud po splatnosti: Automaticky vytvoří aktivitu "faktura po splatnosti" pro sales, přiřazenou den po splatnosti.
 
+## Číslování vydaných faktur
+Automatické inkrementální číslování pro vydané faktury (např. 2024-001, 2024-002).
+
+## Změna splatnosti obchodníkem
+V UI pro vytvoření faktury: Možnost změnit splatnost ze standardních 14 dnů na max 30 dnů.
+
+## Dashboard pro obchodníka: Dodatečná částka
+Pod částkou k fakturaci: Menší číslo "+X Kč" jako součet projektů ve stavu "in progress" nebo "approved" (už se pracuje, ale nefakturováno).
+
+## Nová karta pro obchodníky: Graf odměn + seznam faktur
+Karta s:
+- Graf týdenních odměn.
+- Pod tím seznam fakturovaných faktur (včetně nezaplacených).
+
 ## Admin přístup: Tabulka faktur
 V admin sekci: Tabulka faktur (přijaté + vydané) s:
 - Jména klientů/sales.
