@@ -108,16 +108,25 @@ CREATE INDEX IF NOT EXISTS idx_inv_issued_issue ON invoices_issued(issue_date DE
 COMMENT ON TABLE invoices_issued IS 'Vydané faktury klientům za weby';
 
 -- ===========================================
--- INVOICES RECEIVED - Přijaté faktury od obchodníků
--- (obchodník fakturuje Webomatu za provize)
+-- INVOICES RECEIVED - Přijaté faktury
+-- (od obchodníků za provize nebo od externích dodavatelů za služby)
 -- ===========================================
 CREATE TABLE IF NOT EXISTS invoices_received (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    -- Obchodník, který fakturuje
-    seller_id UUID NOT NULL REFERENCES sellers(id),
+    -- Typ faktury
+    -- commission: Faktura od obchodníka za provize
+    -- service: Faktura za služby (AI, hosting, apod.)
+    -- other: Ostatní faktury
+    invoice_type VARCHAR(20) DEFAULT 'commission',
 
-    -- Číslo faktury (od obchodníka)
+    -- Obchodník, který fakturuje (pro commission faktury)
+    seller_id UUID REFERENCES sellers(id),
+
+    -- Název dodavatele (pro service faktury)
+    vendor_name VARCHAR(255),
+
+    -- Číslo faktury (od obchodníka/dodavatele)
     invoice_number VARCHAR(50) NOT NULL,
 
     -- Datumy
@@ -163,13 +172,14 @@ CREATE TABLE IF NOT EXISTS invoices_received (
     CONSTRAINT unique_invoice_received_per_seller UNIQUE (seller_id, invoice_number)
 );
 
--- Indexy pro přijaté faktury od obchodníků
+-- Indexy pro přijaté faktury
+CREATE INDEX IF NOT EXISTS idx_inv_received_type ON invoices_received(invoice_type);
 CREATE INDEX IF NOT EXISTS idx_inv_received_seller ON invoices_received(seller_id);
 CREATE INDEX IF NOT EXISTS idx_inv_received_status ON invoices_received(status);
 CREATE INDEX IF NOT EXISTS idx_inv_received_test ON invoices_received(is_test) WHERE is_test = TRUE;
 CREATE INDEX IF NOT EXISTS idx_inv_received_created ON invoices_received(created_at DESC);
 
-COMMENT ON TABLE invoices_received IS 'Přijaté faktury od obchodníků za provize';
+COMMENT ON TABLE invoices_received IS 'Přijaté faktury - od obchodníků (commission) nebo dodavatelů (service)';
 
 -- ===========================================
 -- Přidání FK do ledger_entries

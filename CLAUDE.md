@@ -386,14 +386,16 @@ Webomat fakturuje klientovi za web.
 | created_at | datetime | Vytvořeno |
 | updated_at | datetime | Upraveno |
 
-### Tabulka `invoices_received` (přijaté faktury od obchodníků)
+### Tabulka `invoices_received` (přijaté faktury)
 
-Obchodník fakturuje Webomatu za provize.
+Faktury přijaté platformou - od obchodníků za provize nebo od externích dodavatelů za služby.
 
 | Sloupec | Typ | Popis |
 |---------|-----|-------|
 | id | uuid | Primární klíč |
-| seller_id | uuid | FK na sellers |
+| seller_id | uuid | FK na sellers (může být NULL pro service faktury) |
+| invoice_type | string | Typ: commission/service/other |
+| vendor_name | string? | Název dodavatele (pro service faktury) |
 | invoice_number | string | Číslo faktury (unique per seller) |
 | issue_date | date | Datum vystavení |
 | due_date | date | Datum splatnosti |
