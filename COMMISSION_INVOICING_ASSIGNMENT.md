@@ -285,9 +285,19 @@ V UI pro vytvoření faktury: Možnost změnit splatnost ze standardních 14 dn�
 Pod částkou k fakturaci: Menší číslo "+X Kč" jako součet projektů ve stavu "in progress" nebo "approved" (už se pracuje, ale nefakturováno).
 
 ## Nová karta pro obchodníky: Graf odměn + seznam faktur
-Karta s:
 - Graf týdenních odměn.
 - Pod tím seznam fakturovaných faktur (včetně nezaplacených).
+
+## Implementace generování PDF faktur (know-how z invoice-generator)
+- Použít knihovnu jako reportlab nebo pdfkit v Python/FastAPI.
+- Nastavit dodavatele: company, street, city, postal_code, company_id, tax_id.
+- Nastavit zákazníka: stejné pole.
+- Nastavit info faktury: issue_date, due_date, invoice_number.
+- Nastavit platební detaily: account_number, variable_symbol.
+- Nastavit nastavení: vat_payer, currency, language.
+- Přidat položky: addItem(name, quantity, price, unit, vat_rate).
+- Volitelné: QR kódy, IBAN validace, více jazyků.
+- Generate() pro PDF output.
 
 ## Automatizace zasílání faktur účetní
 - Měsíční automatické generování emailu s přijatými fakturami (PDF přílohy).
