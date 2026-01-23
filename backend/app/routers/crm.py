@@ -478,12 +478,12 @@ async def get_crm_stats(
 
 
 # Projects
-@router.get("/businesses/{business_id}/project", response_model=Optional[ProjectResponse])
-async def get_project(
+@router.get("/businesses/{business_id}/projects", response_model=list[ProjectResponse])
+async def list_projects(
     business_id: str,
     current_user: Annotated[User, Depends(require_sales_or_admin)],
 ):
-    """Get project for a business."""
+    """Get all projects for a business."""
     supabase = get_supabase()
 
     # Verify access to business
@@ -491,27 +491,26 @@ async def get_project(
 
     result = supabase.table("website_projects").select("*").eq(
         "business_id", business_id
-    ).limit(1).execute()
+    ).order("created_at", desc=True).execute()
 
-    if not result.data:
-        return None
+    projects = []
+    for row in result.data:
+        projects.append(ProjectResponse(
+            id=row["id"],
+            business_id=row["business_id"],
+            package=row.get("package", "start"),
+            status=row.get("status", "offer"),
+            price_setup=row.get("price_setup"),
+            price_monthly=row.get("price_monthly"),
+            domain=row.get("domain"),
+            notes=row.get("notes"),
+            created_at=row.get("created_at"),
+            updated_at=row.get("updated_at"),
+        ))
+    return projects
 
-    row = result.data[0]
-    return ProjectResponse(
-        id=row["id"],
-        business_id=row["business_id"],
-        package=row.get("package", "start"),
-        status=row.get("status", "offer"),
-        price_setup=row.get("price_setup"),
-        price_monthly=row.get("price_monthly"),
-        domain=row.get("domain"),
-        notes=row.get("notes"),
-        created_at=row.get("created_at"),
-        updated_at=row.get("updated_at"),
-    )
 
-
-@router.post("/businesses/{business_id}/project", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/businesses/{business_id}/projects", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
 async def create_project(
     business_id: str,
     data: ProjectCreate,
@@ -522,17 +521,6 @@ async def create_project(
 
     # Verify access to business
     await get_business(business_id, current_user)
-
-    # Check if project already exists
-    existing = supabase.table("website_projects").select("id").eq(
-        "business_id", business_id
-    ).limit(1).execute()
-
-    if existing.data:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Projekt pro tuto firmu již existuje"
-        )
 
     insert_data = {
         "business_id": business_id,
@@ -567,21 +555,18 @@ async def create_project(
     )
 
 
-@router.put("/businesses/{business_id}/project", response_model=ProjectResponse)
+@router.put("/projects/{project_id}", response_model=ProjectResponse)
 async def update_project(
-    business_id: str,
+    project_id: str,
     data: ProjectUpdate,
     current_user: Annotated[User, Depends(require_sales_or_admin)],
 ):
-    """Update a project."""
+    """Update a project by ID."""
     supabase = get_supabase()
 
-    # Verify access to business
-    await get_business(business_id, current_user)
-
-    # Check if project exists
-    existing = supabase.table("website_projects").select("id").eq(
-        "business_id", business_id
+    # Check if project exists and get business_id for access check
+    existing = supabase.table("website_projects").select("id, business_id").eq(
+        "id", project_id
     ).limit(1).execute()
 
     if not existing.data:
@@ -589,6 +574,9 @@ async def update_project(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Projekt nenalezen"
         )
+
+    # Verify access to business
+    await get_business(existing.data[0]["business_id"], current_user)
 
     update_data = {}
     if data.package is not None:
@@ -613,7 +601,7 @@ async def update_project(
     update_data["updated_at"] = datetime.utcnow().isoformat()
 
     result = supabase.table("website_projects").update(update_data).eq(
-        "business_id", business_id
+        "id", project_id
     ).execute()
 
     if not result.data:

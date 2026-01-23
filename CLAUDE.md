@@ -56,6 +56,25 @@ powershell -ExecutionPolicy Bypass -Command "Start-Sleep 45; Invoke-RestMethod -
 - Nelze přes REST API - nutné provést v Supabase Dashboard SQL Editor
 - Po DDL změnách NENÍ potřeba restart backendu
 
+### Debugging databázových chyb
+
+**Při chybě PGRST204 (column not found) nebo 500 erroru:**
+1. VŽDY nejdřív ověř strukturu tabulky lokálně:
+```python
+cd backend && python -c "
+from app.database import get_supabase
+s = get_supabase()
+# Ověř strukturu tabulky
+result = s.table('NAZEV_TABULKY').select('*').limit(1).execute()
+print(result.data)
+"
+```
+2. Nebo dotaz na sloupce v Supabase SQL Editor:
+```sql
+SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'NAZEV_TABULKY';
+```
+3. Teprve pak hledej chybu v kódu
+
 ### Environment Variables
 
 **Backend (Railway):**

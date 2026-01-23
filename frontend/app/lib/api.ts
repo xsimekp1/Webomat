@@ -139,9 +139,9 @@ class ApiClient {
   }
 
   // CRM - Projects
-  static async getBusinessProject(businessId: string) {
+  static async getBusinessProjects(businessId: string) {
     const response = await axios.get(
-      `${API_BASE_URL}/crm/businesses/${businessId}/project`,
+      `${API_BASE_URL}/crm/businesses/${businessId}/projects`,
       { headers: ApiClient.getAuthHeaders() }
     );
     return response.data;
@@ -149,16 +149,16 @@ class ApiClient {
 
   static async createProject(businessId: string, data: any) {
     const response = await axios.post(
-      `${API_BASE_URL}/crm/businesses/${businessId}/project`,
+      `${API_BASE_URL}/crm/businesses/${businessId}/projects`,
       data,
       { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
     );
     return response.data;
   }
 
-  static async updateProject(businessId: string, data: any) {
+  static async updateProject(projectId: string, data: any) {
     const response = await axios.put(
-      `${API_BASE_URL}/crm/businesses/${businessId}/project`,
+      `${API_BASE_URL}/crm/projects/${projectId}`,
       data,
       { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
     );

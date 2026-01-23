@@ -95,7 +95,8 @@ export default function BusinessDetailPage() {
 
   const [business, setBusiness] = useState<Business | null>(null)
   const [activities, setActivities] = useState<Activity[]>([])
-  const [project, setProject] = useState<Project | null>(null)
+  const [projects, setProjects] = useState<Project[]>([])
+  const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -136,20 +137,14 @@ export default function BusinessDetailPage() {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const [businessRes, activitiesRes] = await Promise.all([
+      const [businessRes, activitiesRes, projectsRes] = await Promise.all([
         ApiClient.getBusiness(businessId),
         ApiClient.getBusinessActivities(businessId),
+        ApiClient.getBusinessProjects(businessId),
       ])
       setBusiness(businessRes)
       setActivities(activitiesRes)
-
-      // Projekt načteme samostatně - nemusí existovat
-      try {
-        const projectRes = await ApiClient.getBusinessProject(businessId)
-        setProject(projectRes)
-      } catch {
-        setProject(null)
-      }
+      setProjects(projectsRes || [])
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Chyba při načítání dat')
     } finally {
@@ -229,17 +224,19 @@ export default function BusinessDetailPage() {
     }
   }
 
-  const openProjectModal = () => {
-    if (project) {
+  const openProjectModal = (projectToEdit?: Project) => {
+    if (projectToEdit) {
+      setEditingProject(projectToEdit)
       setProjectForm({
-        package: project.package,
-        status: project.status,
-        price_setup: project.price_setup?.toString() || '',
-        price_monthly: project.price_monthly?.toString() || '',
-        domain: project.domain || '',
-        notes: project.notes || '',
+        package: projectToEdit.package,
+        status: projectToEdit.status,
+        price_setup: projectToEdit.price_setup?.toString() || '',
+        price_monthly: projectToEdit.price_monthly?.toString() || '',
+        domain: projectToEdit.domain || '',
+        notes: projectToEdit.notes || '',
       })
     } else {
+      setEditingProject(null)
       setProjectForm({
         package: 'start',
         status: 'offer',
@@ -266,12 +263,13 @@ export default function BusinessDetailPage() {
     }
 
     try {
-      if (project) {
-        await ApiClient.updateProject(businessId, data)
+      if (editingProject) {
+        await ApiClient.updateProject(editingProject.id, data)
       } else {
         await ApiClient.createProject(businessId, data)
       }
       setShowProjectModal(false)
+      setEditingProject(null)
       fetchData()
     } catch (err: any) {
       console.error('Project save error:', err)
@@ -464,64 +462,68 @@ export default function BusinessDetailPage() {
           </div>
         </div>
 
-        {/* Project Card */}
+        {/* Projects Card */}
         <div className="card project-card">
           <div className="card-header-row">
-            <h3>Projekt</h3>
-            <button className="btn-edit-small" onClick={openProjectModal}>
-              {project ? 'Upravit' : '+ Vytvořit'}
+            <h3>Projekty ({projects.length})</h3>
+            <button className="btn-edit-small" onClick={() => openProjectModal()}>
+              + Nový projekt
             </button>
           </div>
 
-          {project ? (
-            <div className="project-content">
-              <div className="project-header">
-                <span
-                  className="package-badge"
-                  style={{ color: PACKAGE_CONFIG[project.package]?.color || '#666' }}
-                >
-                  {PACKAGE_CONFIG[project.package]?.label || project.package}
-                </span>
-                <span
-                  className="project-status-badge"
-                  style={{
-                    color: PROJECT_STATUS_CONFIG[project.status]?.color || '#666',
-                    backgroundColor: PROJECT_STATUS_CONFIG[project.status]?.bg || '#f5f5f5',
-                  }}
-                >
-                  {PROJECT_STATUS_CONFIG[project.status]?.label || project.status}
-                </span>
-              </div>
-
-              <div className="project-prices">
-                {project.price_setup !== null && (
-                  <div className="price-item">
-                    <span className="price-label">Jednorázově:</span>
-                    <span className="price-value">{project.price_setup.toLocaleString('cs-CZ')} Kč</span>
+          {projects.length > 0 ? (
+            <div className="projects-list">
+              {projects.map((project) => (
+                <div key={project.id} className="project-content" onClick={() => openProjectModal(project)} style={{ cursor: 'pointer' }}>
+                  <div className="project-header">
+                    <span
+                      className="package-badge"
+                      style={{ color: PACKAGE_CONFIG[project.package]?.color || '#666' }}
+                    >
+                      {PACKAGE_CONFIG[project.package]?.label || project.package}
+                    </span>
+                    <span
+                      className="project-status-badge"
+                      style={{
+                        color: PROJECT_STATUS_CONFIG[project.status]?.color || '#666',
+                        backgroundColor: PROJECT_STATUS_CONFIG[project.status]?.bg || '#f5f5f5',
+                      }}
+                    >
+                      {PROJECT_STATUS_CONFIG[project.status]?.label || project.status}
+                    </span>
                   </div>
-                )}
-                {project.price_monthly !== null && (
-                  <div className="price-item">
-                    <span className="price-label">Měsíčně:</span>
-                    <span className="price-value">{project.price_monthly.toLocaleString('cs-CZ')} Kč</span>
+
+                  <div className="project-prices">
+                    {project.price_setup !== null && (
+                      <div className="price-item">
+                        <span className="price-label">Jednorázově:</span>
+                        <span className="price-value">{project.price_setup.toLocaleString('cs-CZ')} Kč</span>
+                      </div>
+                    )}
+                    {project.price_monthly !== null && (
+                      <div className="price-item">
+                        <span className="price-label">Měsíčně:</span>
+                        <span className="price-value">{project.price_monthly.toLocaleString('cs-CZ')} Kč</span>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {project.domain && (
-                <div className="info-row">
-                  <span className="label">Doména:</span>
-                  <a href={`https://${project.domain}`} target="_blank" rel="noopener noreferrer" className="web-link">
-                    {project.domain}
-                  </a>
-                </div>
-              )}
+                  {project.domain && (
+                    <div className="info-row">
+                      <span className="label">Doména:</span>
+                      <a href={`https://${project.domain}`} target="_blank" rel="noopener noreferrer" className="web-link" onClick={(e) => e.stopPropagation()}>
+                        {project.domain}
+                      </a>
+                    </div>
+                  )}
 
-              {project.notes && (
-                <div className="project-notes">
-                  <p>{project.notes}</p>
+                  {project.notes && (
+                    <div className="project-notes">
+                      <p>{project.notes}</p>
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
           ) : (
             <div className="empty-project">
@@ -633,7 +635,7 @@ export default function BusinessDetailPage() {
       {showProjectModal && (
         <div className="modal-overlay" onClick={() => setShowProjectModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>{project ? 'Upravit projekt' : 'Vytvořit projekt'}</h2>
+            <h2>{editingProject ? 'Upravit projekt' : 'Vytvořit projekt'}</h2>
 
             <div className="form-row">
               <div className="form-group">
