@@ -95,7 +95,14 @@ Zobrazuje:
 - pro start doporučuju: Static (rychlejší, méně problémů)
 - volitelné: „1 zip“ vs „repo struktura“
 
-#### I) Spuštění generování
+#### I) Generování loga s Midjourney
+- Radio button: „Chcete logo k projektu?“ (Ano/Ne)
+- Pokud Ano: Automatické generování loga přes Midjourney API
+- Prompt: Založeno na brand name, tone, style z formuláře
+- Výsledek: Přidáno do project_assets jako logo (kind=logo)
+- Pozn.: API pro Midjourney bude integrováno samostatně
+
+#### J) Spuštění generování
 - Button: Vygenerovat novou verzi
 - před spuštěním: vytvořit generation_request, vytvořit generation_run (status queued/running/failed/done)
 - po dokončení: vytvořit website_version (včetně preview), ukázat logy / progress
