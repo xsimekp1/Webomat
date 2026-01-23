@@ -33,8 +33,7 @@ async def generate_website(
 
     if not project_result.data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Projekt nenalezen"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Projekt nenalezen"
         )
 
     project = project_result.data
@@ -54,7 +53,7 @@ async def generate_website(
             if business_owner and business_owner != current_user.id:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Nemáte oprávnění k tomuto projektu"
+                    detail="Nemáte oprávnění k tomuto projektu",
                 )
 
     # DRY RUN mode - return dummy HTML
@@ -115,13 +114,12 @@ async def generate_website(
         return GenerateWebsiteResponse(
             success=True,
             message="DRY RUN: Vygenerována testovací stránka",
-            html_content=dummy_html
+            html_content=dummy_html,
         )
 
     # TODO: Implement actual Claude API call for production generation
     # For now, return error indicating this is not implemented yet
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Vlastní generování webu zatím není implementováno. Použijte DRY RUN režim."
-    )</content>
-<parameter name="filePath">C:\Users\psimek\Projects\Webomat\backend\app\routers\website.py
+        detail="Vlastní generování webu zatím není implementováno. Použijte DRY RUN režim.",
+    )
