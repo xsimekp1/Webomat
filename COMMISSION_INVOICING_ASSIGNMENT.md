@@ -257,3 +257,20 @@ UI:
 - Admin zamítne → agent může „duplikovat“ fakturu jako nový draft
 - Agent chce fakturovat méně než minimum → validace > 0
 - Saldo < 20k a fakturoval před 14 dny → zablokovat submit a vysvětlit proč
+
+---
+
+## Rozšíření: Faktury přijaté vs. vydané
+Rozdělit na dvě tabulky:
+- **invoices_received** (přijaté faktury od klientů za weby).
+- **invoices_issued** (vydané faktury pro sales za provize).
+
+## Exporty do Excel
+V admin: Export faktur do Excel za vybraný rok nebo měsíc.
+
+## Generování vydané faktury
+Po schváleném návrhu: Tlačítko "Fakturovat" v projektu → vygeneruje fakturu z template (PDF), vyplněná z klientových iniciál a systémových proměnných (Webomat IČO, adresa).
+
+## Stav faktury a splatnost
+- Přepínání stavu na "splacená".
+- Pokud po splatnosti: Automaticky vytvoří aktivitu "faktura po splatnosti" pro sales, přiřazenou den po splatnosti.
