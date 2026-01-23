@@ -1037,7 +1037,7 @@ async def get_seller_dashboard(
         supabase.table("ledger_entries")
         .select("amount")
         .eq("seller_id", current_user.id)
-        .eq("type", "commission_earned")
+        .eq("entry_type", "commission_earned")
         .execute()
     )
     total_earned = (
@@ -1048,7 +1048,7 @@ async def get_seller_dashboard(
         supabase.table("ledger_entries")
         .select("amount")
         .eq("seller_id", current_user.id)
-        .in_("type", ["payout_reserved", "payout_paid"])
+        .in_("entry_type", ["payout_reserved", "payout_paid"])
         .execute()
     )
     total_payouts = (
@@ -1058,23 +1058,32 @@ async def get_seller_dashboard(
     available_balance = total_earned - total_payouts
 
     # Calculate pending projects amount: sum of project prices where status is won/in_production
-    projects_result = (
-        supabase.table("website_projects")
-        .select("price_setup, price_monthly, status")
-        .eq("seller_id", current_user.id)
-        .in_("status", ["won", "in_production"])
+    # Get businesses owned by this seller first
+    businesses_result = (
+        supabase.table("businesses")
+        .select("id")
+        .eq("owner_seller_id", current_user.id)
         .execute()
     )
-    pending_amount = 0
-    if projects_result.data:
-        for project in projects_result.data:
-            if project["price_setup"]:
-                pending_amount += project["price_setup"]
-            # Could add monthly if needed
+    business_ids = [b["id"] for b in businesses_result.data] if businesses_result.data else []
 
-    # Get recent invoices
+    pending_amount = 0
+    if business_ids:
+        projects_result = (
+            supabase.table("website_projects")
+            .select("price_setup, price_monthly, status")
+            .in_("business_id", business_ids)
+            .in_("status", ["won", "in_production"])
+            .execute()
+        )
+        if projects_result.data:
+            for project in projects_result.data:
+                if project.get("price_setup"):
+                    pending_amount += project["price_setup"]
+
+    # Get recent invoices (invoices_received = invoices from sellers for commissions)
     invoices_result = (
-        supabase.table("invoices")
+        supabase.table("invoices_received")
         .select("id, invoice_number, amount_total, status, issue_date")
         .eq("seller_id", current_user.id)
         .order("created_at", desc=True)
