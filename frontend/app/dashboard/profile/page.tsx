@@ -10,6 +10,8 @@ interface ProfileData {
   email: string
   phone: string
   bank_account: string
+  profile_photo_url?: string
+  theme: 'light' | 'dark'
 }
 
 export default function ProfilePage() {
@@ -19,7 +21,9 @@ export default function ProfilePage() {
     last_name: '',
     email: '',
     phone: '',
-    bank_account: ''
+    bank_account: '',
+    profile_photo_url: '',
+    theme: 'light'
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -41,19 +45,22 @@ export default function ProfilePage() {
     try {
       const { data, error } = await supabase
         .from('sellers')
-        .select('first_name, last_name, email, phone, bank_account')
+        .select('first_name, last_name, email, phone, bank_account, profile_photo_url')
         .eq('id', userId)
         .single()
 
       if (error) throw error
 
       if (data) {
+        const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light'
         setProfile({
           first_name: data.first_name || '',
           last_name: data.last_name || '',
           email: data.email || '',
           phone: data.phone || '',
-          bank_account: data.bank_account || ''
+          bank_account: data.bank_account || '',
+          profile_photo_url: data.profile_photo_url || '',
+          theme: savedTheme
         })
       }
     } catch (err) {
@@ -63,9 +70,36 @@ export default function ProfilePage() {
     }
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setProfile(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !user) return
+
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user.id}_${Date.now()}.${fileExt}`
+      const filePath = `profile-photos/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('assets')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('assets')
+        .getPublicUrl(filePath)
+
+      setProfile(prev => ({ ...prev, profile_photo_url: publicUrl }))
+      setMessage({ type: 'success', text: 'Fotka byla úspěšně nahrána!' })
+    } catch (err: any) {
+      console.error('Error uploading photo:', err)
+      setMessage({ type: 'error', text: err.message || 'Nepodařilo se nahrát fotku' })
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,9 +117,13 @@ export default function ProfilePage() {
           last_name: profile.last_name,
           email: profile.email,
           phone: profile.phone,
-          bank_account: profile.bank_account
+          bank_account: profile.bank_account,
+          profile_photo_url: profile.profile_photo_url
         })
         .eq('id', user.id)
+
+      // Save theme to localStorage
+      localStorage.setItem('theme', profile.theme)
 
       if (error) throw error
 
@@ -200,6 +238,32 @@ export default function ProfilePage() {
                 placeholder="123456789/0100"
               />
               <span className="form-hint">Pro vyplácení provizí</span>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="profile_photo">Profilová fotka</label>
+              <input
+                type="file"
+                id="profile_photo"
+                accept="image/*"
+                onChange={handleFileChange}
+              />
+              {profile.profile_photo_url && (
+                <img src={profile.profile_photo_url} alt="Profile" width={100} height={100} className="profile-photo" />
+              )}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="theme">Téma</label>
+              <select
+                id="theme"
+                name="theme"
+                value={profile.theme}
+                onChange={handleChange}
+              >
+                <option value="light">Světlé</option>
+                <option value="dark">Tmavé</option>
+              </select>
             </div>
 
             <div className="form-actions">
