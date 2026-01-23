@@ -2,6 +2,52 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⚠️ DŮLEŽITÉ: Produkční prostředí
+
+**Tento projekt běží v produkci!** Při úpravách kódu pracujeme na živém systému. Změny pushnuté do master větve se automaticky deployují.
+
+## Production Deployment
+
+| Služba | URL | Platforma |
+|--------|-----|-----------|
+| **Frontend** | https://webomat.vercel.app | Vercel |
+| **Backend API** | https://webomat-backend-production.up.railway.app | Railway |
+| **Database** | cmtvixayfbqhdlftsgqg.supabase.co | Supabase |
+
+**Railway Project ID:** `d6a191b5-bc63-4836-b905-1cdee9fe51e5`
+**Railway Service ID:** `54b194dd-644f-4c26-a806-faabaaeacc7b`
+
+### Environment Variables
+
+**Backend (Railway):**
+- `SUPABASE_URL` - Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key
+- `JWT_SECRET_KEY` - Secret pro JWT tokeny
+- `CORS_ORIGINS` - Povolené origins (včetně Vercel URL)
+- `PORT` - Port pro uvicorn (8000)
+
+**Frontend (Vercel):**
+- `NEXT_PUBLIC_API_URL` - URL backendu (Railway)
+- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anon key
+
+### Redeploy Script
+
+```powershell
+# Nastav tokeny (jednou za session)
+$env:RAILWAY_TOKEN = "66977604-f06c-4e9c-afd2-0440b57f6150"
+$env:VERCEL_TOKEN = "uanxoOOLz8mCzrjFupSNoznD"
+
+# Redeploy obou služeb
+.\scripts\redeploy.ps1
+
+# Pouze backend
+.\scripts\redeploy.ps1 -BackendOnly
+
+# Pouze frontend
+.\scripts\redeploy.ps1 -FrontendOnly
+```
+
 ## Project Overview
 
 Webomat is a CRM + Business Discovery System for finding businesses without websites (via Google Places API) and managing sales/web development projects. The project is in active MVP development.
@@ -10,19 +56,23 @@ Webomat is a CRM + Business Discovery System for finding businesses without webs
 
 **Current Stack:**
 - **Database:** Supabase (PostgreSQL) - 12-table schema (sellers, businesses, CRM activities, invoices, commissions, etc.)
-- **Frontend (in development):** Next.js 14 + React 18 + TypeScript + Tailwind CSS
-- **Backend (planned):** FastAPI on port 8000
+- **Frontend:** Next.js 14 + React 18 + TypeScript + Tailwind CSS (deployed on Vercel)
+- **Backend:** FastAPI + Pydantic (deployed on Railway, port 8000)
 - **APIs:** Google Places, Supabase, OpenAI/Claude
 
 **Key Components:**
 - `frontend/` - Next.js app with API client (`app/lib/api.ts`) using Axios with Bearer token auth
-- `backend/` - FastAPI backend (empty structure, implementation pending)
-- `streamlit_app/` - Streamlit dashboard (launcher scripts only in repo)
+- `backend/` - FastAPI backend with routers, schemas, Supabase integration
 
-**API Endpoints (planned for FastAPI backend):**
-- Auth: `/token`, `/users/me`
-- CRM: `/crm/companies-simple`, `/crm/contacts-simple`, `/crm/websites-simple`
-- Finance: `/financial/accounts`, `/financial/earnings`, `/financial/payouts`
+**API Endpoints (FastAPI backend):**
+- Auth: `POST /token`, `GET /users/me`, `POST /users/me/password`
+- CRM Businesses: `GET/POST /crm/businesses`, `GET/PUT/DELETE /crm/businesses/{id}`
+- CRM Activities: `GET/POST /crm/businesses/{id}/activities`
+- CRM Projects: `GET/POST/PUT /crm/businesses/{id}/project`
+- CRM Dashboard: `GET /crm/dashboard/today`, `GET /crm/dashboard/stats`
+- Finance: `/financial/summary`, `/financial/accounts`, `/financial/earnings`, `/financial/payouts`
+- Admin: `GET /admin/users`, `GET /admin/users/{id}`, `POST /admin/users/{id}/reset-password`, `POST /admin/users/{id}/toggle-active`
+- Health: `GET /health`
 
 ## Commands
 

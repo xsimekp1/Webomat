@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../utils/supabase'
@@ -12,6 +12,7 @@ interface ProfileData {
   email: string
   phone: string
   bank_account: string
+  avatar_url: string | null
 }
 
 export default function ProfilePage() {
@@ -21,7 +22,8 @@ export default function ProfilePage() {
     last_name: '',
     email: '',
     phone: '',
-    bank_account: ''
+    bank_account: '',
+    avatar_url: null
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -29,6 +31,8 @@ export default function ProfilePage() {
   const [showPasswordChange, setShowPasswordChange] = useState(false)
   const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' })
   const [changingPassword, setChangingPassword] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -47,7 +51,7 @@ export default function ProfilePage() {
     try {
       const { data, error } = await supabase
         .from('sellers')
-        .select('first_name, last_name, email, phone, bank_account')
+        .select('first_name, last_name, email, phone, bank_account, avatar_url')
         .eq('id', userId)
         .single()
 
@@ -59,7 +63,8 @@ export default function ProfilePage() {
           last_name: data.last_name || '',
           email: data.email || '',
           phone: data.phone || '',
-          bank_account: data.bank_account || ''
+          bank_account: data.bank_account || '',
+          avatar_url: data.avatar_url || null
         })
       }
     } catch (err) {
@@ -135,6 +140,64 @@ export default function ProfilePage() {
     }
   }
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      setMessage({ type: 'error', text: 'Nepodporovaný formát. Použijte PNG, JPG, GIF nebo WEBP.' })
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'Soubor je příliš velký (max 5 MB)' })
+      return
+    }
+
+    setUploadingAvatar(true)
+    setMessage(null)
+
+    try {
+      const result = await ApiClient.uploadAvatar(file)
+      setProfile(prev => ({ ...prev, avatar_url: result.avatar_url }))
+      await refreshUser()
+      setMessage({ type: 'success', text: 'Avatar byl úspěšně nahrán!' })
+    } catch (err: any) {
+      console.error('Error uploading avatar:', err)
+      setMessage({ type: 'error', text: err.response?.data?.detail || 'Nepodařilo se nahrát avatar' })
+    } finally {
+      setUploadingAvatar(false)
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  const handleAvatarDelete = async () => {
+    if (!confirm('Opravdu chcete smazat profilovou fotku?')) return
+
+    setUploadingAvatar(true)
+    setMessage(null)
+
+    try {
+      await ApiClient.deleteAvatar()
+      setProfile(prev => ({ ...prev, avatar_url: null }))
+      await refreshUser()
+      setMessage({ type: 'success', text: 'Avatar byl smazán' })
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.response?.data?.detail || 'Nepodařilo se smazat avatar' })
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
   if (authLoading || !user || loading) {
     return <div className="loading">Načítám...</div>
   }
@@ -205,18 +268,52 @@ export default function ProfilePage() {
               />
             </div>
 
-            {/* <div className="form-group">
-              <label htmlFor="profile_photo">Profilová fotka</label>
+            <div className="avatar-section">
+              <label>Profilová fotka</label>
+              <div className="avatar-container">
+                <div className="avatar-preview" onClick={handleAvatarClick}>
+                  {profile.avatar_url ? (
+                    <img src={profile.avatar_url} alt="Avatar" />
+                  ) : (
+                    <div className="avatar-placeholder">
+                      {profile.first_name?.[0]?.toUpperCase() || '?'}
+                      {profile.last_name?.[0]?.toUpperCase() || ''}
+                    </div>
+                  )}
+                  {uploadingAvatar && <div className="avatar-loading">...</div>}
+                </div>
+                <div className="avatar-actions">
+                  <button type="button" onClick={handleAvatarClick} disabled={uploadingAvatar} className="btn-secondary">
+                    {uploadingAvatar ? 'Nahrávám...' : 'Změnit fotku'}
+                  </button>
+                  {profile.avatar_url && (
+                    <button type="button" onClick={handleAvatarDelete} disabled={uploadingAvatar} className="btn-delete-avatar">
+                      Smazat
+                    </button>
+                  )}
+                </div>
+              </div>
               <input
+                ref={fileInputRef}
                 type="file"
-                id="profile_photo"
-                accept="image/*"
-                onChange={handleFileChange}
+                accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+                onChange={handleAvatarChange}
+                style={{ display: 'none' }}
               />
-              {profile.profile_photo_url && (
-                <img src={profile.profile_photo_url} alt="Profile" width={100} height={100} className="profile-photo" />
-              )}
-            </div> */}
+              <span className="form-hint">PNG, JPG, GIF nebo WEBP (max 5 MB)</span>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="phone">Telefon</label>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                value={profile.phone}
+                onChange={handleChange}
+                placeholder="+420 123 456 789"
+              />
+            </div>
 
             <div className="form-group">
               <label htmlFor="bank_account">Číslo účtu</label>
@@ -378,6 +475,91 @@ export default function ProfilePage() {
         .form-hint {
           font-size: 0.85rem;
           color: #888;
+        }
+
+        .avatar-section {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .avatar-section label {
+          font-weight: 600;
+          color: #333;
+        }
+
+        .avatar-container {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+
+        .avatar-preview {
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          overflow: hidden;
+          cursor: pointer;
+          position: relative;
+          border: 3px solid #e0e0e0;
+          transition: border-color 0.2s;
+        }
+
+        .avatar-preview:hover {
+          border-color: #667eea;
+        }
+
+        .avatar-preview img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .avatar-placeholder {
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.5rem;
+          font-weight: 600;
+        }
+
+        .avatar-loading {
+          position: absolute;
+          inset: 0;
+          background: rgba(0,0,0,0.5);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .avatar-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .btn-delete-avatar {
+          padding: 0.5rem 1rem;
+          background: #f8d7da;
+          color: #721c24;
+          border: none;
+          border-radius: 6px;
+          font-size: 0.85rem;
+          cursor: pointer;
+        }
+
+        .btn-delete-avatar:hover:not(:disabled) {
+          background: #f5c6cb;
+        }
+
+        .btn-delete-avatar:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
 
         .form-actions {

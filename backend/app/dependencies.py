@@ -59,7 +59,7 @@ async def get_user_by_username(username: str) -> UserInDB | None:
     supabase = get_supabase()
 
     result = supabase.table("sellers").select(
-        "id, first_name, last_name, email, password_hash, role, is_active, phone, notes, created_at"
+        "id, first_name, last_name, email, password_hash, role, is_active, phone, notes, avatar_url, must_change_password, created_at"
     ).or_(
         f"first_name.ilike.{username},email.ilike.{username}"
     ).limit(1).execute()
@@ -78,6 +78,7 @@ async def get_user_by_username(username: str) -> UserInDB | None:
         is_active=seller.get("is_active", True),
         phone=seller.get("phone"),
         notes=seller.get("notes"),
+        avatar_url=seller.get("avatar_url"),
         must_change_password=seller.get("must_change_password", False),
         created_at=seller.get("created_at")
     )
@@ -88,7 +89,7 @@ async def get_user_by_id(user_id: str) -> User | None:
     supabase = get_supabase()
 
     result = supabase.table("sellers").select(
-        "id, first_name, last_name, email, role, is_active, phone, notes, created_at"
+        "id, first_name, last_name, email, role, is_active, phone, notes, avatar_url, must_change_password, created_at"
     ).eq("id", user_id).limit(1).execute()
 
     if not result.data:
@@ -104,6 +105,7 @@ async def get_user_by_id(user_id: str) -> User | None:
         is_active=seller.get("is_active", True),
         phone=seller.get("phone"),
         notes=seller.get("notes"),
+        avatar_url=seller.get("avatar_url"),
         must_change_password=seller.get("must_change_password", False),
         created_at=seller.get("created_at")
     )

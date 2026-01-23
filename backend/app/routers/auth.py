@@ -96,6 +96,7 @@ async def get_current_user_info(
         role=current_user.role,
         is_active=current_user.is_active,
         phone=current_user.phone,
+        avatar_url=current_user.avatar_url,
         must_change_password=current_user.must_change_password
     )
 

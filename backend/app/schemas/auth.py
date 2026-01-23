@@ -27,6 +27,7 @@ class User(BaseModel):
     is_active: bool
     phone: str | None = None
     notes: str | None = None
+    avatar_url: str | None = None
     must_change_password: bool = False
     created_at: datetime | None = None
 
@@ -47,6 +48,7 @@ class UserResponse(BaseModel):
     role: Literal["admin", "sales"]
     is_active: bool
     phone: str | None = None
+    avatar_url: str | None = None
     must_change_password: bool = False
 
 
