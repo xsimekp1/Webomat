@@ -78,6 +78,8 @@ Grouped by logical categories and dependencies for focused development: Auth/Use
 
 32. **mvp-32 (Medium)**: Implement AI backend for website generation based on [AI_BACKEND_GENERATION_ASSIGNMENT.md](./AI_BACKEND_GENERATION_ASSIGNMENT.md)
 
+33. **mvp-33 (Low)**: Implement advanced project features (copy/reassign/request/templates + client comments) based on [ADVANCED_PROJECT_FEATURES_ASSIGNMENT.md](./ADVANCED_PROJECT_FEATURES_ASSIGNMENT.md)
+
 ## Current State
 - Platform is visible and login works.  
 - Now adding first real value through iterative implementation.
