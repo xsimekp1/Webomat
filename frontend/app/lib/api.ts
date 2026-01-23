@@ -296,6 +296,27 @@ class ApiClient {
     return response.data;
   }
 
+  static async getAdminDashboardStats() {
+    const response = await axios.get(
+      `${API_BASE_URL}/admin/dashboard/stats`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async generateTestWebsite(dryRun: boolean = true, businessName?: string, businessType?: string) {
+    const response = await axios.post(
+      `${API_BASE_URL}/website/generate-test`,
+      {
+        dry_run: dryRun,
+        business_name: businessName || 'Test Firma s.r.o.',
+        business_type: businessType || 'restaurace'
+      },
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
   // Website Generation endpointy
   static async generateWebsite(projectId: string, dryRun: boolean = false) {
     const response = await axios.post(
