@@ -318,6 +318,32 @@ Key MVP patterns:
 - `live` - Živé
 - `cancelled` - Zrušeno
 
+### Tabulka `audit_log` (audit log)
+
+**Nutné vytvořit:** Spusť `sql/create_audit_log.sql` v Supabase SQL Editor.
+
+| Sloupec | Typ | Popis |
+|---------|-----|-------|
+| id | uuid | Primární klíč |
+| user_id | uuid? | FK na sellers |
+| user_email | string? | Email uživatele |
+| action | string | Akce (login/logout/login_failed/business_create/etc.) |
+| entity_type | string? | Typ entity (business/project/user) |
+| entity_id | uuid? | ID entity |
+| old_values | jsonb? | Staré hodnoty |
+| new_values | jsonb? | Nové hodnoty |
+| ip_address | string? | IP adresa |
+| user_agent | text? | User agent |
+| created_at | datetime | Kdy |
+
+### Deduplikace leadů
+
+Při vytváření leadu se kontroluje:
+1. **Blokující** (409 Conflict): `place_id`, `phone`, `website`
+2. **Varování** (vrátí similar_names): `name` - pro soukromé osoby bez IČO
+
+Endpoint: `GET /crm/businesses/check-duplicate?phone=&website=&name=`
+
 ## Project Language
 
 Primary documentation is in Czech. The project serves Czech market businesses.

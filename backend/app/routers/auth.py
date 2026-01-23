@@ -21,6 +21,7 @@ from ..schemas.auth import (
     UserUpdate,
     LoginRequest,
 )
+from ..audit import log_login, log_login_failed, log_entity_change
 
 router = APIRouter(tags=["auth"])
 
@@ -46,6 +47,7 @@ async def login_for_access_token(
         )
 
     if not user:
+        log_login_failed(form_data.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Nesprávné přihlašovací údaje",
@@ -59,6 +61,7 @@ async def login_for_access_token(
         expires_delta=access_token_expires
     )
 
+    log_login(user.id, user.email)
     return Token(access_token=access_token, token_type="bearer")
 
 
@@ -76,6 +79,7 @@ async def login_json(
     user = await authenticate_user(login_data.username, login_data.password)
 
     if not user:
+        log_login_failed(login_data.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Nesprávné přihlašovací údaje",
@@ -88,6 +92,7 @@ async def login_json(
         expires_delta=access_token_expires
     )
 
+    log_login(user.id, user.email)
     return Token(access_token=access_token, token_type="bearer")
 
 

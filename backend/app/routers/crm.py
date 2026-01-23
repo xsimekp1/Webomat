@@ -50,10 +50,15 @@ async def check_duplicate(
     phone: str | None = Query(None, description="Phone to check"),
     website: str | None = Query(None, description="Website to check"),
     place_id: str | None = Query(None, description="Google Place ID to check"),
+    name: str | None = Query(None, description="Name to check for similar entries"),
 ):
-    """Check if a business with given phone/website/place_id already exists."""
+    """
+    Check if a business with given phone/website/place_id already exists.
+    Also returns similar names as warnings (for private persons without IČO).
+    """
     supabase = get_supabase()
 
+    # Strict duplicate check (blocks creation)
     duplicate = check_duplicate_business(supabase, phone, website, place_id)
     if duplicate:
         return {
@@ -63,9 +68,30 @@ async def check_duplicate(
                 "name": duplicate["name"],
                 "phone": duplicate.get("phone"),
                 "website": duplicate.get("website"),
-            }
+            },
+            "similar_names": []
         }
-    return {"is_duplicate": False, "existing_business": None}
+
+    # Soft check by name (warning only, doesn't block)
+    similar = []
+    if name:
+        similar_results = check_similar_by_name(supabase, name)
+        similar = [
+            {
+                "id": s["id"],
+                "name": s["name"],
+                "phone": s.get("phone"),
+                "website": s.get("website"),
+                "contact_person": s.get("contact_person"),
+            }
+            for s in similar_results
+        ]
+
+    return {
+        "is_duplicate": False,
+        "existing_business": None,
+        "similar_names": similar
+    }
 
 
 @router.get("/businesses", response_model=BusinessListResponse)
@@ -207,7 +233,18 @@ def check_duplicate_business(supabase, phone: str | None, website: str | None, p
         if result.data:
             return result.data[0]
 
-    return None
+
+def check_similar_by_name(supabase, name: str) -> list[dict]:
+    """
+    Check for businesses with similar names (for private persons without IČO).
+    Returns list of potential matches (warning, not blocking).
+    """
+    if not name or len(name) < 3:
+        return []
+
+    # Search by exact name match or similar
+    result = supabase.table("businesses").select("id, name, phone, website, contact_person").ilike("name", f"%{name}%").limit(5).execute()
+    return result.data if result.data else []
 
 
 @router.post("/businesses", response_model=BusinessResponse, status_code=status.HTTP_201_CREATED)
