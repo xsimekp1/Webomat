@@ -10,9 +10,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **POSTUP PO ZMĚNÁCH:**
 1. `git add <soubory> && git commit -m "message" && git push origin master`
-2. Redeploy backend (Railway)
-3. Redeploy frontend (Vercel) - pouze pokud změny ve frontend/
-4. Ověřit health check
+2. Spustit seed testovacích dat: `cd frontend && npx tsx scripts/seed-test-data.ts` (pokud potřeba)
+3. Redeploy backend (Railway)
+4. Redeploy frontend (Vercel) - pouze pokud změny ve frontend/
+5. Ověřit health check
 
 **Railway Backend Redeploy:**
 ```bash
