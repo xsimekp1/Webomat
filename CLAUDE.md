@@ -41,9 +41,20 @@ powershell -ExecutionPolicy Bypass -Command "Start-Sleep 45; Invoke-RestMethod -
 | **Frontend** | https://webomat.vercel.app | Vercel |
 | **Backend API** | https://webomat-backend-production.up.railway.app | Railway |
 | **Database** | cmtvixayfbqhdlftsgqg.supabase.co | Supabase |
+| **Supabase Dashboard** | https://supabase.com/dashboard/project/cmtvixayfbqhdlftsgqg | SQL Editor |
 
 **Railway Project ID:** `d6a191b5-bc63-4836-b905-1cdee9fe51e5`
 **Railway Service ID:** `54b194dd-644f-4c26-a806-faabaaeacc7b`
+
+### Credentials a .env soubory
+
+**VŽDY první krok při řešení problémů s API/DB:**
+- `backend/.env` - Supabase URL, Service Role Key, JWT secret
+- `frontend/.env.local` - Vercel/Supabase anon key
+
+**Supabase DDL změny (ALTER TABLE, CREATE TABLE):**
+- Nelze přes REST API - nutné provést v Supabase Dashboard SQL Editor
+- Po DDL změnách NENÍ potřeba restart backendu
 
 ### Environment Variables
 
