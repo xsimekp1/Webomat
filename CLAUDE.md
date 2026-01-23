@@ -31,21 +31,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anon key
 
-### Redeploy Script
+### Supabase Storage
 
+- **Bucket:** `webomat` (public)
+- Používá se pro ukládání avatarů uživatelů
+
+### Redeploy Process
+
+Po pushnutí změn na GitHub je potřeba ručně spustit redeploy (auto-deploy není zapnutý).
+
+**1. Railway Backend:**
 ```powershell
-# Nastav tokeny (jednou za session)
+powershell -ExecutionPolicy Bypass -Command "Invoke-RestMethod -Uri 'https://backboard.railway.app/graphql/v2' -Method Post -Headers @{'Content-Type'='application/json'; 'Authorization'='Bearer 66977604-f06c-4e9c-afd2-0440b57f6150'} -Body '{\"query\": \"mutation { serviceInstanceRedeploy(environmentId: \\\"9afdeb2c-17e7-44d5-bfe9-1258121a59aa\\\", serviceId: \\\"54b194dd-644f-4c26-a806-faabaaeacc7b\\\") }\"}'"
+```
+
+**2. Vercel Frontend:**
+```powershell
+powershell -ExecutionPolicy Bypass -File ".\scripts\redeploy_vercel.ps1"
+```
+
+**3. Ověření stavu:**
+```powershell
+# Backend health check
+Invoke-RestMethod -Uri 'https://webomat-backend-production.up.railway.app/health'
+
+# Frontend check
+(Invoke-WebRequest -Uri 'https://webomat.vercel.app' -Method Head).StatusCode
+```
+
+**Alternativně pomocí skriptu** (pokud máš povolenou ExecutionPolicy):
+```powershell
 $env:RAILWAY_TOKEN = "66977604-f06c-4e9c-afd2-0440b57f6150"
 $env:VERCEL_TOKEN = "uanxoOOLz8mCzrjFupSNoznD"
-
-# Redeploy obou služeb
 .\scripts\redeploy.ps1
-
-# Pouze backend
-.\scripts\redeploy.ps1 -BackendOnly
-
-# Pouze frontend
-.\scripts\redeploy.ps1 -FrontendOnly
 ```
 
 ## Project Overview

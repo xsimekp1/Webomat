@@ -59,15 +59,15 @@ async def upload_avatar(
     filename = f"{current_user.id}/{uuid.uuid4().hex}.{ext}"
 
     try:
-        # Upload to Supabase Storage
-        result = supabase.storage.from_("avatars").upload(
+        # Upload to Supabase Storage (bucket: webomat)
+        result = supabase.storage.from_("webomat").upload(
             path=filename,
             file=content,
             file_options={"content-type": file.content_type or f"image/{ext}"}
         )
 
         # Get public URL
-        public_url = supabase.storage.from_("avatars").get_public_url(filename)
+        public_url = supabase.storage.from_("webomat").get_public_url(filename)
 
         # Update user's avatar_url in database
         supabase.table("sellers").update({
@@ -100,11 +100,11 @@ async def delete_avatar(
 
     if result.data and result.data.get("avatar_url"):
         try:
-            # Extract path from URL (after /avatars/)
+            # Extract path from URL (after /webomat/)
             url = result.data["avatar_url"]
-            if "/avatars/" in url:
-                path = url.split("/avatars/")[-1].split("?")[0]
-                supabase.storage.from_("avatars").remove([path])
+            if "/webomat/" in url:
+                path = url.split("/webomat/")[-1].split("?")[0]
+                supabase.storage.from_("webomat").remove([path])
         except Exception:
             pass  # Ignore storage deletion errors
 
