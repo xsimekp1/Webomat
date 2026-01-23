@@ -197,6 +197,61 @@ class ProjectResponse(BaseModel):
     updated_at: datetime | None = None
 
 
+# Website Version schemas
+class WebsiteVersionStatus(str, Enum):
+    created = "created"
+    generating = "generating"
+    ready = "ready"
+    failed = "failed"
+    archived = "archived"
+
+
+class WebsiteVersionCreate(BaseModel):
+    project_id: str
+    source_bundle_path: str | None = None
+    preview_image_path: str | None = None
+    notes: str | None = None
+
+
+class WebsiteVersionResponse(BaseModel):
+    id: str
+    project_id: str
+    version_number: int
+    status: str
+    source_bundle_path: str | None = None
+    preview_image_path: str | None = None
+    notes: str | None = None
+    created_at: datetime | None = None
+    created_by: str | None = None
+
+
+class WebsiteVersionListResponse(BaseModel):
+    items: list[WebsiteVersionResponse]
+    total: int
+
+
+# Asset schemas
+class ProjectAssetCreate(BaseModel):
+    project_id: str
+    type: str  # logo, photos, contract, etc.
+    file_path: str
+    filename: str
+    mime_type: str
+    size_bytes: int
+
+
+class ProjectAssetResponse(BaseModel):
+    id: str
+    project_id: str
+    type: str
+    file_path: str
+    filename: str
+    mime_type: str
+    size_bytes: int
+    uploaded_at: datetime | None = None
+    uploaded_by: str | None = None
+
+
 # ARES API schemas
 class ARESAddress(BaseModel):
     nazevStatu: str | None = None

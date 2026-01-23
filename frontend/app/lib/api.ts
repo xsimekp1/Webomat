@@ -306,6 +306,50 @@ class ApiClient {
     return response.data;
   }
 
+  // Website Versions
+  static async getWebsiteVersions(projectId: string) {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/projects/${projectId}/versions`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async createWebsiteVersion(projectId: string, data: any) {
+    const response = await axios.post(
+      `${API_BASE_URL}/crm/projects/${projectId}/versions`,
+      data,
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  static async getWebsiteVersion(versionId: string) {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/versions/${versionId}`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  // Project Assets
+  static async getProjectAssets(projectId: string) {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/projects/${projectId}/assets`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async createProjectAsset(projectId: string, data: any) {
+    const response = await axios.post(
+      `${API_BASE_URL}/crm/projects/${projectId}/assets`,
+      data,
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
   // Sellers endpointy
   static async getSellersList() {
     const response = await axios.get(

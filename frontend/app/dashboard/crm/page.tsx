@@ -404,17 +404,19 @@ export default function CRMPage() {
                      type="button"
                      onClick={handleFillFromARES}
                      disabled={!formData.ico || loading}
-                     style={{
-                       padding: '10px 16px',
-                       background: '#667eea',
-                       color: 'white',
-                       border: 'none',
-                       borderRadius: '6px',
-                       cursor: formData.ico && !loading ? 'pointer' : 'not-allowed',
-                       opacity: formData.ico && !loading ? 1 : 0.6
-                     }}
+                     className="ares-button"
                    >
-                     {loading ? 'Načítám...' : 'Vyplnit z ARES'}
+                     {loading ? (
+                       <>
+                         <div className="spinner"></div>
+                         Načítám...
+                       </>
+                     ) : (
+                       <>
+                         <span className="icon">🔍</span>
+                         Vyplnit z ARES
+                       </>
+                     )}
                    </button>
                  </div>
                </div>

@@ -224,8 +224,50 @@ class ApiClientClass {
       `${API_BASE_URL}/website/generate`,
       { project_id: projectId, dry_run: dryRun },
       { headers: { ...this.getAuthHeaders(), 'Content-Type': 'application/json' } }
-    )
-    return response.data
+    );
+    return response.data;
+  }
+
+  async getWebsiteVersions(projectId: string) {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/projects/${projectId}/versions`,
+      { headers: this.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  async createWebsiteVersion(projectId: string, data: any) {
+    const response = await axios.post(
+      `${API_BASE_URL}/crm/projects/${projectId}/versions`,
+      data,
+      { headers: { ...this.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  async getWebsiteVersion(versionId: string) {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/versions/${versionId}`,
+      { headers: this.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  async getProjectAssets(projectId: string) {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/projects/${projectId}/assets`,
+      { headers: this.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  async createProjectAsset(projectId: string, data: any) {
+    const response = await axios.post(
+      `${API_BASE_URL}/crm/projects/${projectId}/assets`,
+      data,
+      { headers: { ...this.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
   }
 
   // ARES

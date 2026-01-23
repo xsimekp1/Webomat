@@ -23,6 +23,11 @@ from ..schemas.crm import (
     ProjectResponse,
     SellerDashboard,
     ARESCompany,
+    WebsiteVersionCreate,
+    WebsiteVersionResponse,
+    WebsiteVersionListResponse,
+    ProjectAssetCreate,
+    ProjectAssetResponse,
 )
 
 router = APIRouter(prefix="/crm", tags=["CRM"])
@@ -1018,4 +1023,290 @@ async def update_project(
         notes=row.get("notes"),
         created_at=row.get("created_at"),
         updated_at=row.get("updated_at"),
+    )
+
+
+# Website Versions
+@router.get(
+    "/projects/{project_id}/versions", response_model=WebsiteVersionListResponse
+)
+async def list_website_versions(
+    project_id: str,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """Get all versions for a project."""
+    supabase = get_supabase()
+
+    # Verify access to project
+    project_result = (
+        supabase.table("website_projects")
+        .select("business_id")
+        .eq("id", project_id)
+        .single()
+        .execute()
+    )
+
+    if not project_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Projekt nenalezen"
+        )
+
+    # Check access to business
+    await get_business(project_result.data["business_id"], current_user)
+
+    result = (
+        supabase.table("website_versions")
+        .select("*")
+        .eq("project_id", project_id)
+        .order("version_number", desc=True)
+        .execute()
+    )
+
+    versions = []
+    for row in result.data or []:
+        versions.append(
+            WebsiteVersionResponse(
+                id=row["id"],
+                project_id=row["project_id"],
+                version_number=row["version_number"],
+                status=row.get("status", "created"),
+                source_bundle_path=row.get("source_bundle_path"),
+                preview_image_path=row.get("preview_image_path"),
+                notes=row.get("notes"),
+                created_at=row.get("created_at"),
+                created_by=row.get("created_by"),
+            )
+        )
+
+    return WebsiteVersionListResponse(items=versions, total=len(versions))
+
+
+@router.post(
+    "/projects/{project_id}/versions",
+    response_model=WebsiteVersionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_website_version(
+    project_id: str,
+    data: WebsiteVersionCreate,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """Create a new website version for a project."""
+    supabase = get_supabase()
+
+    # Verify access to project
+    project_result = (
+        supabase.table("website_projects")
+        .select("business_id")
+        .eq("id", project_id)
+        .single()
+        .execute()
+    )
+
+    if not project_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Projekt nenalezen"
+        )
+
+    # Check access to business
+    await get_business(project_result.data["business_id"], current_user)
+
+    # Get next version number
+    version_result = (
+        supabase.table("website_versions")
+        .select("version_number")
+        .eq("project_id", project_id)
+        .order("version_number", desc=True)
+        .limit(1)
+        .execute()
+    )
+
+    next_version = 1
+    if version_result.data and version_result.data[0]:
+        next_version = version_result.data[0]["version_number"] + 1
+
+    # Create version
+    insert_data = {
+        "project_id": project_id,
+        "version_number": next_version,
+        "status": "created",
+        "source_bundle_path": data.source_bundle_path,
+        "preview_image_path": data.preview_image_path,
+        "notes": data.notes,
+        "created_by": current_user.id,
+    }
+
+    result = supabase.table("website_versions").insert(insert_data).execute()
+
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Nepodařilo se vytvořit verzi",
+        )
+
+    row = result.data[0]
+    return WebsiteVersionResponse(
+        id=row["id"],
+        project_id=row["project_id"],
+        version_number=row["version_number"],
+        status=row.get("status", "created"),
+        source_bundle_path=row.get("source_bundle_path"),
+        preview_image_path=row.get("preview_image_path"),
+        notes=row.get("notes"),
+        created_at=row.get("created_at"),
+        created_by=row.get("created_by"),
+    )
+
+
+@router.get("/versions/{version_id}", response_model=WebsiteVersionResponse)
+async def get_website_version(
+    version_id: str,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """Get a specific website version."""
+    supabase = get_supabase()
+
+    result = (
+        supabase.table("website_versions")
+        .select("*, website_projects(business_id)")
+        .eq("id", version_id)
+        .single()
+        .execute()
+    )
+
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Verze nenalezena"
+        )
+
+    # Check access to business
+    business_id = result.data["website_projects"]["business_id"]
+    await get_business(business_id, current_user)
+
+    return WebsiteVersionResponse(
+        id=result.data["id"],
+        project_id=result.data["project_id"],
+        version_number=result.data["version_number"],
+        status=result.data.get("status", "created"),
+        source_bundle_path=result.data.get("source_bundle_path"),
+        preview_image_path=result.data.get("preview_image_path"),
+        notes=result.data.get("notes"),
+        created_at=result.data.get("created_at"),
+        created_by=result.data.get("created_by"),
+    )
+
+
+# Project Assets
+@router.get("/projects/{project_id}/assets", response_model=list[ProjectAssetResponse])
+async def list_project_assets(
+    project_id: str,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """Get all assets for a project."""
+    supabase = get_supabase()
+
+    # Verify access to project
+    project_result = (
+        supabase.table("website_projects")
+        .select("business_id")
+        .eq("id", project_id)
+        .single()
+        .execute()
+    )
+
+    if not project_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Projekt nenalezen"
+        )
+
+    # Check access to business
+    await get_business(project_result.data["business_id"], current_user)
+
+    result = (
+        supabase.table("project_assets")
+        .select("*")
+        .eq("project_id", project_id)
+        .order("uploaded_at", desc=True)
+        .execute()
+    )
+
+    assets = []
+    for row in result.data or []:
+        assets.append(
+            ProjectAssetResponse(
+                id=row["id"],
+                project_id=row["project_id"],
+                type=row["type"],
+                file_path=row["file_path"],
+                filename=row["filename"],
+                mime_type=row["mime_type"],
+                size_bytes=row["size_bytes"],
+                uploaded_at=row.get("uploaded_at"),
+                uploaded_by=row.get("uploaded_by"),
+            )
+        )
+
+    return assets
+
+
+@router.post(
+    "/projects/{project_id}/assets",
+    response_model=ProjectAssetResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_project_asset(
+    project_id: str,
+    data: ProjectAssetCreate,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """Create a new asset for a project."""
+    supabase = get_supabase()
+
+    # Verify access to project
+    project_result = (
+        supabase.table("website_projects")
+        .select("business_id")
+        .eq("id", project_id)
+        .single()
+        .execute()
+    )
+
+    if not project_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Projekt nenalezen"
+        )
+
+    # Check access to business
+    await get_business(project_result.data["business_id"], current_user)
+
+    # Create asset
+    insert_data = {
+        "project_id": project_id,
+        "type": data.type,
+        "file_path": data.file_path,
+        "filename": data.filename,
+        "mime_type": data.mime_type,
+        "size_bytes": data.size_bytes,
+        "uploaded_by": current_user.id,
+    }
+
+    result = supabase.table("project_assets").insert(insert_data).execute()
+
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Nepodařilo se vytvořit asset",
+        )
+
+    row = result.data[0]
+    return ProjectAssetResponse(
+        id=row["id"],
+        project_id=row["project_id"],
+        type=row["type"],
+        file_path=row["file_path"],
+        filename=row["filename"],
+        mime_type=row["mime_type"],
+        size_bytes=row["size_bytes"],
+        uploaded_at=row.get("uploaded_at"),
+        uploaded_by=row.get("uploaded_by"),
     )

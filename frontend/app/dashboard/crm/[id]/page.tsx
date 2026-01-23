@@ -51,6 +51,8 @@ interface Project {
   notes: string | null
   created_at: string | null
   updated_at: string | null
+  latest_version_id: string | null
+  versions_count: number
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
@@ -516,6 +518,11 @@ export default function BusinessDetailPage() {
                     >
                       {PROJECT_STATUS_CONFIG[project.status]?.label || project.status}
                     </span>
+                    {project.versions_count > 0 && (
+                      <span className="versions-badge">
+                        {project.versions_count} verzí
+                      </span>
+                    )}
                   </div>
 
                   <div className="project-prices">
@@ -545,6 +552,19 @@ export default function BusinessDetailPage() {
                   {project.notes && (
                     <div className="project-notes">
                       <p>{project.notes}</p>
+                    </div>
+                  )}
+
+                  {/* Website Preview */}
+                  {project.latest_version_id && (
+                    <div className="project-preview" onClick={(e) => e.stopPropagation()}>
+                      <div className="preview-header">
+                        <span className="preview-label">📸 Náhled webu</span>
+                        <span className="preview-version">v{project.versions_count}</span>
+                      </div>
+                      <div className="preview-placeholder">
+                        <span>Náhled bude zde</span>
+                      </div>
                     </div>
                   )}
 
@@ -1071,6 +1091,16 @@ export default function BusinessDetailPage() {
           font-weight: 500;
         }
 
+        .versions-badge {
+          padding: 4px 10px;
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: 500;
+          background-color: #e0f2fe;
+          color: #0369a1;
+          margin-left: 8px;
+        }
+
         .project-prices {
           display: flex;
           gap: 20px;
@@ -1236,6 +1266,50 @@ export default function BusinessDetailPage() {
         .activity-seller {
           font-size: 12px;
           color: #999;
+        }
+
+        .project-preview {
+          margin-top: 12px;
+          padding: 12px;
+          background: #f8fafc;
+          border-radius: 8px;
+          border: 1px solid #e5e7eb;
+        }
+
+        .preview-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 8px;
+        }
+
+        .preview-label {
+          font-size: 12px;
+          font-weight: 600;
+          color: #374151;
+        }
+
+        .preview-version {
+          font-size: 10px;
+          color: #6b7280;
+          background: #e5e7eb;
+          padding: 2px 6px;
+          border-radius: 4px;
+        }
+
+        .preview-placeholder {
+          height: 60px;
+          background: #fff;
+          border: 1px solid #d1d5db;
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .preview-placeholder span {
+          font-size: 12px;
+          color: #9ca3af;
         }
 
         .project-actions {

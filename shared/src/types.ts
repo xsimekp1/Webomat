@@ -87,3 +87,27 @@ export interface SellerDashboard {
   recent_invoices: any[]
   weekly_rewards: any[]
 }
+
+export interface WebsiteVersion {
+  id: string
+  project_id: string
+  version_number: number
+  status: string
+  source_bundle_path: string | null
+  preview_image_path: string | null
+  notes: string | null
+  created_at: string | null
+  created_by: string | null
+}
+
+export interface ProjectAsset {
+  id: string
+  project_id: string
+  type: string
+  file_path: string
+  filename: string
+  mime_type: string
+  size_bytes: number
+  uploaded_at: string | null
+  uploaded_by: string | null
+}
