@@ -36,7 +36,14 @@ async def login_for_access_token(
     Login with username (first_name or email) and password.
     Returns JWT access token.
     """
-    user = await authenticate_user(form_data.username, form_data.password)
+    try:
+        user = await authenticate_user(form_data.username, form_data.password)
+    except Exception as e:
+        print(f"Authentication error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Chyba při přihlášení: {str(e)}"
+        )
 
     if not user:
         raise HTTPException(

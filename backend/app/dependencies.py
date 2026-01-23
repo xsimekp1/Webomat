@@ -58,11 +58,13 @@ async def get_user_by_username(username: str) -> UserInDB | None:
     """Get user from database by username (first_name) or email."""
     supabase = get_supabase()
 
-    result = supabase.table("sellers").select(
-        "id, first_name, last_name, email, password_hash, role, is_active, phone, notes, avatar_url, must_change_password, created_at"
-    ).or_(
-        f"first_name.ilike.{username},email.ilike.{username}"
-    ).limit(1).execute()
+    try:
+        result = supabase.table("sellers").select("*").or_(
+            f"first_name.ilike.{username},email.ilike.{username}"
+        ).limit(1).execute()
+    except Exception as e:
+        print(f"Error fetching user by username: {e}")
+        return None
 
     if not result.data:
         return None
@@ -88,9 +90,13 @@ async def get_user_by_id(user_id: str) -> User | None:
     """Get user from database by ID."""
     supabase = get_supabase()
 
-    result = supabase.table("sellers").select(
-        "id, first_name, last_name, email, role, is_active, phone, notes, avatar_url, must_change_password, created_at"
-    ).eq("id", user_id).limit(1).execute()
+    try:
+        result = supabase.table("sellers").select("*").eq(
+            "id", user_id
+        ).limit(1).execute()
+    except Exception as e:
+        print(f"Error fetching user by ID: {e}")
+        return None
 
     if not result.data:
         return None
