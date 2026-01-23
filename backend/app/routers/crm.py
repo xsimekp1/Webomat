@@ -1,5 +1,5 @@
 from datetime import datetime, date
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
@@ -478,7 +478,7 @@ async def get_crm_stats(
 
 
 # Projects
-@router.get("/businesses/{business_id}/project", response_model=ProjectResponse | None)
+@router.get("/businesses/{business_id}/project", response_model=Optional[ProjectResponse])
 async def get_project(
     business_id: str,
     current_user: Annotated[User, Depends(require_sales_or_admin)],
