@@ -142,6 +142,13 @@ class CRMStats(BaseModel):
     follow_ups_today: int
 
 
+class SellerDashboard(BaseModel):
+    available_balance: float
+    pending_projects_amount: float
+    recent_invoices: list[dict]
+    weekly_rewards: list[dict]
+
+
 # Project schemas
 class ProjectStatus(str, Enum):
     offer = "offer"

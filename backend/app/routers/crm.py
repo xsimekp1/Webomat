@@ -19,6 +19,7 @@ from ..schemas.crm import (
     ProjectCreate,
     ProjectUpdate,
     ProjectResponse,
+    SellerDashboard,
 )
 
 router = APIRouter(prefix="/crm", tags=["CRM"])
@@ -28,7 +29,13 @@ def get_seller_name(supabase, seller_id: str | None) -> str | None:
     """Get seller name by ID."""
     if not seller_id:
         return None
-    result = supabase.table("sellers").select("first_name, last_name").eq("id", seller_id).limit(1).execute()
+    result = (
+        supabase.table("sellers")
+        .select("first_name, last_name")
+        .eq("id", seller_id)
+        .limit(1)
+        .execute()
+    )
     if result.data:
         s = result.data[0]
         return f"{s.get('first_name', '')} {s.get('last_name', '')}".strip() or None
@@ -69,7 +76,7 @@ async def check_duplicate(
                 "phone": duplicate.get("phone"),
                 "website": duplicate.get("website"),
             },
-            "similar_names": []
+            "similar_names": [],
         }
 
     # Soft check by name (warning only, doesn't block)
@@ -87,11 +94,7 @@ async def check_duplicate(
             for s in similar_results
         ]
 
-    return {
-        "is_duplicate": False,
-        "existing_business": None,
-        "similar_names": similar
-    }
+    return {"is_duplicate": False, "existing_business": None, "similar_names": similar}
 
 
 @router.get("/businesses", response_model=BusinessListResponse)
@@ -100,7 +103,9 @@ async def list_businesses(
     status_crm: str | None = Query(None, description="Comma-separated statuses"),
     search: str | None = Query(None, description="Search in name"),
     owner_seller_id: str | None = Query(None, description="Filter by owner seller"),
-    next_follow_up_at_before: date | None = Query(None, description="Follow-up before date"),
+    next_follow_up_at_before: date | None = Query(
+        None, description="Follow-up before date"
+    ),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
 ):
@@ -112,7 +117,9 @@ async def list_businesses(
 
     # RBAC: Sales see only their own or unassigned
     if current_user.role == "sales":
-        query = query.or_(f"owner_seller_id.eq.{current_user.id},owner_seller_id.is.null")
+        query = query.or_(
+            f"owner_seller_id.eq.{current_user.id},owner_seller_id.is.null"
+        )
     elif owner_seller_id:
         query = query.eq("owner_seller_id", owner_seller_id)
 
@@ -130,7 +137,9 @@ async def list_businesses(
         query = query.lte("next_follow_up_at", next_follow_up_at_before.isoformat())
 
     # Order by next_follow_up_at (nulls last), then created_at
-    query = query.order("next_follow_up_at", nullsfirst=False).order("created_at", desc=True)
+    query = query.order("next_follow_up_at", nullsfirst=False).order(
+        "created_at", desc=True
+    )
 
     # Pagination
     offset = (page - 1) * limit
@@ -141,28 +150,27 @@ async def list_businesses(
     # Transform response
     items = []
     for row in result.data:
-        items.append(BusinessResponse(
-            id=row["id"],
-            name=row["name"],
-            address=row.get("address_full"),
-            phone=row.get("phone"),
-            email=row.get("email"),
-            website=row.get("website"),
-            category=types_to_string(row.get("types")),
-            notes=row.get("editorial_summary"),
-            status_crm=row.get("status_crm", "new"),
-            owner_seller_id=row.get("owner_seller_id"),
-            owner_seller_name=get_seller_name(supabase, row.get("owner_seller_id")),
-            next_follow_up_at=row.get("next_follow_up_at"),
-            created_at=row.get("created_at"),
-            updated_at=row.get("updated_at"),
-        ))
+        items.append(
+            BusinessResponse(
+                id=row["id"],
+                name=row["name"],
+                address=row.get("address_full"),
+                phone=row.get("phone"),
+                email=row.get("email"),
+                website=row.get("website"),
+                category=types_to_string(row.get("types")),
+                notes=row.get("editorial_summary"),
+                status_crm=row.get("status_crm", "new"),
+                owner_seller_id=row.get("owner_seller_id"),
+                owner_seller_name=get_seller_name(supabase, row.get("owner_seller_id")),
+                next_follow_up_at=row.get("next_follow_up_at"),
+                created_at=row.get("created_at"),
+                updated_at=row.get("updated_at"),
+            )
+        )
 
     return BusinessListResponse(
-        items=items,
-        total=result.count or 0,
-        page=page,
-        limit=limit
+        items=items, total=result.count or 0, page=page, limit=limit
     )
 
 
@@ -175,12 +183,17 @@ async def get_business(
     supabase = get_supabase()
 
     # First fetch the business
-    result = supabase.table("businesses").select("*").eq("id", business_id).limit(1).execute()
+    result = (
+        supabase.table("businesses")
+        .select("*")
+        .eq("id", business_id)
+        .limit(1)
+        .execute()
+    )
 
     if not result.data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Business not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Business not found"
         )
 
     row = result.data[0]
@@ -190,8 +203,7 @@ async def get_business(
         owner = row.get("owner_seller_id")
         if owner and owner != current_user.id:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Business not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Business not found"
             )
 
     return BusinessResponse(
@@ -212,24 +224,50 @@ async def get_business(
     )
 
 
-def check_duplicate_business(supabase, phone: str | None, website: str | None, place_id: str | None = None) -> dict | None:
+def check_duplicate_business(
+    supabase, phone: str | None, website: str | None, place_id: str | None = None
+) -> dict | None:
     """Check if business already exists by phone, website, or place_id. Returns existing business or None."""
     if place_id:
-        result = supabase.table("businesses").select("id, name, phone, website").eq("place_id", place_id).limit(1).execute()
+        result = (
+            supabase.table("businesses")
+            .select("id, name, phone, website")
+            .eq("place_id", place_id)
+            .limit(1)
+            .execute()
+        )
         if result.data:
             return result.data[0]
 
     if phone:
         # Normalize phone - remove spaces and common prefixes for comparison
         normalized_phone = phone.replace(" ", "").replace("-", "")
-        result = supabase.table("businesses").select("id, name, phone, website").ilike("phone", f"%{normalized_phone[-9:]}%").limit(1).execute()
+        result = (
+            supabase.table("businesses")
+            .select("id, name, phone, website")
+            .ilike("phone", f"%{normalized_phone[-9:]}%")
+            .limit(1)
+            .execute()
+        )
         if result.data:
             return result.data[0]
 
     if website:
         # Normalize website - remove protocol and www
-        normalized_web = website.lower().replace("https://", "").replace("http://", "").replace("www.", "").rstrip("/")
-        result = supabase.table("businesses").select("id, name, phone, website").ilike("website", f"%{normalized_web}%").limit(1).execute()
+        normalized_web = (
+            website.lower()
+            .replace("https://", "")
+            .replace("http://", "")
+            .replace("www.", "")
+            .rstrip("/")
+        )
+        result = (
+            supabase.table("businesses")
+            .select("id, name, phone, website")
+            .ilike("website", f"%{normalized_web}%")
+            .limit(1)
+            .execute()
+        )
         if result.data:
             return result.data[0]
 
@@ -243,11 +281,19 @@ def check_similar_by_name(supabase, name: str) -> list[dict]:
         return []
 
     # Search by exact name match or similar
-    result = supabase.table("businesses").select("id, name, phone, website, contact_person").ilike("name", f"%{name}%").limit(5).execute()
+    result = (
+        supabase.table("businesses")
+        .select("id, name, phone, website, contact_person")
+        .ilike("name", f"%{name}%")
+        .limit(5)
+        .execute()
+    )
     return result.data if result.data else []
 
 
-@router.post("/businesses", response_model=BusinessResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/businesses", response_model=BusinessResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_business(
     data: BusinessCreate,
     current_user: Annotated[User, Depends(require_sales_or_admin)],
@@ -260,7 +306,7 @@ async def create_business(
     if duplicate:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Firma již existuje v systému: {duplicate['name']} (ID: {duplicate['id']})"
+            detail=f"Firma již existuje v systému: {duplicate['name']} (ID: {duplicate['id']})",
         )
 
     # Map fields to database columns
@@ -273,7 +319,8 @@ async def create_business(
         "types": data.category,
         "editorial_summary": data.notes,
         "status_crm": data.status_crm.value if data.status_crm else "new",
-        "owner_seller_id": data.owner_seller_id or (current_user.id if current_user.role == "sales" else None),
+        "owner_seller_id": data.owner_seller_id
+        or (current_user.id if current_user.role == "sales" else None),
     }
 
     # Convert datetime to ISO string if present
@@ -288,7 +335,7 @@ async def create_business(
     if not result.data:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create business"
+            detail="Failed to create business",
         )
 
     row = result.data[0]
@@ -320,16 +367,26 @@ async def update_business(
     supabase = get_supabase()
 
     # Check access
-    existing = supabase.table("businesses").select("id, owner_seller_id").eq("id", business_id).limit(1).execute()
+    existing = (
+        supabase.table("businesses")
+        .select("id, owner_seller_id")
+        .eq("id", business_id)
+        .limit(1)
+        .execute()
+    )
 
     if not existing.data:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Business not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Business not found"
+        )
 
     # RBAC check for sales
     if current_user.role == "sales":
         owner = existing.data[0].get("owner_seller_id")
         if owner and owner != current_user.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
+            )
 
     # Map fields to database columns
     update_data = {}
@@ -355,14 +412,20 @@ async def update_business(
         update_data["next_follow_up_at"] = data.next_follow_up_at.isoformat()
 
     if not update_data:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No data to update")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No data to update"
+        )
 
     update_data["updated_at"] = datetime.utcnow().isoformat()
 
-    result = supabase.table("businesses").update(update_data).eq("id", business_id).execute()
+    result = (
+        supabase.table("businesses").update(update_data).eq("id", business_id).execute()
+    )
 
     if not result.data:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update"
+        )
 
     # Fetch with seller name
     return await get_business(business_id, current_user)
@@ -377,22 +440,34 @@ async def delete_business(
     supabase = get_supabase()
 
     # Check if business exists and user has permission
-    existing = supabase.table("businesses").select("id, owner_seller_id").eq("id", business_id).limit(1).execute()
+    existing = (
+        supabase.table("businesses")
+        .select("id, owner_seller_id")
+        .eq("id", business_id)
+        .limit(1)
+        .execute()
+    )
 
     if not existing.data:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Business not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Business not found"
+        )
 
     # RBAC: Sales can only delete their own or unassigned
     if current_user.role == "sales":
         owner = existing.data[0].get("owner_seller_id")
         if owner and owner != current_user.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
+            )
 
     supabase.table("businesses").delete().eq("id", business_id).execute()
 
 
 # Activities
-@router.get("/businesses/{business_id}/activities", response_model=list[ActivityResponse])
+@router.get(
+    "/businesses/{business_id}/activities", response_model=list[ActivityResponse]
+)
 async def list_activities(
     business_id: str,
     current_user: Annotated[User, Depends(require_sales_or_admin)],
@@ -404,28 +479,39 @@ async def list_activities(
     # Verify access to business
     await get_business(business_id, current_user)
 
-    result = supabase.table("crm_activities").select("*").eq(
-        "business_id", business_id
-    ).order("occurred_at", desc=True).limit(limit).execute()
+    result = (
+        supabase.table("crm_activities")
+        .select("*")
+        .eq("business_id", business_id)
+        .order("occurred_at", desc=True)
+        .limit(limit)
+        .execute()
+    )
 
     activities = []
     for row in result.data:
-        activities.append(ActivityResponse(
-            id=row["id"],
-            business_id=row["business_id"],
-            seller_id=row.get("seller_id", ""),
-            seller_name=get_seller_name(supabase, row.get("seller_id")),
-            activity_type=row["type"],           # DB column is 'type'
-            description=row.get("content", ""),  # DB column is 'content'
-            outcome=row.get("outcome"),
-            duration_minutes=None,               # Column doesn't exist in DB
-            created_at=row.get("occurred_at"),   # Use occurred_at
-        ))
+        activities.append(
+            ActivityResponse(
+                id=row["id"],
+                business_id=row["business_id"],
+                seller_id=row.get("seller_id", ""),
+                seller_name=get_seller_name(supabase, row.get("seller_id")),
+                activity_type=row["type"],  # DB column is 'type'
+                description=row.get("content", ""),  # DB column is 'content'
+                outcome=row.get("outcome"),
+                duration_minutes=None,  # Column doesn't exist in DB
+                created_at=row.get("occurred_at"),  # Use occurred_at
+            )
+        )
 
     return activities
 
 
-@router.post("/businesses/{business_id}/activities", response_model=ActivityResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/businesses/{business_id}/activities",
+    response_model=ActivityResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_activity(
     business_id: str,
     data: ActivityCreate,
@@ -442,7 +528,7 @@ async def create_activity(
         "business_id": business_id,
         "seller_id": current_user.id,
         "type": data.activity_type.value,  # DB column is 'type'
-        "content": data.description,        # DB column is 'content'
+        "content": data.description,  # DB column is 'content'
         "outcome": data.outcome,
         "occurred_at": datetime.utcnow().isoformat(),  # Required
     }
@@ -453,14 +539,19 @@ async def create_activity(
     result = supabase.table("crm_activities").insert(insert_data).execute()
 
     if not result.data:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create activity")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create activity",
+        )
 
     # Update business status if requested
     if data.new_status:
-        supabase.table("businesses").update({
-            "status_crm": data.new_status.value,
-            "updated_at": datetime.utcnow().isoformat()
-        }).eq("id", business_id).execute()
+        supabase.table("businesses").update(
+            {
+                "status_crm": data.new_status.value,
+                "updated_at": datetime.utcnow().isoformat(),
+            }
+        ).eq("id", business_id).execute()
 
     row = result.data[0]
     return ActivityResponse(
@@ -468,11 +559,11 @@ async def create_activity(
         business_id=row["business_id"],
         seller_id=row["seller_id"],
         seller_name=f"{current_user.first_name} {current_user.last_name}",
-        activity_type=row["type"],           # DB column is 'type'
+        activity_type=row["type"],  # DB column is 'type'
         description=row.get("content", ""),  # DB column is 'content'
         outcome=row.get("outcome"),
-        duration_minutes=None,               # Column doesn't exist in DB
-        created_at=row.get("occurred_at"),   # Use occurred_at
+        duration_minutes=None,  # Column doesn't exist in DB
+        created_at=row.get("occurred_at"),  # Use occurred_at
     )
 
 
@@ -486,10 +577,11 @@ async def get_today_tasks(
 
     today = date.today().isoformat()
 
-    query = supabase.table("businesses").select(
-        "id, name, phone, status_crm, next_follow_up_at"
-    ).lte("next_follow_up_at", today).not_.in_(
-        "status_crm", ["won", "lost", "dnc"]
+    query = (
+        supabase.table("businesses")
+        .select("id, name, phone, status_crm, next_follow_up_at")
+        .lte("next_follow_up_at", today)
+        .not_.in_("status_crm", ["won", "lost", "dnc"])
     )
 
     # RBAC
@@ -508,7 +600,7 @@ async def get_today_tasks(
             phone=row.get("phone"),
             status_crm=row["status_crm"],
             next_follow_up_at=row.get("next_follow_up_at"),
-            last_activity=None
+            last_activity=None,
         )
         for row in result.data
     ]
@@ -527,7 +619,9 @@ async def get_crm_stats(
 
     # RBAC
     if current_user.role == "sales":
-        query = query.or_(f"owner_seller_id.eq.{current_user.id},owner_seller_id.is.null")
+        query = query.or_(
+            f"owner_seller_id.eq.{current_user.id},owner_seller_id.is.null"
+        )
 
     result = query.execute()
 
@@ -582,28 +676,38 @@ async def list_projects(
     # Verify access to business
     await get_business(business_id, current_user)
 
-    result = supabase.table("website_projects").select("*").eq(
-        "business_id", business_id
-    ).order("created_at", desc=True).execute()
+    result = (
+        supabase.table("website_projects")
+        .select("*")
+        .eq("business_id", business_id)
+        .order("created_at", desc=True)
+        .execute()
+    )
 
     projects = []
     for row in result.data:
-        projects.append(ProjectResponse(
-            id=row["id"],
-            business_id=row["business_id"],
-            package=row.get("package", "start"),
-            status=row.get("status", "offer"),
-            price_setup=row.get("price_setup"),
-            price_monthly=row.get("price_monthly"),
-            domain=row.get("domain"),
-            notes=row.get("notes"),
-            created_at=row.get("created_at"),
-            updated_at=row.get("updated_at"),
-        ))
+        projects.append(
+            ProjectResponse(
+                id=row["id"],
+                business_id=row["business_id"],
+                package=row.get("package", "start"),
+                status=row.get("status", "offer"),
+                price_setup=row.get("price_setup"),
+                price_monthly=row.get("price_monthly"),
+                domain=row.get("domain"),
+                notes=row.get("notes"),
+                created_at=row.get("created_at"),
+                updated_at=row.get("updated_at"),
+            )
+        )
     return projects
 
 
-@router.post("/businesses/{business_id}/projects", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/businesses/{business_id}/projects",
+    response_model=ProjectResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_project(
     business_id: str,
     data: ProjectCreate,
@@ -617,8 +721,10 @@ async def create_project(
 
     insert_data = {
         "business_id": business_id,
-        "package": data.package.value if hasattr(data.package, 'value') else data.package,
-        "status": data.status.value if hasattr(data.status, 'value') else data.status,
+        "package": data.package.value
+        if hasattr(data.package, "value")
+        else data.package,
+        "status": data.status.value if hasattr(data.status, "value") else data.status,
         "price_setup": data.price_setup,
         "price_monthly": data.price_monthly,
         "domain": data.domain,
@@ -630,7 +736,7 @@ async def create_project(
     if not result.data:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Nepodařilo se vytvořit projekt"
+            detail="Nepodařilo se vytvořit projekt",
         )
 
     row = result.data[0]
@@ -648,6 +754,81 @@ async def create_project(
     )
 
 
+@router.get("/seller/dashboard", response_model=SellerDashboard)
+async def get_seller_dashboard(
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """Get dashboard data for seller including available balance and pending amounts."""
+    supabase = get_supabase()
+
+    # Calculate available balance: sum of earned commissions minus payouts
+    earned_result = (
+        supabase.table("ledger_entries")
+        .select("amount")
+        .eq("seller_id", current_user.id)
+        .eq("type", "commission_earned")
+        .execute()
+    )
+    total_earned = (
+        sum(row["amount"] for row in earned_result.data) if earned_result.data else 0
+    )
+
+    payout_result = (
+        supabase.table("ledger_entries")
+        .select("amount")
+        .eq("seller_id", current_user.id)
+        .in_("type", ["payout_reserved", "payout_paid"])
+        .execute()
+    )
+    total_payouts = (
+        sum(row["amount"] for row in payout_result.data) if payout_result.data else 0
+    )
+
+    available_balance = total_earned - total_payouts
+
+    # Calculate pending projects amount: sum of project prices where status is won/in_production
+    projects_result = (
+        supabase.table("website_projects")
+        .select("price_setup, price_monthly, status")
+        .eq("seller_id", current_user.id)
+        .in_("status", ["won", "in_production"])
+        .execute()
+    )
+    pending_amount = 0
+    if projects_result.data:
+        for project in projects_result.data:
+            if project["price_setup"]:
+                pending_amount += project["price_setup"]
+            # Could add monthly if needed
+
+    # Get recent invoices
+    invoices_result = (
+        supabase.table("invoices")
+        .select("id, invoice_number, amount_total, status, issue_date")
+        .eq("seller_id", current_user.id)
+        .order("created_at", desc=True)
+        .limit(5)
+        .execute()
+    )
+    recent_invoices = invoices_result.data if invoices_result.data else []
+
+    # Weekly rewards (simplified - last 4 weeks of commissions)
+    # For now, placeholder - would need proper date aggregation
+    weekly_rewards = [
+        {"week": "This week", "amount": 0},
+        {"week": "Last week", "amount": 0},
+        {"week": "2 weeks ago", "amount": 0},
+        {"week": "3 weeks ago", "amount": 0},
+    ]
+
+    return SellerDashboard(
+        available_balance=available_balance,
+        pending_projects_amount=pending_amount,
+        recent_invoices=recent_invoices,
+        weekly_rewards=weekly_rewards,
+    )
+
+
 @router.put("/projects/{project_id}", response_model=ProjectResponse)
 async def update_project(
     project_id: str,
@@ -658,14 +839,17 @@ async def update_project(
     supabase = get_supabase()
 
     # Check if project exists and get business_id for access check
-    existing = supabase.table("website_projects").select("id, business_id").eq(
-        "id", project_id
-    ).limit(1).execute()
+    existing = (
+        supabase.table("website_projects")
+        .select("id, business_id")
+        .eq("id", project_id)
+        .limit(1)
+        .execute()
+    )
 
     if not existing.data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Projekt nenalezen"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Projekt nenalezen"
         )
 
     # Verify access to business
@@ -673,9 +857,13 @@ async def update_project(
 
     update_data = {}
     if data.package is not None:
-        update_data["package"] = data.package.value if hasattr(data.package, 'value') else data.package
+        update_data["package"] = (
+            data.package.value if hasattr(data.package, "value") else data.package
+        )
     if data.status is not None:
-        update_data["status"] = data.status.value if hasattr(data.status, 'value') else data.status
+        update_data["status"] = (
+            data.status.value if hasattr(data.status, "value") else data.status
+        )
     if data.price_setup is not None:
         update_data["price_setup"] = data.price_setup
     if data.price_monthly is not None:
@@ -687,20 +875,22 @@ async def update_project(
 
     if not update_data:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Žádná data k aktualizaci"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Žádná data k aktualizaci"
         )
 
     update_data["updated_at"] = datetime.utcnow().isoformat()
 
-    result = supabase.table("website_projects").update(update_data).eq(
-        "id", project_id
-    ).execute()
+    result = (
+        supabase.table("website_projects")
+        .update(update_data)
+        .eq("id", project_id)
+        .execute()
+    )
 
     if not result.data:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Nepodařilo se aktualizovat projekt"
+            detail="Nepodařilo se aktualizovat projekt",
         )
 
     row = result.data[0]
