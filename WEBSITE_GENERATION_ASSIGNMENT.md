@@ -200,6 +200,15 @@ website_version_assets
   usage_note (optional)
 ```
 
+## Manuální editace vygenerovaných webů
+- Tlačítko "Editovat kód" u verze: Otevře editor pro úpravu HTML/CSS/JS
+- Uložení: Vytvoří novou verzi s poznámkou "manuální úprava"
+- Pro drobné změny textu bez AI regenerace
+
+## Branding footer
+- Radio button (default zapnutý): "Přidat branding footer"
+- Text: "stránky vytvořena webyweby.cz" v malém, nízkokontrastním písmu v patičce
+
 ## Co bych přidal navíc (hodně užitečné v praxi)
 - **Approval flow**: verze má status: draft → approved → published, klient může „approve“
 - **Komentáře k verzi**: klient/tenant může napsat feedback
