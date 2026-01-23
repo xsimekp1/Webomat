@@ -88,5 +88,6 @@ Na sales dashboard zobrazit všechny aktivní projekty patřící přihlášené
 5. **Call list**: Denní seznam kontaktů k zavolání.
 6. **Notifikace**: Highlight zpožděných follow-upů, čekajících akcí.
 7. **Integrace**: Propojení s CRM, verzemi webu, fakturací.
+8. **Telefonní seznam**: Schovaný panel nebo stránka s kontakty na admin a všechny sales lidi (jména, telefony, role).
 
 Tento dashboard je operativní nástroj pro sales, zaměřený na denní workflow bez zbytečných detailů.
