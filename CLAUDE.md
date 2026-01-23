@@ -23,6 +23,7 @@ powershell -ExecutionPolicy Bypass -Command "Invoke-RestMethod -Uri 'https://bac
 ```bash
 powershell -ExecutionPolicy Bypass -File ".\scripts\redeploy_vercel.ps1"
 ```
+**POZOR:** Vercel free tier má limit deploymentů! Nevolat redeploy opakovaně. Vercel deployuje automaticky při git push - ruční redeploy jen když je to nutné.
 
 **Health Check:**
 ```bash
@@ -185,40 +186,120 @@ Key MVP patterns:
 - Packages: Start/Profi/Premium/Custom with setup + monthly pricing
 - Commissions tied to actual payments, not promises
 
-## Database Schema
+## Database Schema (Supabase)
 
-Core tables:
-- `sellers` - Sales representatives
-- `businesses` - Client companies/leads
-- `business_contacts` - Contact persons
-- `crm_activities` - Sales activities
-- `tasks` - Tasks and follow-ups
-- `website_projects`, `project_assets` - Web development
-- `client_invoices`, `client_invoice_items` - Invoicing
-- `commissions`, `payouts`, `payout_items` - Commission tracking
+**DŮLEŽITÉ:** Před vytvářením/úpravou tabulek vždy ověř aktuální strukturu v Supabase!
+
+### Tabulka `sellers` (obchodníci/uživatelé)
+
+| Sloupec | Typ | Popis |
+|---------|-----|-------|
+| id | uuid | Primární klíč |
+| seller_code | string? | Kód obchodníka |
+| first_name | string | Jméno |
+| last_name | string | Příjmení |
+| email | string | Email (unique, login) |
+| phone | string? | Telefon |
+| address | string? | Adresa |
+| country | string? | Země |
+| date_of_birth | date? | Datum narození |
+| onboarded_at | datetime? | Datum onboardingu |
+| contract_signed_at | datetime? | Datum podpisu smlouvy |
+| status | string | Status (active/inactive) |
+| terminated_at | datetime? | Datum ukončení |
+| commission_plan_id | uuid? | FK na plán provizí |
+| default_commission_rate | decimal? | Výchozí provize % |
+| payout_method | string? | Způsob výplaty |
+| bank_account_iban | string? | IBAN |
+| bank_account | string? | Číslo účtu |
+| last_payout_at | datetime? | Poslední výplata |
+| payout_balance_due | decimal? | Nevyplacený zůstatek |
+| notes | text? | Poznámky |
+| password_hash | string | Hash hesla |
+| role | string | Role (admin/sales) |
+| is_active | boolean | Je aktivní |
+| must_change_password | boolean | Musí změnit heslo |
+| avatar_url | string? | URL profilové fotky |
+| created_at | datetime | Vytvořeno |
+| updated_at | datetime | Upraveno |
 
 ### Tabulka `businesses` (firmy/leady)
 
 | Sloupec | Typ | Popis |
 |---------|-----|-------|
 | id | uuid | Primární klíč |
+| source | string? | Zdroj leadu |
+| place_id | string? | Google Places ID (pro deduplikaci) |
 | name | string | Název firmy |
-| address | string? | Adresa sídla |
-| phone | string? | Telefon |
+| ico | string? | IČO |
+| vat_id | string? | VAT ID |
+| dic | string? | DIČ |
+| address_full | string? | Plná adresa |
+| city | string? | Město |
+| postal_code | string? | PSČ |
+| country | string? | Země |
+| lat | decimal? | Zeměpisná šířka |
+| lng | decimal? | Zeměpisná délka |
+| phone | string? | Telefon (pro deduplikaci) |
 | email | string? | Email |
-| website | string? | Web |
-| category | string? | Kategorie/obor |
-| notes | string? | Poznámky |
-| status_crm | enum | Status v CRM pipeline (new/calling/interested/offer_sent/won/lost/dnc) |
-| owner_seller_id | uuid? | FK na sellers - přiřazený obchodník |
-| next_follow_up_at | datetime? | Datum příštího follow-upu |
-| **ico** | string? | IČO (identifikační číslo) |
-| **dic** | string? | DIČ (daňové identifikační číslo) |
-| **billing_address** | string? | Fakturační adresa (pokud jiná než sídlo) |
-| **bank_account** | string? | Bankovní účet |
-| **contact_person** | string? | Kontaktní osoba / jednatel |
-| created_at | datetime | Datum vytvoření |
-| updated_at | datetime | Datum poslední úpravy |
+| website | string? | Web (pro deduplikaci) |
+| has_website | boolean? | Má web |
+| rating | decimal? | Hodnocení Google |
+| review_count | int? | Počet recenzí |
+| price_level | int? | Cenová úroveň |
+| types | array? | Typy/kategorie z Google |
+| editorial_summary | text? | Popis/poznámky |
+| status_crm | string | CRM status (new/calling/interested/offer_sent/won/lost/dnc) |
+| status_reason | string? | Důvod statusu |
+| owner_seller_id | uuid? | FK na sellers |
+| first_contact_at | datetime? | První kontakt |
+| last_contact_at | datetime? | Poslední kontakt |
+| next_follow_up_at | datetime? | Příští follow-up |
+| billing_address | string? | Fakturační adresa |
+| bank_account | string? | Bankovní účet |
+| contact_person | string? | Kontaktní osoba |
+| created_at | datetime | Vytvořeno |
+| updated_at | datetime | Upraveno |
+
+**Deduplikace:** Kontrolovat podle `place_id`, `phone`, `website` před vytvořením nového leadu.
+
+### Tabulka `crm_activities` (aktivity/komunikace)
+
+| Sloupec | Typ | Popis |
+|---------|-----|-------|
+| id | uuid | Primární klíč |
+| business_id | uuid | FK na businesses |
+| seller_id | uuid? | FK na sellers |
+| contact_id | uuid? | FK na business_contacts |
+| type | string | Typ (call/email/meeting/note/message) |
+| direction | string? | Směr (inbound/outbound) |
+| subject | string? | Předmět |
+| content | text? | Obsah/popis |
+| outcome | string? | Výsledek |
+| occurred_at | datetime | Kdy proběhlo |
+| created_at | datetime | Vytvořeno |
+
+### Tabulka `website_projects` (projekty webů)
+
+| Sloupec | Typ | Popis |
+|---------|-----|-------|
+| id | uuid | Primární klíč |
+| business_id | uuid | FK na businesses |
+| seller_id | uuid? | FK na sellers |
+| package | string | Balíček (start/profi/premium/custom) |
+| status | string | Status projektu (offer/won/in_production/delivered/live/cancelled) |
+| status_web | string? | Status webu (brief/design/development/review/live) |
+| brief | text? | Brief od klienta |
+| domain | string? | Doména |
+| hosting | string? | Hosting (internal/external) |
+| tech_stack | string? | Technologie |
+| price_setup | decimal? | Jednorázová cena |
+| price_monthly | decimal? | Měsíční cena |
+| notes | text? | Poznámky |
+| started_at | datetime? | Zahájeno |
+| delivered_at | datetime? | Dodáno |
+| created_at | datetime | Vytvořeno |
+| updated_at | datetime | Upraveno |
 
 ### CRM Status hodnoty
 - `new` - Nový lead
@@ -228,6 +309,14 @@ Core tables:
 - `won` - Vyhráno (klient)
 - `lost` - Ztraceno
 - `dnc` - Do Not Contact
+
+### Project Status hodnoty
+- `offer` - Nabídka
+- `won` - Vyhráno
+- `in_production` - Ve výrobě
+- `delivered` - Dodáno
+- `live` - Živé
+- `cancelled` - Zrušeno
 
 ## Project Language
 

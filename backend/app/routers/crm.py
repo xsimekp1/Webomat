@@ -44,6 +44,30 @@ def types_to_string(types) -> str | None:
     return str(types)
 
 
+@router.get("/businesses/check-duplicate")
+async def check_duplicate(
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+    phone: str | None = Query(None, description="Phone to check"),
+    website: str | None = Query(None, description="Website to check"),
+    place_id: str | None = Query(None, description="Google Place ID to check"),
+):
+    """Check if a business with given phone/website/place_id already exists."""
+    supabase = get_supabase()
+
+    duplicate = check_duplicate_business(supabase, phone, website, place_id)
+    if duplicate:
+        return {
+            "is_duplicate": True,
+            "existing_business": {
+                "id": duplicate["id"],
+                "name": duplicate["name"],
+                "phone": duplicate.get("phone"),
+                "website": duplicate.get("website"),
+            }
+        }
+    return {"is_duplicate": False, "existing_business": None}
+
+
 @router.get("/businesses", response_model=BusinessListResponse)
 async def list_businesses(
     current_user: Annotated[User, Depends(require_sales_or_admin)],
@@ -162,6 +186,30 @@ async def get_business(
     )
 
 
+def check_duplicate_business(supabase, phone: str | None, website: str | None, place_id: str | None = None) -> dict | None:
+    """Check if business already exists by phone, website, or place_id. Returns existing business or None."""
+    if place_id:
+        result = supabase.table("businesses").select("id, name, phone, website").eq("place_id", place_id).limit(1).execute()
+        if result.data:
+            return result.data[0]
+
+    if phone:
+        # Normalize phone - remove spaces and common prefixes for comparison
+        normalized_phone = phone.replace(" ", "").replace("-", "")
+        result = supabase.table("businesses").select("id, name, phone, website").ilike("phone", f"%{normalized_phone[-9:]}%").limit(1).execute()
+        if result.data:
+            return result.data[0]
+
+    if website:
+        # Normalize website - remove protocol and www
+        normalized_web = website.lower().replace("https://", "").replace("http://", "").replace("www.", "").rstrip("/")
+        result = supabase.table("businesses").select("id, name, phone, website").ilike("website", f"%{normalized_web}%").limit(1).execute()
+        if result.data:
+            return result.data[0]
+
+    return None
+
+
 @router.post("/businesses", response_model=BusinessResponse, status_code=status.HTTP_201_CREATED)
 async def create_business(
     data: BusinessCreate,
@@ -169,6 +217,14 @@ async def create_business(
 ):
     """Create a new business/lead."""
     supabase = get_supabase()
+
+    # Check for duplicates
+    duplicate = check_duplicate_business(supabase, data.phone, data.website)
+    if duplicate:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Firma již existuje v systému: {duplicate['name']} (ID: {duplicate['id']})"
+        )
 
     # Map fields to database columns
     insert_data = {
