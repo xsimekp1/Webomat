@@ -353,6 +353,64 @@ Endpoint: `GET /crm/businesses/check-duplicate?phone=&website=&name=`
 - Umožňuje testovat printscreen a thumbnail funkcionality bez nákladů
 - UI: Modal s možností výběru mezi DRY RUN a AI generováním (AI zatím disabled)
 
+## Deployment & Online Testing
+
+### 🚀 Quick Deploy Commands (Updated)
+
+**FULL DEPLOYMENT:**
+```bash
+# Deploy all services
+npm run deploy:all
+
+# Or deploy individually:
+./scripts/deploy-backend.sh    # Railway
+./scripts/deploy-frontend.sh   # Vercel
+./scripts/deploy-mobile.sh     # EAS
+```
+
+**TESTING URLs:**
+- **Frontend (Web):** https://webomat.vercel.app
+- **Backend API:** https://webomat-backend-production.up.railway.app
+- **Mobile:** Expo Go app or downloaded builds
+
+### 📱 Mobile App Testing
+
+**Development:**
+```bash
+npm run mobile          # Start Expo dev server
+npm run mobile:ios      # iOS simulator
+npm run mobile:android  # Android emulator
+```
+
+**Build & Test:**
+```bash
+npm run mobile:build:dev    # Development build
+npm run mobile:build:preview # Preview build
+npm run mobile:build:prod   # Production build
+```
+
+**Expo Go Testing:**
+1. Install Expo Go on phone
+2. Scan QR code from `npm run mobile`
+3. Test without full build
+
+### 🔧 Setup Requirements
+
+**For Deployment:**
+1. **Railway CLI:** `npm install -g @railway/cli`
+2. **Vercel CLI:** `npm install -g vercel`
+3. **EAS CLI:** `npm install -g @expo/eas-cli`
+
+**Environment Variables:**
+- Vercel: Set `NEXT_PUBLIC_API_URL` in dashboard
+- EAS: Configure in `mobile/app.json` or EAS dashboard
+
+### 📊 CI/CD Status
+
+- ✅ **Backend:** Railway (auto-deploy on push)
+- ✅ **Frontend:** Vercel (auto-deploy on push)
+- ✅ **Mobile:** EAS (manual builds, auto on PR)
+
 ## Project Language
 
 Primary documentation is in Czech. The project serves Czech market businesses.
