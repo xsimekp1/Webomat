@@ -16,6 +16,9 @@ from ..schemas.crm import (
     TodayTask,
     TodayTasksResponse,
     CRMStats,
+    ProjectCreate,
+    ProjectUpdate,
+    ProjectResponse,
 )
 
 router = APIRouter(prefix="/crm", tags=["CRM"])
@@ -472,3 +475,163 @@ async def get_crm_stats(
             stats["follow_ups_today"] += 1
 
     return CRMStats(**stats)
+
+
+# Projects
+@router.get("/businesses/{business_id}/project", response_model=ProjectResponse | None)
+async def get_project(
+    business_id: str,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """Get project for a business."""
+    supabase = get_supabase()
+
+    # Verify access to business
+    await get_business(business_id, current_user)
+
+    result = supabase.table("website_projects").select("*").eq(
+        "business_id", business_id
+    ).limit(1).execute()
+
+    if not result.data:
+        return None
+
+    row = result.data[0]
+    return ProjectResponse(
+        id=row["id"],
+        business_id=row["business_id"],
+        package=row.get("package", "start"),
+        status=row.get("status", "offer"),
+        price_setup=row.get("price_setup"),
+        price_monthly=row.get("price_monthly"),
+        domain=row.get("domain"),
+        notes=row.get("notes"),
+        created_at=row.get("created_at"),
+        updated_at=row.get("updated_at"),
+    )
+
+
+@router.post("/businesses/{business_id}/project", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
+async def create_project(
+    business_id: str,
+    data: ProjectCreate,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """Create a project for a business."""
+    supabase = get_supabase()
+
+    # Verify access to business
+    await get_business(business_id, current_user)
+
+    # Check if project already exists
+    existing = supabase.table("website_projects").select("id").eq(
+        "business_id", business_id
+    ).limit(1).execute()
+
+    if existing.data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Projekt pro tuto firmu již existuje"
+        )
+
+    insert_data = {
+        "business_id": business_id,
+        "package": data.package.value if hasattr(data.package, 'value') else data.package,
+        "status": data.status.value if hasattr(data.status, 'value') else data.status,
+        "price_setup": data.price_setup,
+        "price_monthly": data.price_monthly,
+        "domain": data.domain,
+        "notes": data.notes,
+    }
+
+    result = supabase.table("website_projects").insert(insert_data).execute()
+
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Nepodařilo se vytvořit projekt"
+        )
+
+    row = result.data[0]
+    return ProjectResponse(
+        id=row["id"],
+        business_id=row["business_id"],
+        package=row.get("package", "start"),
+        status=row.get("status", "offer"),
+        price_setup=row.get("price_setup"),
+        price_monthly=row.get("price_monthly"),
+        domain=row.get("domain"),
+        notes=row.get("notes"),
+        created_at=row.get("created_at"),
+        updated_at=row.get("updated_at"),
+    )
+
+
+@router.put("/businesses/{business_id}/project", response_model=ProjectResponse)
+async def update_project(
+    business_id: str,
+    data: ProjectUpdate,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """Update a project."""
+    supabase = get_supabase()
+
+    # Verify access to business
+    await get_business(business_id, current_user)
+
+    # Check if project exists
+    existing = supabase.table("website_projects").select("id").eq(
+        "business_id", business_id
+    ).limit(1).execute()
+
+    if not existing.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Projekt nenalezen"
+        )
+
+    update_data = {}
+    if data.package is not None:
+        update_data["package"] = data.package.value if hasattr(data.package, 'value') else data.package
+    if data.status is not None:
+        update_data["status"] = data.status.value if hasattr(data.status, 'value') else data.status
+    if data.price_setup is not None:
+        update_data["price_setup"] = data.price_setup
+    if data.price_monthly is not None:
+        update_data["price_monthly"] = data.price_monthly
+    if data.domain is not None:
+        update_data["domain"] = data.domain
+    if data.notes is not None:
+        update_data["notes"] = data.notes
+
+    if not update_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Žádná data k aktualizaci"
+        )
+
+    update_data["updated_at"] = datetime.utcnow().isoformat()
+
+    result = supabase.table("website_projects").update(update_data).eq(
+        "business_id", business_id
+    ).execute()
+
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Nepodařilo se aktualizovat projekt"
+        )
+
+    row = result.data[0]
+    return ProjectResponse(
+        id=row["id"],
+        business_id=row["business_id"],
+        package=row.get("package", "start"),
+        status=row.get("status", "offer"),
+        price_setup=row.get("price_setup"),
+        price_monthly=row.get("price_monthly"),
+        domain=row.get("domain"),
+        notes=row.get("notes"),
+        created_at=row.get("created_at"),
+        updated_at=row.get("updated_at"),
+    )

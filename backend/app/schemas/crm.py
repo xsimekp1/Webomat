@@ -160,7 +160,6 @@ class PackageType(str, Enum):
 
 
 class ProjectCreate(BaseModel):
-    business_id: str
     package: PackageType = PackageType.start
     status: ProjectStatus = ProjectStatus.offer
     price_setup: float | None = None
