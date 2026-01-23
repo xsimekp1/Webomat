@@ -43,12 +43,15 @@ export default function DashboardPage() {
           <span className="user-info">
             {user.name} ({user.role === 'admin' ? 'Admin' : 'Obchodník'})
           </span>
-          <button onClick={() => router.push('/dashboard/profile')} className="btn-profile">
-            Můj profil
-          </button>
-          <button onClick={logout} className="btn-logout">
-            Odhlásit
-          </button>
+           <button onClick={() => router.push('/help')} className="btn-help">
+             Nápověda
+           </button>
+           <button onClick={() => router.push('/dashboard/profile')} className="btn-profile">
+             Můj profil
+           </button>
+           <button onClick={logout} className="btn-logout">
+             Odhlásit
+           </button>
         </div>
       </header>
 
