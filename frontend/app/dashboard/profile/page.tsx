@@ -39,6 +39,10 @@ export default function ProfilePage() {
     } else {
       router.push('/')
     }
+
+    // Apply theme
+    const savedTheme = localStorage.getItem('theme') || 'light'
+    document.documentElement.setAttribute('data-theme', savedTheme)
   }, [router])
 
   const loadProfile = async (userId: string) => {
@@ -122,8 +126,9 @@ export default function ProfilePage() {
         })
         .eq('id', user.id)
 
-      // Save theme to localStorage
+      // Save theme to localStorage and apply
       localStorage.setItem('theme', profile.theme)
+      document.documentElement.setAttribute('data-theme', profile.theme)
 
       if (error) throw error
 
