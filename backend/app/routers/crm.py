@@ -22,6 +22,8 @@ from ..schemas.crm import (
     ProjectUpdate,
     ProjectResponse,
     SellerDashboard,
+    PendingProjectInfo,
+    UnpaidClientInvoice,
     ARESCompany,
     WebsiteVersionCreate,
     WebsiteVersionResponse,
@@ -1029,8 +1031,9 @@ async def get_sellers_list(
 async def get_seller_dashboard(
     current_user: Annotated[User, Depends(require_sales_or_admin)],
 ):
-    """Get dashboard data for seller including available balance and pending amounts."""
+    """Get dashboard data for seller including available balance, pending projects, unpaid invoices."""
     supabase = get_supabase()
+    today = date.today()
 
     # Calculate available balance: sum of earned commissions minus payouts
     earned_result = (
@@ -1057,29 +1060,104 @@ async def get_seller_dashboard(
 
     available_balance = total_earned - total_payouts
 
-    # Calculate pending projects amount: sum of project prices where status is won/in_production
-    # Get businesses owned by this seller first
+    # Get businesses owned by this seller
     businesses_result = (
         supabase.table("businesses")
-        .select("id")
+        .select("id, name, status_crm, next_follow_up_at")
         .eq("owner_seller_id", current_user.id)
         .execute()
     )
-    business_ids = [b["id"] for b in businesses_result.data] if businesses_result.data else []
+    businesses_data = businesses_result.data if businesses_result.data else []
+    business_ids = [b["id"] for b in businesses_data]
+    business_names = {b["id"]: b["name"] for b in businesses_data}
 
+    # Count leads and follow-ups
+    total_leads = len(businesses_data)
+    follow_ups_today = sum(
+        1 for b in businesses_data
+        if b.get("next_follow_up_at")
+        and b["next_follow_up_at"] <= today.isoformat()
+        and b.get("status_crm") not in ["won", "lost", "dnc"]
+    )
+
+    # Get pending projects (won, in_production, delivered - not live/cancelled)
+    pending_projects: list[PendingProjectInfo] = []
     pending_amount = 0
+
     if business_ids:
         projects_result = (
             supabase.table("website_projects")
-            .select("price_setup, price_monthly, status")
+            .select("id, business_id, status, package, price_setup, created_at")
             .in_("business_id", business_ids)
-            .in_("status", ["won", "in_production"])
+            .in_("status", ["won", "in_production", "delivered"])
+            .order("created_at", desc=True)
+            .limit(10)
             .execute()
         )
+
         if projects_result.data:
             for project in projects_result.data:
                 if project.get("price_setup"):
                     pending_amount += project["price_setup"]
+
+                # Get latest version for this project
+                version_result = (
+                    supabase.table("website_versions")
+                    .select("version_number, created_at")
+                    .eq("project_id", project["id"])
+                    .order("version_number", desc=True)
+                    .limit(1)
+                    .execute()
+                )
+
+                latest_version = None
+                latest_version_date = None
+                if version_result.data:
+                    latest_version = version_result.data[0]["version_number"]
+                    latest_version_date = version_result.data[0]["created_at"]
+
+                pending_projects.append(
+                    PendingProjectInfo(
+                        id=project["id"],
+                        business_id=project["business_id"],
+                        business_name=business_names.get(project["business_id"], "Neznámá firma"),
+                        status=project["status"],
+                        package=project.get("package", "start"),
+                        latest_version_number=latest_version,
+                        latest_version_date=latest_version_date,
+                    )
+                )
+
+    # Get unpaid client invoices (invoices_issued with status issued or overdue)
+    unpaid_client_invoices: list[UnpaidClientInvoice] = []
+
+    if business_ids:
+        invoices_issued_result = (
+            supabase.table("invoices_issued")
+            .select("id, business_id, invoice_number, amount_total, due_date, status")
+            .in_("business_id", business_ids)
+            .in_("status", ["issued", "overdue"])
+            .order("due_date")
+            .limit(10)
+            .execute()
+        )
+
+        if invoices_issued_result.data:
+            for inv in invoices_issued_result.data:
+                due_date = datetime.fromisoformat(inv["due_date"]) if inv.get("due_date") else datetime.now()
+                days_overdue = (today - due_date.date()).days
+
+                unpaid_client_invoices.append(
+                    UnpaidClientInvoice(
+                        id=inv["id"],
+                        business_id=inv["business_id"],
+                        business_name=business_names.get(inv["business_id"], "Neznámá firma"),
+                        invoice_number=inv["invoice_number"],
+                        amount_total=inv["amount_total"],
+                        due_date=due_date,
+                        days_overdue=days_overdue,
+                    )
+                )
 
     # Get recent invoices (invoices_received = invoices from sellers for commissions)
     invoices_result = (
@@ -1092,13 +1170,12 @@ async def get_seller_dashboard(
     )
     recent_invoices = invoices_result.data if invoices_result.data else []
 
-    # Weekly rewards (simplified - last 4 weeks of commissions)
-    # For now, placeholder - would need proper date aggregation
+    # Weekly rewards (placeholder)
     weekly_rewards = [
-        {"week": "This week", "amount": 0},
-        {"week": "Last week", "amount": 0},
-        {"week": "2 weeks ago", "amount": 0},
-        {"week": "3 weeks ago", "amount": 0},
+        {"week": "Tento týden", "amount": 0},
+        {"week": "Minulý týden", "amount": 0},
+        {"week": "Před 2 týdny", "amount": 0},
+        {"week": "Před 3 týdny", "amount": 0},
     ]
 
     return SellerDashboard(
@@ -1106,6 +1183,10 @@ async def get_seller_dashboard(
         pending_projects_amount=pending_amount,
         recent_invoices=recent_invoices,
         weekly_rewards=weekly_rewards,
+        pending_projects=pending_projects,
+        unpaid_client_invoices=unpaid_client_invoices,
+        total_leads=total_leads,
+        follow_ups_today=follow_ups_today,
     )
 
 

@@ -2,11 +2,13 @@ from datetime import datetime
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
+from enum import Enum
 
 from ..database import get_supabase
 from ..dependencies import require_sales_or_admin, require_admin
 from ..schemas.auth import User
-from ..schemas.website import GenerateWebsiteRequest, GenerateWebsiteResponse
+from ..schemas.website import GenerateWebsiteRequest, GenerateWebsiteResponse, EnglishVersionMode
+from ..services.llm import process_translation_request, is_llm_available
 
 router = APIRouter(prefix="/website", tags=["website generation"])
 
@@ -16,6 +18,7 @@ class GenerateTestRequest(BaseModel):
     dry_run: bool = True  # Default je dry run
     business_name: str = "Test Firma s.r.o."
     business_type: str = "restaurace"
+    include_english: EnglishVersionMode = EnglishVersionMode.no
 
 
 class GenerateTestResponse(BaseModel):
@@ -23,6 +26,20 @@ class GenerateTestResponse(BaseModel):
     success: bool
     message: str
     html_content: str | None = None
+    html_content_en: str | None = None
+    translation_status: str | None = None  # pending/completed/client_required/unavailable
+    strings_for_client: list[str] | None = None  # Texty k překladu klientem
+
+
+@router.get("/translation-status")
+async def get_translation_status(
+    current_user: Annotated[User, Depends(require_admin)],
+):
+    """Zkontroluje dostupnost překladové služby (OpenAI API)."""
+    return {
+        "available": is_llm_available(),
+        "message": "OpenAI API je dostupné" if is_llm_available() else "OpenAI API klíč není nastaven"
+    }
 
 
 @router.post("/generate-test", response_model=GenerateTestResponse)
@@ -35,6 +52,11 @@ async def generate_test_website(
 
     Nevyžaduje projekt - slouží pro testování generátoru.
     Pokud dry_run=True (default), vrátí dummy HTML.
+
+    include_english:
+    - "no": Pouze česká verze
+    - "auto": Automatický překlad pomocí AI (vyžaduje OPENAI_API_KEY)
+    - "client": Vrátí seznam textů k překladu klientem
     """
 
     if data.dry_run:
@@ -156,10 +178,38 @@ async def generate_test_website(
 </body>
 </html>"""
 
+        # Zpracování anglické verze
+        html_content_en = None
+        translation_status = None
+        strings_for_client = None
+
+        if data.include_english != EnglishVersionMode.no:
+            translation_result = await process_translation_request(
+                html_content=dummy_html,
+                mode=data.include_english.value,
+                business_type=data.business_type
+            )
+
+            if data.include_english == EnglishVersionMode.auto:
+                if translation_result.success and translation_result.translated_content:
+                    html_content_en = translation_result.translated_content
+                    translation_status = "completed"
+                elif not is_llm_available():
+                    translation_status = "unavailable"
+                else:
+                    translation_status = "failed"
+
+            elif data.include_english == EnglishVersionMode.client:
+                strings_for_client = translation_result.strings_for_client
+                translation_status = "client_required"
+
         return GenerateTestResponse(
             success=True,
             message=f"DRY RUN: Testovací stránka pro '{data.business_name}' ({data.business_type})",
             html_content=dummy_html,
+            html_content_en=html_content_en,
+            translation_status=translation_status,
+            strings_for_client=strings_for_client,
         )
 
     # AI generování - zatím není implementováno
@@ -178,6 +228,11 @@ async def generate_website(
     Generate website for a project.
 
     If dry_run=True, returns dummy HTML instead of calling Claude API.
+
+    include_english:
+    - "no": Czech version only
+    - "auto": Auto-translate using AI (requires OPENAI_API_KEY)
+    - "client": Returns list of strings for client to translate
     """
     supabase = get_supabase()
 
@@ -270,10 +325,35 @@ async def generate_website(
 </body>
 </html>"""
 
+        # Zpracování anglické verze
+        html_content_en = None
+        translation_status = None
+
+        if data.include_english != EnglishVersionMode.no:
+            translation_result = await process_translation_request(
+                html_content=dummy_html,
+                mode=data.include_english.value,
+                business_type=None  # Mohli bychom načíst z businessu
+            )
+
+            if data.include_english == EnglishVersionMode.auto:
+                if translation_result.success and translation_result.translated_content:
+                    html_content_en = translation_result.translated_content
+                    translation_status = "completed"
+                elif not is_llm_available():
+                    translation_status = "unavailable"
+                else:
+                    translation_status = "failed"
+
+            elif data.include_english == EnglishVersionMode.client:
+                translation_status = "client_required"
+
         return GenerateWebsiteResponse(
             success=True,
             message="DRY RUN: Vygenerována testovací stránka",
             html_content=dummy_html,
+            html_content_en=html_content_en,
+            translation_status=translation_status,
         )
 
     # TODO: Implement actual Claude API call for production generation

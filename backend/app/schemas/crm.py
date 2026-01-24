@@ -148,11 +148,38 @@ class CRMStats(BaseModel):
     follow_ups_today: int
 
 
+class PendingProjectInfo(BaseModel):
+    """Rozpracovaný projekt pro dashboard."""
+    id: str
+    business_id: str
+    business_name: str
+    status: str
+    package: str
+    latest_version_number: int | None = None
+    latest_version_date: datetime | None = None
+
+
+class UnpaidClientInvoice(BaseModel):
+    """Nezaplacená faktura od klienta."""
+    id: str
+    business_id: str
+    business_name: str
+    invoice_number: str
+    amount_total: float
+    due_date: datetime
+    days_overdue: int  # záporné = dní do splatnosti, kladné = dní po splatnosti
+
+
 class SellerDashboard(BaseModel):
     available_balance: float
     pending_projects_amount: float
     recent_invoices: list[dict]
     weekly_rewards: list[dict]
+    # Nová pole pro redesign
+    pending_projects: list[PendingProjectInfo] = []
+    unpaid_client_invoices: list[UnpaidClientInvoice] = []
+    total_leads: int = 0
+    follow_ups_today: int = 0
 
 
 # Project schemas

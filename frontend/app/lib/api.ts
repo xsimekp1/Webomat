@@ -304,13 +304,27 @@ class ApiClient {
     return response.data;
   }
 
-  static async generateTestWebsite(dryRun: boolean = true, businessName?: string, businessType?: string) {
+  static async getSellerDashboard() {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/seller/dashboard`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async generateTestWebsite(
+    dryRun: boolean = true,
+    businessName?: string,
+    businessType?: string,
+    includeEnglish: 'no' | 'auto' | 'client' = 'no'
+  ) {
     const response = await axios.post(
       `${API_BASE_URL}/website/generate-test`,
       {
         dry_run: dryRun,
         business_name: businessName || 'Test Firma s.r.o.',
-        business_type: businessType || 'restaurace'
+        business_type: businessType || 'restaurace',
+        include_english: includeEnglish
       },
       { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
     );
