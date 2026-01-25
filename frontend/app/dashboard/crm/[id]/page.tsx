@@ -261,6 +261,19 @@ export default function BusinessDetailPage() {
     setSaving(true)
     setError('')
 
+    // Validate form data before sending
+    if (!projectForm.package) {
+      setError('Balíček je povinný')
+      setSaving(false)
+      return
+    }
+    
+    if (!projectForm.status) {
+      setError('Status je povinný')
+      setSaving(false)
+      return
+    }
+
     const data = {
       package: projectForm.package,
       status: projectForm.status,
@@ -292,7 +305,23 @@ export default function BusinessDetailPage() {
       console.error('Project save error:', err)
       const detail = err.response?.data?.detail || err.message || 'Neznámá chyba'
       const status = err.response?.status || 'N/A'
-      setError(`[${status}] ${detail}`)
+      
+      // Add more specific error handling
+      if (status === 400) {
+        if (detail.includes('package') || detail.includes('status')) {
+          setError('Chyba v datech formuláře. Zkontrolujte balíček a status projektu.')
+        } else if (detail.includes('access')) {
+          setError('Nemáte oprávnění vytvořit projekt pro tuto firmu.')
+        } else {
+          setError(`Chyba dat: ${detail}`)
+        }
+      } else if (status === 403) {
+        setError('Nemáte oprávnění vytvořit projekt pro tuto firmu.')
+      } else if (status === 500) {
+        setError('Chyba serveru. Zkuste to znovu později.')
+      } else {
+        setError(`[${status}] ${detail}`)
+      }
     } finally {
       setSaving(false)
     }

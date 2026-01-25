@@ -955,37 +955,45 @@ async def create_project(
 
     insert_data = {
         "business_id": business_id,
-        "package": data.package.value
-        if hasattr(data.package, "value")
-        else data.package,
-        "status": data.status.value if hasattr(data.status, "value") else data.status,
+        "package": str(data.package.value) if hasattr(data.package, "value") else str(data.package),
+        "status": str(data.status.value) if hasattr(data.status, "value") else str(data.status),
         "price_setup": data.price_setup,
         "price_monthly": data.price_monthly,
         "domain": data.domain,
         "notes": data.notes,
     }
 
-    result = supabase.table("website_projects").insert(insert_data).execute()
+    try:
+        result = supabase.table("website_projects").insert(insert_data).execute()
 
-    if not result.data:
+        if not result.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Nepodařilo se vytvořit projekt",
+            )
+
+        row = result.data[0]
+        return ProjectResponse(
+            id=row["id"],
+            business_id=row["business_id"],
+            package=row.get("package", "start"),
+            status=row.get("status", "offer"),
+            price_setup=row.get("price_setup"),
+            price_monthly=row.get("price_monthly"),
+            domain=row.get("domain"),
+            notes=row.get("notes"),
+            created_at=row.get("created_at"),
+            updated_at=row.get("updated_at"),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Log the actual error for debugging
+        print(f"Project creation error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Nepodařilo se vytvořit projekt",
+            detail=f"Chyba při vytváření projektu: {str(e)}"
         )
-
-    row = result.data[0]
-    return ProjectResponse(
-        id=row["id"],
-        business_id=row["business_id"],
-        package=row.get("package", "start"),
-        status=row.get("status", "offer"),
-        price_setup=row.get("price_setup"),
-        price_monthly=row.get("price_monthly"),
-        domain=row.get("domain"),
-        notes=row.get("notes"),
-        created_at=row.get("created_at"),
-        updated_at=row.get("updated_at"),
-    )
 
 
 @router.get("/sellers", response_model=list[dict])
