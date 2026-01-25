@@ -1089,7 +1089,7 @@ async def get_seller_dashboard(
             supabase.table("website_projects")
             .select("id, business_id, status, package, price_setup, created_at")
             .in_("business_id", business_ids)
-            .in_("status", ["won", "in_production", "delivered"])
+            .in_("status", ["offer", "won", "in_production", "delivered"])
             .order("created_at", desc=True)
             .limit(10)
             .execute()
