@@ -244,6 +244,35 @@ async def toggle_user_active(
     user_info = result.data[0]
     new_status = not user_info.get("is_active", True)
 
+    # If deactivating, check for unpaid balance
+    if not new_status:
+        # Calculate balance from ledger
+        earned_result = (
+            supabase.table("ledger_entries")
+            .select("amount")
+            .eq("seller_id", user_id)
+            .eq("entry_type", "commission_earned")
+            .execute()
+        )
+        total_earned = sum(r["amount"] for r in earned_result.data) if earned_result.data else 0
+
+        payout_result = (
+            supabase.table("ledger_entries")
+            .select("amount")
+            .eq("seller_id", user_id)
+            .in_("entry_type", ["payout_reserved", "payout_paid"])
+            .execute()
+        )
+        total_payouts = sum(r["amount"] for r in payout_result.data) if payout_result.data else 0
+
+        balance = total_earned - total_payouts
+
+        if balance > 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Nelze deaktivovat obchodníka s nevyplaceným zůstatkem {balance:.0f} Kč. Nejprve vyplaťte provize."
+            )
+
     # Update
     supabase.table("sellers").update({
         "is_active": new_status

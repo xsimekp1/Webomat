@@ -450,6 +450,33 @@ Endpoint: `GET /crm/businesses/check-duplicate?phone=&website=&name=`
 - Umožňuje testovat printscreen a thumbnail funkcionality bez nákladů
 - UI: Modal s možností výběru mezi DRY RUN a AI generováním (AI zatím disabled)
 
+## Anglická verze webu & LLM překlady
+
+**Parametr:** `include_english` v endpointech `/website/generate` a `/website/generate-test`
+
+**Hodnoty:**
+- `no` - Pouze česká verze (default)
+- `auto` - Automatický překlad pomocí OpenAI API
+- `client` - Vrátí seznam textů k překladu klientem
+
+**Backend služba:** `backend/app/services/llm.py`
+
+**Požadované env proměnné pro překlad:**
+```bash
+OPENAI_API_KEY=sk-...  # OpenAI API klíč
+```
+
+**Endpoint pro kontrolu dostupnosti:**
+```bash
+GET /website/translation-status  # Vrátí {"available": true/false}
+```
+
+**Response obsahuje:**
+- `html_content` - Česká verze HTML
+- `html_content_en` - Anglická verze (pokud include_english=auto a API dostupné)
+- `translation_status` - completed/unavailable/failed/client_required
+- `strings_for_client` - Seznam textů k překladu (pokud include_english=client)
+
 ## Deployment & Online Testing
 
 ### 🚀 Quick Deploy Commands (Updated)
@@ -511,3 +538,65 @@ npm run mobile:build:prod   # Production build
 ## Project Language
 
 Primary documentation is in Czech. The project serves Czech market businesses.
+
+## Unit Testing (Backend)
+
+### Spuštění testů
+
+```bash
+cd backend
+pip install -r requirements.txt  # Nainstaluje pytest, pytest-asyncio, httpx
+pytest                           # Spustí všechny testy
+pytest -v                        # Verbose výstup
+pytest tests/test_sales_pipeline.py  # Jen konkrétní soubor
+pytest -k "test_create_business"     # Jen testy matching pattern
+```
+
+### Struktura testů
+
+```
+backend/tests/
+├── __init__.py
+├── conftest.py          # Fixtures (mock Supabase, mock users, sample data)
+└── test_sales_pipeline.py  # Testy pro sales flow
+```
+
+### Co je pokryto (Sales Pipeline)
+
+| Oblast | Testy | Soubor |
+|--------|-------|--------|
+| Vytvoření businessu | ✅ Úspěšné vytvoření, validace, minimální data | `test_sales_pipeline.py` |
+| Deduplikace | ✅ Telefon, web, normalizace | `test_sales_pipeline.py` |
+| Projekty | ✅ Všechny balíčky, všechny statusy | `test_sales_pipeline.py` |
+| Website verze | ✅ První verze, inkrementace čísla | `test_sales_pipeline.py` |
+| Dry run generování | ✅ HTML struktura, styling | `test_sales_pipeline.py` |
+
+### TODO - Další testy k doplnění
+
+**Vysoká priorita:**
+- [ ] Autentizace (JWT, login/logout, password change)
+- [ ] RBAC (admin vs sales přístup)
+- [ ] Ledger výpočty (balance obchodníka)
+- [ ] Admin operace (reset password, toggle active)
+
+**Střední priorita:**
+- [ ] CRM aktivity (vytvoření, status update)
+- [ ] Dashboard statistiky
+- [ ] List/filter businessů (pagination, search)
+- [ ] Update business/project
+
+**Nižší priorita:**
+- [ ] Upload/delete logo
+- [ ] ARES lookup
+- [ ] Audit log
+
+### Fixtures v conftest.py
+
+- `mock_supabase` - Mockovaný Supabase klient
+- `sample_seller` - Testovací obchodník (role: sales)
+- `sample_admin` - Testovací admin
+- `sample_business` - Testovací lead/firma
+- `sample_project` - Testovací projekt
+- `sample_version` - Testovací website verze
+- `app_client` - FastAPI TestClient s sales rolí
+- `admin_client` - FastAPI TestClient s admin rolí

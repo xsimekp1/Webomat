@@ -113,6 +113,9 @@ async def get_user_by_id(user_id: str) -> User | None:
         notes=seller.get("notes"),
         avatar_url=seller.get("avatar_url"),
         must_change_password=seller.get("must_change_password", False),
+        onboarded_at=seller.get("onboarded_at"),
+        bank_account=seller.get("bank_account"),
+        bank_account_iban=seller.get("bank_account_iban"),
         created_at=seller.get("created_at")
     )
 
