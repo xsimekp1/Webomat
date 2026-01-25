@@ -253,13 +253,16 @@ export default function DashboardPage() {
         )}
 
         {/* Empty state for projects */}
-        {sellerData?.pending_projects?.length === 0 && (
+        {(!sellerData?.pending_projects || sellerData.pending_projects.length === 0) && (
           <section className="dashboard-section">
             <div className="section-header">
               <h3>🔧 Rozpracované projekty</h3>
             </div>
             <div className="empty-state">
               <p>Zatím nemáte žádné rozpracované projekty.</p>
+              <small style={{ display: 'block', marginTop: '8px', color: '#94a3b8' }}>
+                Po uzavření dealu vytvořte projekt a objeví se zde
+              </small>
               <button className="btn-primary" onClick={() => router.push('/dashboard/crm')}>
                 Přidat nový lead
               </button>
