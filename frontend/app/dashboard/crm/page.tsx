@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
 import ApiClient from '../../lib/api'
-import { toast } from 'react-hot-toast'
+
 
 interface Business {
   id: string
@@ -74,7 +74,6 @@ export default function CRMPage() {
     next_follow_up_at: '',
   })
   const [saving, setSaving] = useState(false)
-  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
