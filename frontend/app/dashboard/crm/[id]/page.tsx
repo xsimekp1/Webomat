@@ -276,9 +276,18 @@ export default function BusinessDetailPage() {
       } else {
         await ApiClient.createProject(businessId, data)
       }
+      
+      // Close modal immediately after successful save
       setShowProjectModal(false)
       setEditingProject(null)
-      fetchData()
+      
+      // Refresh data but don't let business become null if refresh fails
+      try {
+        fetchData()
+      } catch (refreshErr) {
+        console.error('Refresh failed after project save:', refreshErr)
+        // Don't show error - project was saved successfully
+      }
     } catch (err: any) {
       console.error('Project save error:', err)
       const detail = err.response?.data?.detail || err.message || 'Neznámá chyba'
