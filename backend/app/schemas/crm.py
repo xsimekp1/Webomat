@@ -104,8 +104,8 @@ class ActivityCreate(BaseModel):
     activity_type: ActivityType
     description: str
     outcome: str | None = None
-    duration_minutes: int | None = None
     new_status: CRMStatus | None = None
+    next_follow_up_at: datetime | None = None
 
 
 class ActivityResponse(BaseModel):

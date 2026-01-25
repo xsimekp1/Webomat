@@ -109,7 +109,6 @@ export default function BusinessDetailPage() {
     description: '',
     outcome: '',
     new_status: '',
-    next_follow_up_at: '',
   })
   const [saving, setSaving] = useState(false)
 
@@ -176,13 +175,12 @@ export default function BusinessDetailPage() {
     setSaving(true)
     setError('')
 
-      try {
+    try {
       await ApiClient.createActivity(businessId, {
         activity_type: activityForm.activity_type,
         description: activityForm.description,
         outcome: activityForm.outcome || null,
         new_status: activityForm.new_status || null,
-        next_follow_up_at: activityForm.next_follow_up_at || null,
       })
 
       setShowActivityModal(false)
@@ -702,25 +700,6 @@ export default function BusinessDetailPage() {
                 onChange={(e) => setActivityForm({ ...activityForm, outcome: e.target.value })}
                 placeholder="Volat zítra, poslat nabídku..."
               />
-            </div>
-
-            <div className="form-group">
-              <label>Další follow-up</label>
-              <input
-                type="datetime-local"
-                value={activityForm.next_follow_up_at}
-                onChange={(e) => {
-                  const selectedDate = new Date(e.target.value);
-                  const now = new Date();
-                  if (selectedDate >= now) {
-                    setActivityForm({ ...activityForm, next_follow_up_at: e.target.value });
-                  }
-                }}
-                min={new Date().toISOString().slice(0, 16)}
-              />
-              <small style={{ color: '#94a3b8', fontSize: '12px' }}>
-                Nelze nastavit datum v minulosti
-              </small>
             </div>
 
             <div className="form-group">

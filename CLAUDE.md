@@ -301,7 +301,30 @@ Key MVP patterns:
 | notes | text? | Poznámky |
 | started_at | datetime? | Zahájeno |
 | delivered_at | datetime? | Dodáno |
+| versions_count | integer? | Počet verzí webu |
+| latest_version_id | uuid? | FK na nejnovější verzi |
 | created_at | datetime | Vytvořeno |
+| updated_at | datetime | Upraveno |
+
+### Tabulka `website_versions` (verze webů)
+
+| Sloupec | Typ | Popis |
+|---------|-----|-------|
+| id | uuid | Primární klíč |
+| project_id | uuid | FK na website_projects |
+| version_number | integer | Číslo verze (1, 2, 3...) |
+| html_content | text | HTML kód verze |
+| html_content_en | text? | Anglická verze HTML |
+| thumbnail_url | string? | URL náhledu |
+| printscreen_url | string? | URL printscreenu |
+| status | string | Status (draft/published/archived) |
+| title | string? | Titulek verze |
+| description | text? | Popis verze |
+| changes_summary | text? | Souhrn změn |
+| is_active | boolean | Je aktivní verze |
+| published_at | datetime? | Publikováno kdy |
+| created_at | datetime | Vytvořeno |
+| created_by | uuid? | Kdo vytvořil (FK na sellers) |
 | updated_at | datetime | Upraveno |
 
 ### CRM Status hodnoty

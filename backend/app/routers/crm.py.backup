@@ -778,17 +778,14 @@ async def create_activity(
             detail="Failed to create activity",
         )
 
-    # Update business status and follow-up if requested
-    business_update_data = {}
+    # Update business status if requested
     if data.new_status:
-        business_update_data["status_crm"] = data.new_status.value
-    
-    if data.next_follow_up_at:
-        business_update_data["next_follow_up_at"] = data.next_follow_up_at.isoformat()
-    
-    if business_update_data:
-        business_update_data["updated_at"] = datetime.utcnow().isoformat()
-        supabase.table("businesses").update(business_update_data).eq("id", business_id).execute()
+        supabase.table("businesses").update(
+            {
+                "status_crm": data.new_status.value,
+                "updated_at": datetime.utcnow().isoformat(),
+            }
+        ).eq("id", business_id).execute()
 
     row = result.data[0]
     return ActivityResponse(
@@ -957,7 +954,6 @@ async def create_project(
     await get_business(business_id, current_user)
 
     insert_data = {
-        "seller_id": current_user.id,
         "business_id": business_id,
         "package": str(data.package.value) if hasattr(data.package, "value") else str(data.package),
         "status": str(data.status.value) if hasattr(data.status, "value") else str(data.status),
@@ -987,7 +983,6 @@ async def create_project(
             domain=row.get("domain"),
             notes=row.get("notes"),
             created_at=row.get("created_at"),
-            seller_id=row.get("seller_id"),
             updated_at=row.get("updated_at"),
         )
     except HTTPException:
@@ -1093,7 +1088,7 @@ async def get_seller_dashboard(
         and b.get("status_crm") not in ["won", "lost", "dnc"]
     )
 
-    # Get pending projects (offer, won, in_production - not live/cancelled/delivered)
+    # Get pending projects (won, in_production, delivered - not live/cancelled)
     pending_projects: list[PendingProjectInfo] = []
     pending_amount = 0
 
@@ -1102,7 +1097,7 @@ async def get_seller_dashboard(
             supabase.table("website_projects")
             .select("id, business_id, status, package, price_setup, created_at")
             .in_("business_id", business_ids)
-            .in_("status", ["offer", "won", "in_production"])
+            .in_("status", ["offer", "won", "in_production", "delivered"])
             .order("created_at", desc=True)
             .limit(10)
             .execute()
