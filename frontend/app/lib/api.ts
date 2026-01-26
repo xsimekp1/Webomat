@@ -33,7 +33,7 @@ class ApiClient {
   }
 
   static async updateUserProfile(userData: any) {
-    const response = await axios.put(
+    const response = await axios.post(
       `${API_BASE_URL}/users/me`,
       userData,
       { headers: ApiClient.getAuthHeaders() }

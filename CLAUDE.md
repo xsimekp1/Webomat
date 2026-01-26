@@ -581,8 +581,35 @@ pytest -k "test_create_business"     # Jen testy matching pattern
 backend/tests/
 ├── __init__.py
 ├── conftest.py          # Fixtures (mock Supabase, mock users, sample data)
-└── test_sales_pipeline.py  # Testy pro sales flow
+├── test_sales_pipeline.py  # Testy pro sales flow
+├── test_crm_activities.py  # Testy pro CRM aktivity
+└── test_seller_dashboard.py # Testy pro dashboard statistiky
 ```
+
+### Nově implementované funkce
+
+**Payment Reminder System (2025-01-26):**
+- Backend endpoint: `POST /crm/invoices/{id}/generate-reminder` - generování textu upomínky
+- Backend endpoint: `POST /crm/invoices/{id}/send-reminder` - odeslání a vytvoření aktivity
+- Automatické vytvoření follow-up aktivity s konfigurovatelným počtem dní (default 3)
+- Frontend modal pro zobrazení a odeslání upomínky
+- Generovaný text obsahuje: číslo faktury, částka, datum splatnosti, jméno klienta, doménu
+
+**Profile Management Fix (2025-01-26):**
+- Opraveno ukládání jména a příjmení přes backend API
+- Změněn frontend z přímého Supabase přístupu na `PUT /users/me` endpoint
+- Opravena metoda z `updateUserProfile` na PUT namísto POST
+
+**Pending Projects Filter (2025-01-26):**
+- Opraven filtr rozpracovaných projektů - odebrány projekty ve stavu "delivered"
+- Zobrazeny pouze projekty se statusem: "offer", "won", "in_production"
+- Zlepšena přehlednost dashboardu - relevantní projekty k práci
+
+**Activity Follow-up Management (2025-01-26):**
+- Přidáno pole `next_follow_up_at` do formuláře pro vytvoření aktivity
+- Validace proti nastavení data v minulosti
+- Backend aktualizován pro automatickou aktualizaci `next_follow_up_at` v businesses tabulce
+- Vylepšeno UI s datumovým polem a validací
 
 ### Co je pokryto (Sales Pipeline)
 

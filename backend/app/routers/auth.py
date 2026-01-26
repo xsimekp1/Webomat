@@ -119,7 +119,7 @@ async def get_current_user_info(
     )
 
 
-@router.put("/users/me", response_model=UserResponse)
+@router.post("/users/me", response_model=UserResponse)
 async def update_current_user(
     update_data: UserUpdate,
     current_user: Annotated[User, Depends(get_current_active_user)]

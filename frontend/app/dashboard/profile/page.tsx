@@ -96,8 +96,6 @@ export default function ProfilePage() {
         bank_account: profile.bank_account
       })
 
-      if (error) throw error
-
       // Refresh user data in AuthContext
       await refreshUser()
 
