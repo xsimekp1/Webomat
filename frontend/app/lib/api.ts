@@ -33,7 +33,7 @@ class ApiClient {
   }
 
   static async updateUserProfile(userData: any) {
-    const response = await axios.post(
+    const response = await axios.put(
       `${API_BASE_URL}/users/me`,
       userData,
       { headers: ApiClient.getAuthHeaders() }
@@ -54,6 +54,25 @@ class ApiClient {
           'Content-Type': 'multipart/form-data'
         }
       }
+    );
+    return response.data;
+  }
+
+  // Invoice reminders
+  static async generatePaymentReminder(invoiceId: string) {
+    const response = await axios.post(
+      `${API_BASE_URL}/crm/invoices/${invoiceId}/generate-reminder`,
+      {},
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async sendPaymentReminder(invoiceId: string) {
+    const response = await axios.post(
+      `${API_BASE_URL}/crm/invoices/${invoiceId}/send-reminder`,
+      {},
+      { headers: ApiClient.getAuthHeaders() }
     );
     return response.data;
   }

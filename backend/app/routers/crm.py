@@ -1505,6 +1505,154 @@ async def list_project_assets(
     return assets
 
 
+# Invoice reminder generation
+@router.post("/invoices/{invoice_id}/generate-reminder")
+async def generate_payment_reminder(
+    invoice_id: str,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """Generate payment reminder text for an unpaid invoice."""
+    supabase = get_supabase()
+    
+    # Get invoice details
+    invoice_result = (
+        supabase.table("invoices_issued")
+        .select("*")
+        .eq("id", invoice_id)
+        .single()
+        .execute()
+    )
+    
+    if not invoice_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Faktura nebyla nalezena"
+        )
+    
+    invoice = invoice_result.data
+    
+    # Get business details
+    business_result = (
+        supabase.table("businesses")
+        .select("name, contact_person")
+        .eq("id", invoice["business_id"])
+        .single()
+        .execute()
+    )
+    
+    if not business_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Klient nebyl nalezen"
+        )
+    
+    business = business_result.data
+    
+    # Get project details if available
+    project = None
+    if invoice.get("project_id"):
+        project_result = (
+            supabase.table("website_projects")
+            .select("domain, delivered_at")
+            .eq("id", invoice["project_id"])
+            .single()
+            .execute()
+        )
+        if project_result.data:
+            project = project_result.data
+    
+    # Generate reminder text
+    business_name = business.get("name", "")
+    domain = project.get("domain", "") if project else ""
+    delivered_date = project.get("delivered_at", "") if project else ""
+    due_date = invoice.get("due_date", "")
+    invoice_number = invoice.get("invoice_number", "")
+    amount_total = invoice.get("amount_total", 0)
+    
+    reminder_text = f"""
+Dobrý den,
+
+tímto Vám zasíláme upomínku na neuhrazenou fakturu.
+
+Faktura číslo: {invoice_number}
+Částka k úhradě: {amount_total} Kč
+Datum splatnosti: {due_date}
+
+Informace o našich službách:
+Klient: {business_name}
+{"Doména: " + domain if domain else "Nepřiděno"}
+{"Datum doručení: " + delivered_date[:10] if delivered_date else "Probíhající"}
+
+V případě, že fakturu již uhradil(a) jste, považujte tuto zprávu za bezpředmětnou.
+
+V případě dotazů nás kontaktujte na email nebo telefon.
+
+S pozdravem,
+Webomat team
+    """.strip()
+    
+    return {
+        "invoice_id": invoice_id,
+        "reminder_text": reminder_text,
+        "business_name": business_name,
+        "domain": domain,
+        "due_date": due_date,
+        "amount_total": amount_total,
+        "invoice_number": invoice_number
+    }
+
+
+@router.post("/invoices/{invoice_id}/send-reminder")
+async def send_payment_reminder(
+    invoice_id: str,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """Send payment reminder and create follow-up activity."""
+    supabase = get_supabase()
+    
+    # Generate reminder
+    reminder_data = await generate_payment_reminder(invoice_id, current_user)
+    
+    # Get follow-up settings (default 3 days)
+    settings_result = (
+        supabase.table("platform_settings")
+        .select("value")
+        .eq("key", "follow_up_reminder_days")
+        .single()
+        .execute()
+    )
+    
+    follow_up_days = 3  # Default
+    if settings_result.data and settings_result.data.get("value"):
+        follow_up_days = settings_result.data["value"]
+    
+    # Create follow-up activity
+    from datetime import datetime, timedelta
+    follow_up_date = (datetime.now() + timedelta(days=follow_up_days)).isoformat()
+    
+    activity_data = {
+        "business_id": reminder_data["business_id"],
+        "type": "email",
+        "content": f"Odeslána upomínka na fakturu {reminder_data['invoice_number']}",
+        "outcome": f"Follow-up za {follow_up_days} dní",
+        "occurred_at": datetime.now().isoformat()
+    }
+    
+    supabase.table("crm_activities").insert(activity_data).execute()
+    
+    # Update business follow-up
+    supabase.table("businesses").update({
+        "next_follow_up_at": follow_up_date,
+        "updated_at": datetime.now().isoformat()
+    }).eq("id", reminder_data["business_id"]).execute()
+    
+    return {
+        "message": "Upomínka byla úspěšně odeslána",
+        "follow_up_date": follow_up_date,
+        "reminder_text": reminder_data["reminder_text"]
+    }
+
+
 @router.post(
     "/projects/{project_id}/assets",
     response_model=ProjectAssetResponse,

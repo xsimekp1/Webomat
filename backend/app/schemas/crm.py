@@ -285,6 +285,30 @@ class ProjectAssetResponse(BaseModel):
     uploaded_by: str | None = None
 
 
+# Ledger entries for account movements
+class LedgerEntryResponse(BaseModel):
+    id: str
+    entry_type: str
+    amount: float
+    description: str | None = None
+    notes: str | None = None
+    created_at: datetime | None = None
+    related_project_id: str | None = None
+    related_business_id: str | None = None
+
+
+class WeeklyRewardSummary(BaseModel):
+    week: str
+    amount: float
+    count: int
+
+
+class BalancePageResponse(BaseModel):
+    available_balance: float
+    ledger_entries: list[LedgerEntryResponse]
+    weekly_rewards: list[WeeklyRewardSummary]
+
+
 # ARES API schemas
 class ARESAddress(BaseModel):
     nazevStatu: str | None = None

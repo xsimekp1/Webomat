@@ -67,6 +67,11 @@ export default function DashboardPage() {
   const [generatedHtml, setGeneratedHtml] = useState<string | null>(null)
   const [generatorError, setGeneratorError] = useState('')
   const [includeEnglish, setIncludeEnglish] = useState<'no' | 'auto' | 'client'>('no')
+  
+  // Reminder modal state
+  const [showReminderModal, setShowReminderModal] = useState(false)
+  const [reminderData, setReminderData] = useState<any>(null)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -109,6 +114,28 @@ export default function DashboardPage() {
       setGeneratorError(err.response?.data?.detail || 'Chyba při generování')
     } finally {
       setGenerating(false)
+    }
+  }
+
+  // Reminder generation
+  const handleGenerateReminder = async (invoiceId: string) => {
+    try {
+      const reminder = await ApiClient.generatePaymentReminder(invoiceId)
+      setShowReminderModal(true)
+      setReminderData(reminder)
+    } catch (err: any) {
+      setError('Nepodařilo se vygenerovat upomínku')
+    }
+  }
+
+  const handleSendReminder = async (invoiceId: string) => {
+    try {
+      await ApiClient.sendPaymentReminder(invoiceId)
+      setShowReminderModal(false)
+      setReminderData(null)
+      fetchSellerData()
+    } catch (err: any) {
+      setError('Nepodařilo se odeslat upomínku')
     }
   }
 
@@ -295,6 +322,16 @@ export default function DashboardPage() {
                       <span className="status-upcoming">za {Math.abs(invoice.days_overdue)} dní</span>
                     )}
                   </div>
+                  <button 
+                    className="btn-reminder"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleGenerateReminder(invoice.id)
+                    }}
+                    title="Generovat upomínku"
+                  >
+                    📧
+                  </button>
                 </div>
               ))}
             </div>
@@ -1241,11 +1278,116 @@ export default function DashboardPage() {
             gap: 8px;
           }
 
-          .mode-selector {
+        .mode-selector {
             flex-direction: column;
           }
         }
+
+        .reminder-modal {
+          max-width: 600px;
+        }
+
+        .reminder-info {
+          display: grid;
+          grid-template-columns: 120px 1fr;
+          gap: 8px;
+          margin-bottom: 20px;
+        }
+
+        .reminder-info .label {
+          font-weight: 600;
+          color: #475569;
+        }
+
+        .reminder-info .value {
+          color: #1e293b;
+        }
+
+        .reminder-text {
+          margin-top: 20px;
+        }
+
+        .reminder-text h4 {
+          margin-bottom: 10px;
+          color: #374151;
+        }
+
+        .reminder-text textarea {
+          width: 100%;
+          border: 1px solid #d1d5db;
+          padding: 12px;
+          border-radius: 8px;
+          font-family: monospace;
+          font-size: 13px;
+          line-height: 1.4;
+          resize: vertical;
+        }
+
+        .btn-reminder {
+          background: #fbbf24;
+          color: #78350f;
+          border: none;
+          padding: 6px 8px;
+          border-radius: 4px;
+          cursor: pointer;
+          margin-left: 8px;
+        }
+
+        .btn-reminder:hover {
+          background: #f59e0b;
+        }
       `}</style>
+
+      {/* Reminder Modal */}
+      {showReminderModal && reminderData && (
+        <div className="modal-overlay" onClick={() => setShowReminderModal(false)}>
+          <div className="modal-content reminder-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>📧 Upomínka na platbu</h3>
+              <button className="modal-close" onClick={() => setShowReminderModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="reminder-info">
+                <div className="info-row">
+                  <span className="label">Klient:</span>
+                  <span className="value">{reminderData.business_name}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">Faktura:</span>
+                  <span className="value">{reminderData.invoice_number}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">Částka:</span>
+                  <span className="value">{formatCurrency(reminderData.amount_total)}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">Splatnost:</span>
+                  <span className="value">{reminderData.due_date}</span>
+                </div>
+              </div>
+              <div className="reminder-text">
+                <h4>Text upomínky:</h4>
+                <textarea
+                  value={reminderData.reminder_text}
+                  readOnly
+                  rows={15}
+                />
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setShowReminderModal(false)}>
+                Zrušit
+              </button>
+              <button 
+                className="btn-primary" 
+                onClick={() => handleSendReminder(reminderData.invoice_id)}
+              >
+                Odeslat upomínku
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
