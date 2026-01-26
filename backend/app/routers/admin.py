@@ -1,6 +1,8 @@
 import secrets
 import string
+from datetime import datetime, timedelta
 from typing import Annotated
+from pydantic import BaseModel
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -9,6 +11,100 @@ from ..dependencies import require_admin, get_password_hash
 from ..schemas.auth import User, UserListItem, AdminPasswordReset
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+class WeeklyInvoice(BaseModel):
+    """Týdenní souhrn fakturace."""
+    week_start: str  # ISO date
+    week_end: str
+    total_amount: float
+    invoice_count: int
+
+
+class AdminDashboardStats(BaseModel):
+    """Statistiky pro admin dashboard."""
+    projects_in_production: int
+    projects_delivered: int
+    projects_won: int
+    total_active_projects: int
+    weekly_invoices: list[WeeklyInvoice]  # 12 týdnů (3 měsíce)
+
+
+@router.get("/dashboard/stats", response_model=AdminDashboardStats)
+async def get_admin_dashboard_stats(
+    current_user: Annotated[User, Depends(require_admin)]
+):
+    """
+    Statistiky pro admin dashboard.
+
+    Vrací:
+    - Počet rozpracovaných projektů (won, in_production, delivered)
+    - Týdenní fakturace za poslední 3 měsíce
+    """
+    supabase = get_supabase()
+
+    # Počty projektů podle statusu
+    projects_result = supabase.table("website_projects").select("status").execute()
+
+    projects_won = 0
+    projects_in_production = 0
+    projects_delivered = 0
+
+    for p in projects_result.data or []:
+        status = p.get("status")
+        if status == "won":
+            projects_won += 1
+        elif status == "in_production":
+            projects_in_production += 1
+        elif status == "delivered":
+            projects_delivered += 1
+
+    total_active = projects_won + projects_in_production + projects_delivered
+
+    # Týdenní fakturace za poslední 12 týdnů (3 měsíce)
+    weekly_invoices = []
+    today = datetime.utcnow().date()
+
+    # Začátek aktuálního týdne (pondělí)
+    current_week_start = today - timedelta(days=today.weekday())
+
+    for i in range(12):  # 12 týdnů zpětně
+        week_start = current_week_start - timedelta(weeks=i)
+        week_end = week_start + timedelta(days=6)
+
+        # Dotaz na faktury v tomto týdnu
+        invoices_result = (
+            supabase.table("invoices_issued")
+            .select("amount_total")
+            .gte("issue_date", week_start.isoformat())
+            .lte("issue_date", week_end.isoformat())
+            .in_("status", ["issued", "paid"])
+            .execute()
+        )
+
+        total_amount = sum(
+            inv.get("amount_total", 0) or 0
+            for inv in (invoices_result.data or [])
+        )
+        invoice_count = len(invoices_result.data or [])
+
+        weekly_invoices.append(WeeklyInvoice(
+            week_start=week_start.isoformat(),
+            week_end=week_end.isoformat(),
+            total_amount=total_amount,
+            invoice_count=invoice_count,
+        ))
+
+    # Obrátit pořadí - od nejstaršího po nejnovější
+    weekly_invoices.reverse()
+
+    return AdminDashboardStats(
+        projects_in_production=projects_in_production,
+        projects_delivered=projects_delivered,
+        projects_won=projects_won,
+        total_active_projects=total_active,
+        weekly_invoices=weekly_invoices,
+    )
 
 
 def generate_temp_password(length: int = 12) -> str:
@@ -147,6 +243,35 @@ async def toggle_user_active(
 
     user_info = result.data[0]
     new_status = not user_info.get("is_active", True)
+
+    # If deactivating, check for unpaid balance
+    if not new_status:
+        # Calculate balance from ledger
+        earned_result = (
+            supabase.table("ledger_entries")
+            .select("amount")
+            .eq("seller_id", user_id)
+            .eq("entry_type", "commission_earned")
+            .execute()
+        )
+        total_earned = sum(r["amount"] for r in earned_result.data) if earned_result.data else 0
+
+        payout_result = (
+            supabase.table("ledger_entries")
+            .select("amount")
+            .eq("seller_id", user_id)
+            .in_("entry_type", ["payout_reserved", "payout_paid"])
+            .execute()
+        )
+        total_payouts = sum(r["amount"] for r in payout_result.data) if payout_result.data else 0
+
+        balance = total_earned - total_payouts
+
+        if balance > 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Nelze deaktivovat obchodníka s nevyplaceným zůstatkem {balance:.0f} Kč. Nejprve vyplaťte provize."
+            )
 
     # Update
     supabase.table("sellers").update({

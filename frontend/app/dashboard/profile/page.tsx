@@ -87,18 +87,14 @@ export default function ProfilePage() {
     setMessage(null)
 
     try {
-      const { error } = await supabase
-        .from('sellers')
-        .update({
-          first_name: profile.first_name,
-          last_name: profile.last_name,
-          email: profile.email,
-          phone: profile.phone,
-          bank_account: profile.bank_account
-        })
-        .eq('id', user.id)
-
-      if (error) throw error
+      // Update profile through backend API
+      await ApiClient.updateUserProfile({
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        email: profile.email,
+        phone: profile.phone,
+        bank_account: profile.bank_account
+      })
 
       // Refresh user data in AuthContext
       await refreshUser()

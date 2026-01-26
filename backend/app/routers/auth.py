@@ -20,7 +20,9 @@ from ..schemas.auth import (
     PasswordChange,
     UserUpdate,
     LoginRequest,
+    OnboardingComplete,
 )
+from datetime import datetime
 from ..audit import log_login, log_login_failed, log_entity_change
 
 router = APIRouter(tags=["auth"])
@@ -109,11 +111,15 @@ async def get_current_user_info(
         is_active=current_user.is_active,
         phone=current_user.phone,
         avatar_url=current_user.avatar_url,
-        must_change_password=current_user.must_change_password
+        must_change_password=current_user.must_change_password,
+        onboarded_at=current_user.onboarded_at,
+        bank_account=current_user.bank_account,
+        bank_account_iban=current_user.bank_account_iban,
+        needs_onboarding=current_user.needs_onboarding
     )
 
 
-@router.put("/users/me", response_model=UserResponse)
+@router.post("/users/me", response_model=UserResponse)
 async def update_current_user(
     update_data: UserUpdate,
     current_user: Annotated[User, Depends(get_current_active_user)]
@@ -130,6 +136,10 @@ async def update_current_user(
         update_dict["email"] = update_data.email
     if update_data.phone is not None:
         update_dict["phone"] = update_data.phone
+    if update_data.bank_account is not None:
+        update_dict["bank_account"] = update_data.bank_account
+    if update_data.bank_account_iban is not None:
+        update_dict["bank_account_iban"] = update_data.bank_account_iban
 
     if not update_dict:
         raise HTTPException(
@@ -155,7 +165,12 @@ async def update_current_user(
         role=updated.get("role", "sales"),
         is_active=updated.get("is_active", True),
         phone=updated.get("phone"),
-        must_change_password=updated.get("must_change_password", False)
+        avatar_url=updated.get("avatar_url"),
+        must_change_password=updated.get("must_change_password", False),
+        onboarded_at=updated.get("onboarded_at"),
+        bank_account=updated.get("bank_account"),
+        bank_account_iban=updated.get("bank_account_iban"),
+        needs_onboarding=updated.get("onboarded_at") is None
     )
 
 
@@ -210,3 +225,63 @@ async def change_password(
     }).eq("id", current_user.id).execute()
 
     return {"message": "Heslo bylo úspěšně změněno"}
+
+
+@router.post("/users/me/onboarding", response_model=UserResponse)
+async def complete_onboarding(
+    data: OnboardingComplete,
+    current_user: Annotated[User, Depends(get_current_active_user)]
+):
+    """
+    Complete user onboarding.
+
+    Required fields: first_name, last_name, email, phone
+    At least one of bank_account or bank_account_iban must be provided.
+    """
+    # Validate bank account
+    if not data.bank_account and not data.bank_account_iban:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Musíte vyplnit číslo účtu nebo IBAN pro výplatu provizí"
+        )
+
+    supabase = get_supabase()
+
+    update_dict = {
+        "first_name": data.first_name,
+        "last_name": data.last_name,
+        "email": data.email,
+        "phone": data.phone,
+        "onboarded_at": datetime.utcnow().isoformat(),
+    }
+
+    if data.bank_account:
+        update_dict["bank_account"] = data.bank_account
+    if data.bank_account_iban:
+        update_dict["bank_account_iban"] = data.bank_account_iban
+
+    result = supabase.table("sellers").update(update_dict).eq(
+        "id", current_user.id
+    ).execute()
+
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Nepodařilo se dokončit onboarding"
+        )
+
+    updated = result.data[0]
+    return UserResponse(
+        id=updated["id"],
+        name=f"{updated['first_name']} {updated['last_name']}".strip(),
+        email=updated["email"],
+        role=updated.get("role", "sales"),
+        is_active=updated.get("is_active", True),
+        phone=updated.get("phone"),
+        avatar_url=updated.get("avatar_url"),
+        must_change_password=updated.get("must_change_password", False),
+        onboarded_at=updated.get("onboarded_at"),
+        bank_account=updated.get("bank_account"),
+        bank_account_iban=updated.get("bank_account_iban"),
+        needs_onboarding=False
+    )

@@ -104,8 +104,8 @@ class ActivityCreate(BaseModel):
     activity_type: ActivityType
     description: str
     outcome: str | None = None
-    duration_minutes: int | None = None
     new_status: CRMStatus | None = None
+    next_follow_up_at: datetime | None = None
 
 
 class ActivityResponse(BaseModel):
@@ -148,11 +148,38 @@ class CRMStats(BaseModel):
     follow_ups_today: int
 
 
+class PendingProjectInfo(BaseModel):
+    """Rozpracovaný projekt pro dashboard."""
+    id: str
+    business_id: str
+    business_name: str
+    status: str
+    package: str
+    latest_version_number: int | None = None
+    latest_version_date: datetime | None = None
+
+
+class UnpaidClientInvoice(BaseModel):
+    """Nezaplacená faktura od klienta."""
+    id: str
+    business_id: str
+    business_name: str
+    invoice_number: str
+    amount_total: float
+    due_date: datetime
+    days_overdue: int  # záporné = dní do splatnosti, kladné = dní po splatnosti
+
+
 class SellerDashboard(BaseModel):
     available_balance: float
     pending_projects_amount: float
     recent_invoices: list[dict]
     weekly_rewards: list[dict]
+    # Nová pole pro redesign
+    pending_projects: list[PendingProjectInfo] = []
+    unpaid_client_invoices: list[UnpaidClientInvoice] = []
+    total_leads: int = 0
+    follow_ups_today: int = 0
 
 
 # Project schemas
@@ -256,6 +283,30 @@ class ProjectAssetResponse(BaseModel):
     size_bytes: int
     uploaded_at: datetime | None = None
     uploaded_by: str | None = None
+
+
+# Ledger entries for account movements
+class LedgerEntryResponse(BaseModel):
+    id: str
+    entry_type: str
+    amount: float
+    description: str | None = None
+    notes: str | None = None
+    created_at: datetime | None = None
+    related_project_id: str | None = None
+    related_business_id: str | None = None
+
+
+class WeeklyRewardSummary(BaseModel):
+    week: str
+    amount: float
+    count: int
+
+
+class BalancePageResponse(BaseModel):
+    available_balance: float
+    ledger_entries: list[LedgerEntryResponse]
+    weekly_rewards: list[WeeklyRewardSummary]
 
 
 # ARES API schemas

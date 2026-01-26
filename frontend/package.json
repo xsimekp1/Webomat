@@ -1,0 +1,35 @@
+{
+  "name": "webomat-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "build:check": "npm run build --no-lint",
+    "start": "next start",
+    "pre-commit": "npm run build:check",
+    "post-deploy": "bash ../scripts/check-vercel-deploy.sh"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.91.0",
+    "autoprefixer": "^10.4.0",
+    "axios": "^1.6.0",
+    "next": "14.2.21",
+    "postcss": "^8.4.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.45.0",
+    "react-query": "^3.39.0",
+    "tailwindcss": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.10",
+    "@types/react": "^18.0.0",
+    "dotenv": "^17.2.3",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "14.2.21",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.0.0"
+  }
+}

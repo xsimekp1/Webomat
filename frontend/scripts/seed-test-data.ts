@@ -7,13 +7,19 @@ import { createClient } from '@supabase/supabase-js'
 import * as dotenv from 'dotenv'
 import * as path from 'path'
 
+// Načti frontend .env.local
 dotenv.config({ path: path.join(__dirname, '..', '.env.local') })
+// Načti backend .env jako fallback
+dotenv.config({ path: path.join(__dirname, '..', '..', 'backend', '.env') })
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+// Zkus frontend proměnné, pak backend jako fallback
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('❌ Chybí SUPABASE_URL nebo SUPABASE_ANON_KEY v .env.local')
+  console.error('❌ Chybí SUPABASE_URL nebo SUPABASE_KEY')
+  console.error('   Nastavte NEXT_PUBLIC_SUPABASE_URL/ANON_KEY v frontend/.env.local')
+  console.error('   nebo SUPABASE_URL/SERVICE_ROLE_KEY v backend/.env')
   process.exit(1)
 }
 
@@ -38,6 +44,35 @@ async function seedTestData() {
 
     const andyId = andyData.id
     console.log(`👤 Používám Andyho ID: ${andyId}`)
+
+    // 0. Cleanup - smaž staré testovací data
+    console.log('🧹 Mažu staré testovací data...')
+
+    // Smaž staré aktivity pro Andyho firmy
+    await supabase.from('crm_activities').delete().eq('seller_id', andyId)
+
+    // Smaž staré vydané faktury s TEST prefixem
+    await supabase.from('invoices_issued').delete().like('invoice_number', 'TEST-%')
+
+    // Smaž staré přijaté faktury s FP prefixem
+    await supabase.from('invoices_received').delete().like('invoice_number', 'FP-%')
+
+    // Smaž staré ledger entries
+    await supabase.from('ledger_entries').delete().eq('seller_id', andyId)
+
+    // Najdi a smaž projekty + firmy Andyho
+    const { data: oldBusinesses } = await supabase
+      .from('businesses')
+      .select('id')
+      .eq('owner_seller_id', andyId)
+
+    if (oldBusinesses && oldBusinesses.length > 0) {
+      const oldBusinessIds = oldBusinesses.map(b => b.id)
+      await supabase.from('website_projects').delete().in('business_id', oldBusinessIds)
+      await supabase.from('businesses').delete().in('id', oldBusinessIds)
+    }
+
+    console.log('✅ Staré data smazány')
 
     // 1. Vytvoř testovací firmy
     console.log('🏢 Vytvářím testovací firmy...')
@@ -85,19 +120,12 @@ async function seedTestData() {
         seller_id: andyId,
         package: 'premium',
         status: 'delivered',
-        price_setup: 25000,
-        price_monthly: 1500,
-        domain: 'veterina.cz',
-        notes: 'Kompletní web s rezervačním systémem',
       },
       {
         business_id: insertedBusinesses?.[1]?.id,
         seller_id: andyId,
         package: 'start',
         status: 'in_production',
-        price_setup: 15000,
-        domain: 'kadernictvi.cz',
-        notes: 'Jednoduchý prezentační web',
       },
     ]
 
@@ -115,22 +143,21 @@ async function seedTestData() {
     const commissions = [
       {
         seller_id: andyId,
-        type: 'commission_earned',
+        entry_type: 'commission_earned',
         amount: 5000,
-        related_invoice_id: null,
-        notes: 'Provize za Veterinární kliniku',
+        description: 'Provize za Veterinární kliniku',
       },
       {
         seller_id: andyId,
-        type: 'commission_earned',
+        entry_type: 'commission_earned',
         amount: 3000,
-        notes: 'Provize za Kadeřnictví Elegant',
+        description: 'Provize za Kadeřnictví Elegant',
       },
       {
         seller_id: andyId,
-        type: 'payout_reserved',
+        entry_type: 'payout_reserved',
         amount: -8000,
-        notes: 'Vyplacení provizí',
+        description: 'Vyplacení provizí',
       },
     ]
 
@@ -148,34 +175,138 @@ async function seedTestData() {
     const invoices = [
       {
         seller_id: andyId,
-        invoice_number: '2024-001',
+        invoice_type: 'commission',
+        invoice_number: 'FP-2024-001',
         issue_date: '2024-03-15',
         due_date: '2024-03-30',
         amount_total: 8000,
         status: 'paid',
-        is_test: false,
+        is_test: true,
       },
       {
         seller_id: andyId,
-        invoice_number: '2024-002',
+        invoice_type: 'commission',
+        invoice_number: 'FP-2024-002',
         issue_date: '2024-04-01',
         due_date: '2024-04-15',
         amount_total: 5000,
         status: 'approved',
-        is_test: false,
+        is_test: true,
       },
     ]
 
     const { data: insertedInvoices, error: invoiceError } = await supabase
-      .from('invoices')
+      .from('invoices_received')
       .insert(invoices)
       .select()
 
     if (invoiceError) throw invoiceError
 
-    console.log(`✅ Vytvořeno ${insertedInvoices?.length || 0} faktur`)
+    console.log(`✅ Vytvořeno ${insertedInvoices?.length || 0} faktur (invoices_received)`)
 
-    // 5. Vytvoř testovací aktivity
+    // 5. Vytvoř testovací faktury vydané klientům (invoices_issued)
+    console.log('📄 Vytvářím testovací faktury pro klienty (invoices_issued)...')
+
+    // Pomocné funkce pro dynamické datumy
+    const today = new Date()
+    const formatDate = (date: Date) => date.toISOString().split('T')[0]
+    const addDays = (date: Date, days: number) => {
+      const result = new Date(date)
+      result.setDate(result.getDate() + days)
+      return result
+    }
+
+    // Nejdříve smaž staré testovací faktury
+    const { error: deleteError } = await supabase
+      .from('invoices_issued')
+      .delete()
+      .like('invoice_number', 'TEST-%')
+
+    if (deleteError) {
+      console.warn('⚠️ Varování při mazání starých faktur:', deleteError.message)
+    }
+
+    const invoicesIssued = [
+      {
+        // Faktura PO splatnosti - 15 dní
+        business_id: insertedBusinesses?.[0]?.id,
+        project_id: insertedProjects?.[0]?.id,
+        seller_id: andyId,
+        invoice_number: 'TEST-2025-0001',
+        issue_date: formatDate(addDays(today, -30)),
+        due_date: formatDate(addDays(today, -15)),  // 15 dní po splatnosti
+        amount_without_vat: 12396,
+        vat_rate: 21,
+        vat_amount: 2604,
+        amount_total: 15000,
+        currency: 'CZK',
+        payment_type: 'setup',
+        status: 'overdue',
+        description: 'Zřízení webu - balíček Premium',
+      },
+      {
+        // Faktura PO splatnosti - 3 dny
+        business_id: insertedBusinesses?.[1]?.id,
+        project_id: insertedProjects?.[1]?.id,
+        seller_id: andyId,
+        invoice_number: 'TEST-2025-0002',
+        issue_date: formatDate(addDays(today, -17)),
+        due_date: formatDate(addDays(today, -3)),  // 3 dny po splatnosti
+        amount_without_vat: 4132,
+        vat_rate: 21,
+        vat_amount: 868,
+        amount_total: 5000,
+        currency: 'CZK',
+        payment_type: 'setup',
+        status: 'overdue',
+        description: 'Zřízení webu - balíček Start',
+      },
+      {
+        // Faktura PŘED splatností - za 5 dní
+        business_id: insertedBusinesses?.[0]?.id,
+        project_id: insertedProjects?.[0]?.id,
+        seller_id: andyId,
+        invoice_number: 'TEST-2025-0003',
+        issue_date: formatDate(addDays(today, -9)),
+        due_date: formatDate(addDays(today, 5)),  // splatnost za 5 dní
+        amount_without_vat: 826,
+        vat_rate: 21,
+        vat_amount: 174,
+        amount_total: 1000,
+        currency: 'CZK',
+        payment_type: 'monthly',
+        status: 'issued',
+        description: 'Měsíční provoz webu - leden 2025',
+      },
+      {
+        // Faktura PŘED splatností - za 20 dní
+        business_id: insertedBusinesses?.[1]?.id,
+        project_id: insertedProjects?.[1]?.id,
+        seller_id: andyId,
+        invoice_number: 'TEST-2025-0004',
+        issue_date: formatDate(addDays(today, -2)),
+        due_date: formatDate(addDays(today, 20)),  // splatnost za 20 dní
+        amount_without_vat: 413,
+        vat_rate: 21,
+        vat_amount: 87,
+        amount_total: 500,
+        currency: 'CZK',
+        payment_type: 'monthly',
+        status: 'issued',
+        description: 'Měsíční provoz webu - únor 2025',
+      },
+    ]
+
+    const { data: insertedInvoicesIssued, error: invoiceIssuedError } = await supabase
+      .from('invoices_issued')
+      .insert(invoicesIssued)
+      .select()
+
+    if (invoiceIssuedError) throw invoiceIssuedError
+
+    console.log(`✅ Vytvořeno ${insertedInvoicesIssued?.length || 0} faktur pro klienty (invoices_issued)`)
+
+    // 6. Vytvoř testovací aktivity
     console.log('📝 Vytvářím testovací aktivity...')
     const activities = [
       {
@@ -184,6 +315,7 @@ async function seedTestData() {
         type: 'call',
         content: 'První kontakt - zájem o web',
         outcome: 'Zájem projeven',
+        occurred_at: formatDate(addDays(today, -7)),
       },
       {
         business_id: insertedBusinesses?.[1]?.id,
@@ -191,6 +323,7 @@ async function seedTestData() {
         type: 'email',
         content: 'Odeslána nabídka na webové stránky',
         outcome: 'Čeká na odpověď',
+        occurred_at: formatDate(addDays(today, -3)),
       },
     ]
 
@@ -208,7 +341,8 @@ async function seedTestData() {
     console.log(`   Firmy: ${insertedBusinesses?.length || 0}`)
     console.log(`   Projekty: ${insertedProjects?.length || 0}`)
     console.log(`   Komise: ${insertedCommissions?.length || 0}`)
-    console.log(`   Faktury: ${insertedInvoices?.length || 0}`)
+    console.log(`   Faktury přijaté (invoices_received): ${insertedInvoices?.length || 0}`)
+    console.log(`   Faktury vydané (invoices_issued): ${insertedInvoicesIssued?.length || 0}`)
     console.log(`   Aktivity: ${insertedActivities?.length || 0}`)
 
   } catch (error) {

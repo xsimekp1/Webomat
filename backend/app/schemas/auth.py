@@ -29,11 +29,19 @@ class User(BaseModel):
     notes: str | None = None
     avatar_url: str | None = None
     must_change_password: bool = False
+    onboarded_at: datetime | None = None
+    bank_account: str | None = None
+    bank_account_iban: str | None = None
     created_at: datetime | None = None
 
     @property
     def full_name(self) -> str:
         return f"{self.first_name} {self.last_name}".strip()
+
+    @property
+    def needs_onboarding(self) -> bool:
+        """Check if user needs to complete onboarding."""
+        return self.onboarded_at is None
 
 
 class UserInDB(User):
@@ -50,6 +58,10 @@ class UserResponse(BaseModel):
     phone: str | None = None
     avatar_url: str | None = None
     must_change_password: bool = False
+    onboarded_at: datetime | None = None
+    bank_account: str | None = None
+    bank_account_iban: str | None = None
+    needs_onboarding: bool = False
 
 
 class PasswordChange(BaseModel):
@@ -66,6 +78,18 @@ class UserUpdate(BaseModel):
     last_name: str | None = None
     email: str | None = None
     phone: str | None = None
+    bank_account: str | None = None
+    bank_account_iban: str | None = None
+
+
+class OnboardingComplete(BaseModel):
+    """Data required to complete onboarding."""
+    first_name: str
+    last_name: str
+    email: str
+    phone: str
+    bank_account: str | None = None  # Either bank_account or bank_account_iban required
+    bank_account_iban: str | None = None
 
 
 class UserListItem(BaseModel):

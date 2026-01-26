@@ -191,6 +191,8 @@ Key MVP patterns:
 
 **DŮLEŽITÉ:** Před vytvářením/úpravou tabulek vždy ověř aktuální strukturu v Supabase!
 
+**POVINNOST:** Při jakékoli změně struktury databáze (CREATE TABLE, ALTER TABLE, nové sloupce) MUSÍŠ aktualizovat tuto dokumentaci!
+
 ### Tabulka `sellers` (obchodníci/uživatelé)
 
 | Sloupec | Typ | Popis |
@@ -299,7 +301,30 @@ Key MVP patterns:
 | notes | text? | Poznámky |
 | started_at | datetime? | Zahájeno |
 | delivered_at | datetime? | Dodáno |
+| versions_count | integer? | Počet verzí webu |
+| latest_version_id | uuid? | FK na nejnovější verzi |
 | created_at | datetime | Vytvořeno |
+| updated_at | datetime | Upraveno |
+
+### Tabulka `website_versions` (verze webů)
+
+| Sloupec | Typ | Popis |
+|---------|-----|-------|
+| id | uuid | Primární klíč |
+| project_id | uuid | FK na website_projects |
+| version_number | integer | Číslo verze (1, 2, 3...) |
+| html_content | text | HTML kód verze |
+| html_content_en | text? | Anglická verze HTML |
+| thumbnail_url | string? | URL náhledu |
+| printscreen_url | string? | URL printscreenu |
+| status | string | Status (draft/published/archived) |
+| title | string? | Titulek verze |
+| description | text? | Popis verze |
+| changes_summary | text? | Souhrn změn |
+| is_active | boolean | Je aktivní verze |
+| published_at | datetime? | Publikováno kdy |
+| created_at | datetime | Vytvořeno |
+| created_by | uuid? | Kdo vytvořil (FK na sellers) |
 | updated_at | datetime | Upraveno |
 
 ### CRM Status hodnoty
@@ -337,6 +362,101 @@ Key MVP patterns:
 | user_agent | text? | User agent |
 | created_at | datetime | Kdy |
 
+### Tabulka `ledger_entries` (provizní účet obchodníků)
+
+**SQL:** `sql/create_invoices_ledger.sql`
+
+| Sloupec | Typ | Popis |
+|---------|-----|-------|
+| id | uuid | Primární klíč |
+| seller_id | uuid | FK na sellers |
+| entry_type | string | Typ: commission_earned/admin_adjustment/payout_reserved/payout_paid |
+| amount | decimal | Částka (kladné = příjem, záporné = výdaj) |
+| related_invoice_id | uuid? | FK na invoices_received |
+| related_project_id | uuid? | FK na website_projects |
+| related_business_id | uuid? | FK na businesses |
+| description | text? | Popis |
+| notes | text? | Poznámky |
+| is_test | boolean | Testovací záznam |
+| created_at | datetime | Vytvořeno |
+| created_by | uuid? | Kdo vytvořil |
+
+### Tabulka `invoices_issued` (vydané faktury klientům)
+
+Webomat fakturuje klientovi za web.
+
+| Sloupec | Typ | Popis |
+|---------|-----|-------|
+| id | uuid | Primární klíč |
+| business_id | uuid | FK na businesses |
+| project_id | uuid? | FK na website_projects |
+| seller_id | uuid? | FK na sellers (kdo uzavřel deal) |
+| invoice_number | string | Číslo faktury (unique) |
+| issue_date | date | Datum vystavení |
+| due_date | date | Datum splatnosti |
+| paid_date | date? | Datum zaplacení |
+| amount_without_vat | decimal | Částka bez DPH |
+| vat_rate | decimal | Sazba DPH (default 21) |
+| vat_amount | decimal? | Výše DPH |
+| amount_total | decimal | Celková částka |
+| currency | string | Měna (default CZK) |
+| payment_type | string | Typ: setup/monthly/other |
+| status | string | Status: draft/issued/paid/overdue/cancelled |
+| description | text? | Text faktury |
+| pdf_path | text? | Cesta k PDF |
+| variable_symbol | string? | Variabilní symbol |
+| sent_to_accountant | boolean | Odesláno účetní |
+| created_at | datetime | Vytvořeno |
+| updated_at | datetime | Upraveno |
+
+### Tabulka `invoices_received` (přijaté faktury)
+
+Faktury přijaté platformou - od obchodníků za provize nebo od externích dodavatelů za služby.
+
+| Sloupec | Typ | Popis |
+|---------|-----|-------|
+| id | uuid | Primární klíč |
+| seller_id | uuid | FK na sellers (může být NULL pro service faktury) |
+| invoice_type | string | Typ: commission/service/other |
+| vendor_name | string? | Název dodavatele (pro service faktury) |
+| invoice_number | string | Číslo faktury (unique per seller) |
+| issue_date | date | Datum vystavení |
+| due_date | date | Datum splatnosti |
+| period_from | date? | Období od |
+| period_to | date? | Období do |
+| amount_total | decimal | Celková částka |
+| amount_to_payout | decimal? | Částka k vyplacení |
+| currency | string | Měna (default CZK) |
+| status | string | Status: draft/submitted/approved/paid/rejected |
+| rejected_reason | text? | Důvod zamítnutí |
+| description_text | text? | Text faktury |
+| pdf_path | text? | Cesta k PDF |
+| is_test | boolean | Testovací faktura |
+| approved_at | datetime? | Schváleno kdy |
+| approved_by | uuid? | Schváleno kým |
+| paid_at | datetime? | Vyplaceno kdy |
+| created_at | datetime | Vytvořeno |
+| updated_at | datetime | Upraveno |
+
+### Tabulka `platform_settings` (nastavení platformy)
+
+| Sloupec | Typ | Popis |
+|---------|-----|-------|
+| id | uuid | Primární klíč |
+| key | string | Klíč nastavení (unique) |
+| value | jsonb | Hodnota (JSON) |
+| updated_at | datetime | Upraveno |
+| updated_by | uuid? | Kdo upravil |
+
+**Klíče:**
+- `billing_info` - Fakturační údaje Webomatu (company_name, ico, dic, address...)
+- `invoice_settings` - Nastavení faktur (default_due_days, vat_rate, min_payout_threshold...)
+
+### Databázové funkce
+
+- `get_next_issued_invoice_number(year)` - Generuje další číslo vydané faktury (YYYY-NNNN)
+- `get_seller_balance(seller_id, include_test)` - Vypočítá aktuální saldo obchodníka z ledgeru
+
 ### Deduplikace leadů
 
 Při vytváření leadu se kontroluje:
@@ -352,6 +472,33 @@ Endpoint: `GET /crm/businesses/check-duplicate?phone=&website=&name=`
 - Dummy stránka: kompletní HTML s "Dry run test web" obsahem, gradient background, stylizované tělo
 - Umožňuje testovat printscreen a thumbnail funkcionality bez nákladů
 - UI: Modal s možností výběru mezi DRY RUN a AI generováním (AI zatím disabled)
+
+## Anglická verze webu & LLM překlady
+
+**Parametr:** `include_english` v endpointech `/website/generate` a `/website/generate-test`
+
+**Hodnoty:**
+- `no` - Pouze česká verze (default)
+- `auto` - Automatický překlad pomocí OpenAI API
+- `client` - Vrátí seznam textů k překladu klientem
+
+**Backend služba:** `backend/app/services/llm.py`
+
+**Požadované env proměnné pro překlad:**
+```bash
+OPENAI_API_KEY=sk-...  # OpenAI API klíč
+```
+
+**Endpoint pro kontrolu dostupnosti:**
+```bash
+GET /website/translation-status  # Vrátí {"available": true/false}
+```
+
+**Response obsahuje:**
+- `html_content` - Česká verze HTML
+- `html_content_en` - Anglická verze (pokud include_english=auto a API dostupné)
+- `translation_status` - completed/unavailable/failed/client_required
+- `strings_for_client` - Seznam textů k překladu (pokud include_english=client)
 
 ## Deployment & Online Testing
 
@@ -414,3 +561,92 @@ npm run mobile:build:prod   # Production build
 ## Project Language
 
 Primary documentation is in Czech. The project serves Czech market businesses.
+
+## Unit Testing (Backend)
+
+### Spuštění testů
+
+```bash
+cd backend
+pip install -r requirements.txt  # Nainstaluje pytest, pytest-asyncio, httpx
+pytest                           # Spustí všechny testy
+pytest -v                        # Verbose výstup
+pytest tests/test_sales_pipeline.py  # Jen konkrétní soubor
+pytest -k "test_create_business"     # Jen testy matching pattern
+```
+
+### Struktura testů
+
+```
+backend/tests/
+├── __init__.py
+├── conftest.py          # Fixtures (mock Supabase, mock users, sample data)
+├── test_sales_pipeline.py  # Testy pro sales flow
+├── test_crm_activities.py  # Testy pro CRM aktivity
+└── test_seller_dashboard.py # Testy pro dashboard statistiky
+```
+
+### Nově implementované funkce
+
+**Payment Reminder System (2025-01-26):**
+- Backend endpoint: `POST /crm/invoices/{id}/generate-reminder` - generování textu upomínky
+- Backend endpoint: `POST /crm/invoices/{id}/send-reminder` - odeslání a vytvoření aktivity
+- Automatické vytvoření follow-up aktivity s konfigurovatelným počtem dní (default 3)
+- Frontend modal pro zobrazení a odeslání upomínky
+- Generovaný text obsahuje: číslo faktury, částka, datum splatnosti, jméno klienta, doménu
+
+**Profile Management Fix (2025-01-26):**
+- Opraveno ukládání jména a příjmení přes backend API
+- Změněn frontend z přímého Supabase přístupu na `PUT /users/me` endpoint
+- Opravena metoda z `updateUserProfile` na PUT namísto POST
+
+**Pending Projects Filter (2025-01-26):**
+- Opraven filtr rozpracovaných projektů - odebrány projekty ve stavu "delivered"
+- Zobrazeny pouze projekty se statusem: "offer", "won", "in_production"
+- Zlepšena přehlednost dashboardu - relevantní projekty k práci
+
+**Activity Follow-up Management (2025-01-26):**
+- Přidáno pole `next_follow_up_at` do formuláře pro vytvoření aktivity
+- Validace proti nastavení data v minulosti
+- Backend aktualizován pro automatickou aktualizaci `next_follow_up_at` v businesses tabulce
+- Vylepšeno UI s datumovým polem a validací
+
+### Co je pokryto (Sales Pipeline)
+
+| Oblast | Testy | Soubor |
+|--------|-------|--------|
+| Vytvoření businessu | ✅ Úspěšné vytvoření, validace, minimální data | `test_sales_pipeline.py` |
+| Deduplikace | ✅ Telefon, web, normalizace | `test_sales_pipeline.py` |
+| Projekty | ✅ Všechny balíčky, všechny statusy | `test_sales_pipeline.py` |
+| Website verze | ✅ První verze, inkrementace čísla | `test_sales_pipeline.py` |
+| Dry run generování | ✅ HTML struktura, styling | `test_sales_pipeline.py` |
+
+### TODO - Další testy k doplnění
+
+**Vysoká priorita:**
+- [ ] Autentizace (JWT, login/logout, password change)
+- [ ] RBAC (admin vs sales přístup)
+- [ ] Ledger výpočty (balance obchodníka)
+- [ ] Admin operace (reset password, toggle active)
+
+**Střední priorita:**
+- [ ] CRM aktivity (vytvoření, status update)
+- [ ] Dashboard statistiky
+- [ ] List/filter businessů (pagination, search)
+- [ ] Update business/project
+
+**Nižší priorita:**
+- [ ] Upload/delete logo
+- [ ] ARES lookup
+- [ ] Audit log
+
+### Fixtures v conftest.py
+
+- `mock_supabase` - Mockovaný Supabase klient
+- `sample_seller` - Testovací obchodník (role: sales)
+- `sample_admin` - Testovací admin
+- `sample_business` - Testovací lead/firma
+- `sample_project` - Testovací projekt
+- `sample_version` - Testovací website verze
+- `app_client` - FastAPI TestClient s sales rolí
+- `admin_client` - FastAPI TestClient s admin rolí
