@@ -506,6 +506,22 @@ input:focus {
   padding: 40px;
 }
 
+/* Project Card Color Variations */
+.project-card-offer {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-left: 4px solid #6b7280;
+}
+
+.project-card-in-production {
+  background: linear-gradient(135deg, #e7f5ff 0%, #cce7ff 100%);
+  border-left: 4px solid #3b82f6;
+}
+
+.project-card-default {
+  background: white;
+  border-left: 4px solid #e0e0e0;
+}
+
 /* Test Generator Section */
 .test-generator-section {
   background: white;

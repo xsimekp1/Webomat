@@ -171,14 +171,20 @@ export default function DashboardPage() {
     return labels[status] || status
   }
 
-  const getStatusColor = (status: string) => {
+const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      won: '#f59e0b',
-      in_production: '#3b82f6',
-      delivered: '#10b981',
       offer: '#6b7280',
+      in_production: '#3b82f6',
     }
     return colors[status] || '#6b7280'
+  }
+
+  const getProjectCardClass = (status: string) => {
+    const classes: Record<string, string> = {
+      offer: 'project-card-offer',
+      in_production: 'project-card-in-production',
+    }
+    return classes[status] || 'project-card-default'
   }
 
   if (isLoading || !user) {
@@ -256,10 +262,10 @@ export default function DashboardPage() {
               </button>
             </div>
             <div className="projects-scroll">
-              {sellerData.pending_projects.slice(0, 5).map((project) => (
+{sellerData.pending_projects.slice(0, 5).map((project) => (
                 <div
                   key={project.id}
-                  className="project-card"
+                  className={`project-card ${getProjectCardClass(project.status)}`}
                   onClick={() => router.push(`/dashboard/crm/${project.business_id}`)}
                 >
                   <div className="project-name">{project.business_name}</div>
