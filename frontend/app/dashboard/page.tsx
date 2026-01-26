@@ -133,7 +133,9 @@ export default function DashboardPage() {
       await ApiClient.sendPaymentReminder(invoiceId)
       setShowReminderModal(false)
       setReminderData(null)
-      fetchSellerData()
+      ApiClient.getSellerDashboard()
+        .then(setSellerData)
+        .catch(() => {})
     } catch (err: any) {
       setError('Nepodařilo se odeslat upomínku')
     }
