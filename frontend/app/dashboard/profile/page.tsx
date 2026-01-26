@@ -47,8 +47,12 @@ export default function ProfilePage() {
     }
   }, [user])
 
-  const loadProfile = async (userId: string) => {
+const loadProfile = async (userId: string) => {
     try {
+      if (!supabase) {
+        throw new Error('Supabase client not available')
+      }
+
       const { data, error } = await supabase
         .from('sellers')
         .select('first_name, last_name, email, phone, bank_account, avatar_url')
