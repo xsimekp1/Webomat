@@ -104,11 +104,12 @@ export default function BusinessDetailPage() {
 
   // Activity form
   const [showActivityModal, setShowActivityModal] = useState(false)
-  const [activityForm, setActivityForm] = useState({
+const [activityForm, setActivityForm] = useState({
     activity_type: 'call',
     description: '',
     outcome: '',
     new_status: '',
+    next_follow_up_at: '',
   })
   const [saving, setSaving] = useState(false)
 
@@ -184,11 +185,12 @@ export default function BusinessDetailPage() {
       })
 
       setShowActivityModal(false)
-      setActivityForm({
+setActivityForm({
         activity_type: 'call',
         description: '',
         outcome: '',
         new_status: '',
+        next_follow_up_at: '',
       })
       fetchData()
     } catch (err: any) {
