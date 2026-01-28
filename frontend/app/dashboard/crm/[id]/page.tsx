@@ -333,7 +333,7 @@ setActivityForm({
 const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false) => {
     // Přesměruj na samostatnou stránku pro generování webu
     const businessName = business?.name || 'Neznámá firma'
-    const businessId = id
+    const businessId = params.id // Použij parametr z URL [id]
     
     router.push(
       `/dashboard/crm/${businessId}/generate-website?projectId=${encodeURIComponent(projectId)}&businessName=${encodeURIComponent(businessName)}`
