@@ -36,13 +36,21 @@ class ApiClient {
     return response.data
   }
 
+  static async getUserProfile() {
+    const response = await axios.get(
+      `${API_BASE_URL}/users/me`,
+      { headers: ApiClient.getAuthHeaders() }
+    )
+    return response.data
+  }
+
   static async updateUserProfile(userData: any) {
     const response = await axios.post(
       `${API_BASE_URL}/users/me`,
       userData,
-      { headers: ApiClient.getAuthHeaders() }
-    );
-    return response.data;
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    )
+    return response.data
   }
 
   static async uploadAvatar(file: File) {
