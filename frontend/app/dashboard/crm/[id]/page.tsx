@@ -93,8 +93,7 @@ export default function BusinessDetailPage() {
   const { user, isLoading, isAuthenticated } = useAuth()
   const router = useRouter()
   const params = useParams()
-  const businessId = params.id as string
-
+  const businessId = Array.isArray(params.id) ? params.id[0] : params.id
   const [business, setBusiness] = useState<Business | null>(null)
   const [activities, setActivities] = useState<Activity[]>([])
   const [projects, setProjects] = useState<Project[]>([])
@@ -331,14 +330,12 @@ setActivityForm({
   }
 
 const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false) => {
-    // Přesměruj na SAMOSTATNOU generovací stránku (mimo CRM)
-    const businessName = business?.name || 'Neznámá firma'
-    const businessId = params.id
+  const businessName = business?.name || 'Neznámá firma'
 
-    router.push(
-      `/dashboard/generate-website?businessId=${encodeURIComponent(businessId)}&projectId=${encodeURIComponent(projectId)}&businessName=${encodeURIComponent(businessName)}&dryRun=${dryRun ? '1' : '0'}`
-    )
-  }
+  router.push(
+    `/dashboard/generate-website?businessId=${encodeURIComponent(businessId)}&projectId=${encodeURIComponent(projectId)}&businessName=${encodeURIComponent(businessName)}&dryRun=${dryRun ? '1' : '0'}`
+  )
+}
 
   const formatDateTime = (dateStr: string | null) => {
     if (!dateStr) return '-'
