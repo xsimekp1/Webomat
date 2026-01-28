@@ -331,10 +331,11 @@ setActivityForm({
   }
 
 const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false) => {
-    // Přesměruj na samostatnou stránku pro generování webu
+    // Přesměruj PŘÍMO na generovací stránku, bez modálu
     const businessName = business?.name || 'Neznámá firma'
-    const businessId = params.id // Použij parametr z URL [id]
+    const businessId = params.id
     
+    // Přímo přesměruj bez otevírání modálu
     router.push(
       `/dashboard/crm/${businessId}/generate-website?projectId=${encodeURIComponent(projectId)}&businessName=${encodeURIComponent(businessName)}`
     )
@@ -603,13 +604,10 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
                   <div className="project-actions" onClick={(e) => e.stopPropagation()}>
                     <button
                       className="btn-generate-web"
-                      onClick={() => {
-                        setSelectedProjectId(project.id)
-                        setShowWebsiteModal(true)
-                      }}
+                      onClick={() => handleGenerateWebsite(project.id)}
                       disabled={generatingWebsite}
                     >
-                      {generatingWebsite ? 'Generuji...' : '🚀 Generovat web'}
+                      🚀 Generovat web
                     </button>
                   </div>
                 </div>
