@@ -36,10 +36,7 @@ export default function WebsiteGenerationPage() {
     setResult(null)
 
     try {
-      const response = await ApiClient.generateWebsite(projectId, {
-        dry_run: true,
-        include_english: 'no'
-      })
+      const response = await ApiClient.generateWebsite(projectId, true)
       
       setResult(response)
     } catch (err: any) {
@@ -57,10 +54,7 @@ export default function WebsiteGenerationPage() {
     setResult(null)
 
     try {
-      const response = await ApiClient.generateWebsite(projectId, {
-        dry_run: false,
-        include_english: 'auto'
-      })
+      const response = await ApiClient.generateWebsite(projectId, false)
       
       setResult(response)
     } catch (err: any) {
