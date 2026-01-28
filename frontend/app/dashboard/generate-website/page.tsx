@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import ApiClient from '../../../../lib/api'
+import ApiClient from '../../../lib/api'
 
 interface WebsiteGenerationResult {
   html_content?: string
@@ -11,22 +11,31 @@ interface WebsiteGenerationResult {
   translation_status?: string
 }
 
-export default function WebsiteGenerationPage() {
+export default function WebsiteGeneratorPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  
   const projectId = searchParams.get('projectId')
-  const businessId = searchParams.get('businessId')
+  const businessId = searchParams.get('businessId')  
   const businessName = searchParams.get('businessName') || 'Neznámá firma'
+  const dryRun = searchParams.get('dryRun') === '1'
   
   const [generating, setGenerating] = useState(false)
   const [result, setResult] = useState<WebsiteGenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!projectId || !businessId) {
-      setError('Chybí parametry pro generování webu')
-    }
+    if (!projectId) return setError('Chybí projectId')
+    if (!businessId) return setError('Chybí businessId') 
+    setError(null)
   }, [projectId, businessId])
+
+  // Automaticky spusť DRY RUN pokud je dryRun=1
+  useEffect(() => {
+    if (!projectId || !businessId || !dryRun) return
+    handleDryRun()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, businessId, dryRun])
 
   const handleDryRun = async () => {
     if (!projectId) return
@@ -37,7 +46,6 @@ export default function WebsiteGenerationPage() {
 
     try {
       const response = await ApiClient.generateWebsite(projectId, true)
-      
       setResult(response)
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Chyba při generování')
@@ -55,7 +63,6 @@ export default function WebsiteGenerationPage() {
 
     try {
       const response = await ApiClient.generateWebsite(projectId, false)
-      
       setResult(response)
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Chyba při generování')
@@ -71,11 +78,11 @@ export default function WebsiteGenerationPage() {
           <h1 style={{ color: '#ef4444', marginBottom: '20px' }}>❌ Chyba</h1>
           <p style={{ color: '#666', marginBottom: '30px' }}>{error}</p>
           <button 
-            onClick={() => router.back()} 
+            onClick={() => router.push(`/dashboard/crm/${businessId}`)}
             className="btn-primary"
             style={{ padding: '12px 24px', background: '#667eea', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
           >
-            Zpět
+            Zpět na CRM detail
           </button>
         </div>
       </div>
@@ -95,10 +102,10 @@ export default function WebsiteGenerationPage() {
             </p>
           </div>
           <button 
-            onClick={() => router.back()}
+            onClick={() => router.push(`/dashboard/crm/${businessId}`)}
             style={{ padding: '10px 20px', background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: '6px', cursor: 'pointer' }}
           >
-            ← Zpět
+            ← Zpět na CRM
           </button>
         </div>
       </header>
@@ -112,7 +119,8 @@ export default function WebsiteGenerationPage() {
               border: '2px solid #e5e7eb', 
               borderRadius: '12px', 
               padding: '30px',
-              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)'
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+              opacity: dryRun ? 0.6 : 1
             }}>
               <div style={{ textAlign: 'center', marginBottom: '20px' }}>
                 <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔧</div>
@@ -121,27 +129,32 @@ export default function WebsiteGenerationPage() {
                 </h3>
                 <p style={{ color: '#6b7280', lineHeight: '1.6', marginBottom: '24px' }}>
                   Vygeneruje testovací webovou stránku bez volání AI API. 
-                  Ideální pro testování funkčality a zobrazení výsledku.
+                  Ideální pro testování funkčnosti a zobrazení výsledku.
                 </p>
               </div>
               <button 
                 onClick={handleDryRun}
-                disabled={generating}
+                disabled={generating || dryRun}
                 style={{
                   width: '100%',
                   padding: '16px',
-                  background: generating ? '#9ca3af' : '#667eea',
+                  background: generating || dryRun ? '#9ca3af' : '#667eea',
                   color: 'white',
                   border: 'none',
                   borderRadius: '8px',
                   fontSize: '16px',
                   fontWeight: '600',
-                  cursor: generating ? 'not-allowed' : 'pointer',
+                  cursor: generating || dryRun ? 'not-allowed' : 'pointer',
                   transition: 'all 0.2s'
                 }}
               >
-                {generating ? '⏳ Generuji...' : '🚀 Spustit DRY RUN'}
+                {generating ? '⏳ Generuji...' : dryRun ? '✅ DRY RUN proveden' : '🚀 Spustit DRY RUN'}
               </button>
+              {dryRun && (
+                <p style={{ marginTop: '15px', color: '#10b981', fontSize: '14px', textAlign: 'center' }}>
+                  DRY RUN automaticky spuštěn
+                </p>
+              )}
             </div>
 
             {/* Full AI Generation Option */}
@@ -288,7 +301,7 @@ export default function WebsiteGenerationPage() {
                 </button>
                 
                 <button 
-                  onClick={() => router.back()}
+                  onClick={() => router.push(`/dashboard/crm/${businessId}`)}
                   style={{
                     padding: '12px 24px',
                     background: '#f3f4f6',

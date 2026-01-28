@@ -331,13 +331,12 @@ setActivityForm({
   }
 
 const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false) => {
-    // Přesměruj PŘÍMO na generovací stránku, bez modálu
+    // Přesměruj na SAMOSTATNOU generovací stránku (mimo CRM)
     const businessName = business?.name || 'Neznámá firma'
     const businessId = params.id
-    
-    // Přímo přesměruj bez otevírání modálu
+
     router.push(
-      `/dashboard/crm/${businessId}/generate-website?projectId=${encodeURIComponent(projectId)}&businessName=${encodeURIComponent(businessName)}`
+      `/dashboard/generate-website?businessId=${encodeURIComponent(businessId)}&projectId=${encodeURIComponent(projectId)}&businessName=${encodeURIComponent(businessName)}&dryRun=${dryRun ? '1' : '0'}`
     )
   }
 
