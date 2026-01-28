@@ -330,23 +330,14 @@ setActivityForm({
     }
   }
 
-  const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false) => {
-    setGeneratingWebsite(true)
-    setError('')
-    setGeneratedWebsite(null)
-
-    try {
-      const result = await ApiClient.generateWebsite(projectId, dryRun)
-      setGeneratedWebsite(result)
-      setShowWebsiteModal(false)
-    } catch (err: any) {
-      console.error('Website generation error:', err)
-      const detail = err.response?.data?.detail || err.message || 'Chyba při generování webu'
-      const status = err.response?.status || 'N/A'
-      setError(`[${status}] ${detail}`)
-    } finally {
-      setGeneratingWebsite(false)
-    }
+const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false) => {
+    // Přesměruj na samostatnou stránku pro generování webu
+    const businessName = business?.name || 'Neznámá firma'
+    const businessId = id
+    
+    router.push(
+      `/dashboard/crm/${businessId}/generate-website?projectId=${encodeURIComponent(projectId)}&businessName=${encodeURIComponent(businessName)}`
+    )
   }
 
   const formatDateTime = (dateStr: string | null) => {
@@ -868,47 +859,70 @@ setActivityForm({
       )}
 
       {/* Website Generation Modal */}
-      {showWebsiteModal && (
+{showWebsiteModal && (
         <div className="modal-overlay" onClick={() => setShowWebsiteModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Generování webové stránky</h2>
-
-            <div className="website-gen-options">
-              <div className="option-card" onClick={() => handleGenerateWebsite(selectedProjectId, true)}>
-                <h3>🔧 DRY RUN Test</h3>
-                <p>Vygeneruje testovací stránku bez volání AI API. Ideální pro testování funkcionality.</p>
-                <button className="btn-primary" disabled={generatingWebsite}>
-                  {generatingWebsite ? 'Generuji...' : 'Spustit DRY RUN'}
+            <h2>🌐 Generování webové stránky</h2>
+            
+            <div style={{ textAlign: 'center', padding: '30px 20px' }}>
+              <div style={{ fontSize: '48px', marginBottom: '20px' }}>🚀</div>
+              <p style={{ fontSize: '16px', color: '#374151', marginBottom: '20px', lineHeight: '1.6' }}>
+                Otevřu specializovanou stránku pro generování webu s velkým preview a možnostmi exportu.
+              </p>
+              <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '30px' }}>
+                Můžete vybrat mezi DRY RUN testem a plným AI generováním.
+              </p>
+              
+              <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button 
+                  onClick={() => {
+                    setShowWebsiteModal(false)
+                    handleGenerateWebsite(selectedProjectId, true)
+                  }}
+                  disabled={generatingWebsite}
+                  style={{
+                    padding: '12px 24px',
+                    background: '#667eea',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: generatingWebsite ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  🔧 DRY RUN Test
+                </button>
+                
+                <button 
+                  onClick={() => {
+                    setShowWebsiteModal(false)
+                    handleGenerateWebsite(selectedProjectId, false)
+                  }}
+                  disabled={generatingWebsite}
+                  style={{
+                    padding: '12px 24px',
+                    background: '#f3f4f6',
+                    color: '#6b7280',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'not-allowed'
+                  }}
+                >
+                  🤖 AI Generování (brzy)
                 </button>
               </div>
-
-              <div className="option-card disabled">
-                <h3>🤖 AI Generování</h3>
-                <p>Plné generování pomocí Claude API (zatím není implementováno)</p>
-                <button className="btn-secondary" disabled>
-                  Brzy dostupné
-                </button>
-              </div>
+              
+              {generatingWebsite && (
+                <p style={{ marginTop: '20px', color: '#667eea', fontSize: '14px' }}>
+                  ⏳ Přesměrování na generovací stránku...
+                </p>
+              )}
             </div>
 
-            {generatedWebsite && (
-              <div className="generation-result">
-                <h3>Výsledek generování:</h3>
-                <p>{generatedWebsite.message}</p>
-                {generatedWebsite.html_content && (
-                  <div className="html-preview">
-                    <iframe
-                      srcDoc={generatedWebsite.html_content}
-                      width="100%"
-                      height="300"
-                      style={{ border: '1px solid #ddd', borderRadius: '4px' }}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="modal-actions">
+            <div className="modal-actions" style={{ justifyContent: 'center' }}>
               <button className="btn-secondary" onClick={() => setShowWebsiteModal(false)}>
                 Zrušit
               </button>
