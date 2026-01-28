@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import ApiClient from '../../../lib/api'
+import ApiClient from '../../../../lib/api'
 
 interface WebsiteGenerationResult {
   html_content?: string
