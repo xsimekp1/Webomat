@@ -224,7 +224,7 @@ const getStatusColor = (status: string) => {
 
         {/* Quick Action Cards */}
         <div className="quick-stats-grid">
-          <div className="quick-card balance-card" onClick={() => router.push('/dashboard/profile')}>
+          <div className="quick-card balance-card" onClick={() => router.push('/dashboard/account')}>
             <div className="quick-card-icon">💰</div>
             <div className="quick-card-content">
               <span className="quick-card-value">{formatCurrency(sellerData?.available_balance || 0)}</span>
