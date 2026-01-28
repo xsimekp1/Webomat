@@ -210,6 +210,39 @@ class ApiClient {
     return response.data;
   }
 
+  // Business a project listing pro generátor
+  static async listBusinesses() {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/businesses`,
+      { 
+        headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' },
+        params: { limit: 100, include_projects: true }
+      }
+    );
+    return response.data;
+  }
+
+  static async listProjectsForBusiness(businessId: string) {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/businesses/${businessId}/projects`,
+      { 
+        headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' }
+      }
+    );
+    return response.data;
+  }
+
+  static async generateWebsiteV2(payload: any) {
+    const response = await axios.post(
+      `${API_BASE_URL}/website/generate-v2`,
+      payload,
+      { 
+        headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' }
+      }
+    );
+    return response.data;
+  }
+
   // Finance endpointy
   static async getFinancialSummary() {
     const response = await axios.get(
