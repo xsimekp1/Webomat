@@ -24,12 +24,16 @@ class ApiClient {
     return response.data;
   }
 
-  static async getUserProfile() {
-    const response = await axios.get(
-      `${API_BASE_URL}/users/me`,
-      { headers: ApiClient.getAuthHeaders() }
-    );
-    return response.data;
+  static async getSellerAccountLedger(params: { range: string; type: string; status: string }) {
+    const queryParams = new URLSearchParams()
+
+    queryParams.append('range', params.range)
+    if (params.type !== 'all') queryParams.append('type', params.type)
+    if (params.status !== 'all') queryParams.append('status', params.status)
+
+    const url = `${API_BASE_URL}/seller/account/ledger${queryParams.toString() ? '?' + queryParams.toString() : ''}`
+    const response = await axios.get(url, { headers: ApiClient.getAuthHeaders() })
+    return response.data
   }
 
   static async updateUserProfile(userData: any) {
