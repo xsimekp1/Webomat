@@ -582,30 +582,33 @@ export default function GenerateWebsitePage() {
                     />
                   </div>
                 </div>
+              </div>   
+              <div style={{ height: 12 }} />
+              <div>
+                <label style={{ display: 'block', fontWeight: 800, marginBottom: 6 }}>Tone of voice</label>
+                <input
+                  value={brand.toneOfVoice}
+                  onChange={(e) => setBrand((b) => ({ ...b, toneOfVoice: e.target.value }))}
+                  style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid #d1d5db' }}
+                />
+              </div>
 
               <div style={{ height: 12 }} />
+              <div>
 
-              <label style={{ display: 'block', fontWeight: 800, marginBottom: 6 }}>Tone of voice</label>
-              <input
-                value={brand.toneOfVoice}
-                onChange={(e) => setBrand((b) => ({ ...b, toneOfVoice: e.target.value }))}
-                style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid #d1d5db' }}
-              />
-
-              <div style={{ height: 12 }} />
-
-              <label style={{ display: 'block', fontWeight: 800, marginBottom: 6 }}>Design styl</label>
-              <select
-                value={brand.designStyle}
-                onChange={(e) => setBrand((b) => ({ ...b, designStyle: e.target.value as Brand['designStyle'] }))}
-                style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid #d1d5db' }}
-              >
-                <option value="modern">Modern</option>
-                <option value="corporate">Corporate</option>
-                <option value="luxury">Luxury</option>
-                <option value="friendly">Friendly</option>
-                <option value="minimal">Minimal</option>
-              </select>
+                <label style={{ display: 'block', fontWeight: 800, marginBottom: 6 }}>Design styl</label>
+                <select
+                  value={brand.designStyle}
+                  onChange={(e) => setBrand((b) => ({ ...b, designStyle: e.target.value as Brand['designStyle'] }))}
+                  style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid #d1d5db' }}
+                >
+                  <option value="modern">Modern</option>
+                  <option value="corporate">Corporate</option>
+                  <option value="luxury">Luxury</option>
+                  <option value="friendly">Friendly</option>
+                  <option value="minimal">Minimal</option>
+                </select>
+              </div>
 
               <div style={{ height: 12 }} />
 
