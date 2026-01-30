@@ -49,6 +49,7 @@ type Brand = {
   designStyle: 'modern' | 'corporate' | 'luxury' | 'friendly' | 'minimal'
   language: 'cs' | 'en' | 'auto'
   targetAudience: string
+  font: 'inter' | 'source_sans' | 'lato'
 }
 
 type GenerateResponse = {
@@ -119,6 +120,7 @@ export default function GenerateWebsitePage() {
     designStyle: 'modern',
     language: 'cs',
     targetAudience: '',
+    font: 'inter'
   })
 
   const [constraints, setConstraints] = useState<Constraints>({
@@ -502,17 +504,7 @@ export default function GenerateWebsitePage() {
                   </label>
 
                   <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                    {/* Náhled barvy */}
-                    <div
-                      style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: 10,
-                        border: '1px solid #d1d5db',
-                        background: brand.primaryColor || '#ffffff',
-                      }}
-                      title={brand.primaryColor}
-                    />
+
 
                     {/* Color picker */}
                     <input
@@ -547,16 +539,7 @@ export default function GenerateWebsitePage() {
                   </label>
 
                   <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                    <div
-                      style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: 10,
-                        border: '1px solid #d1d5db',
-                        background: brand.secondaryColor || '#ffffff',
-                      }}
-                      title={brand.secondaryColor}
-                    />
+
 
                     <input
                       type="color"
@@ -583,6 +566,21 @@ export default function GenerateWebsitePage() {
                   </div>
                 </div>
               </div>   
+
+              <div>
+                <label style={{ display: 'block', fontWeight: 800, marginBottom: 6 }}>Font</label>
+                <select
+                  value={brand.font}
+                  onChange={(e) => setBrand((b) => ({ ...b, font: e.target.value as Brand['font'] }))}
+                  style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid #d1d5db' }}
+                >
+                  <option value="inter">Inter — univerzální</option>
+                  <option value="source_sans">Source Sans — profesionální</option>
+                  <option value="lato">Lato — přívětivý</option>
+                </select>
+              </div>
+
+
               <div style={{ height: 12 }} />
               <div>
                 <label style={{ display: 'block', fontWeight: 800, marginBottom: 6 }}>Tone of voice</label>
