@@ -80,6 +80,77 @@ function clampMove<T>(arr: T[], from: number, to: number) {
   return next
 }
 
+function Toggle({
+  checked,
+  onChange,
+  label,
+  hint,
+}: {
+  checked: boolean
+  onChange: (v: boolean) => void
+  label: string
+  hint?: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      aria-pressed={checked}
+      style={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
+        padding: '12px 14px',
+        borderRadius: 12,
+        border: '1px solid #e5e7eb',
+        background: checked ? 'rgba(16,185,129,0.10)' : 'white',
+        cursor: 'pointer',
+        textAlign: 'left',
+        transition: 'all .15s ease',
+      }}
+    >
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontWeight: 900, color: '#111827', lineHeight: 1.2 }}>{label}</div>
+        {hint ? (
+          <div style={{ marginTop: 4, color: '#6b7280', fontSize: 12, lineHeight: 1.3 }}>
+            {hint}
+          </div>
+        ) : null}
+      </div>
+
+      {/* switch */}
+      <div
+        style={{
+          flex: '0 0 auto',
+          width: 44,
+          height: 26,
+          borderRadius: 999,
+          background: checked ? '#10b981' : '#e5e7eb',
+          position: 'relative',
+          transition: 'background .15s ease',
+          boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.06)',
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            top: 3,
+            left: checked ? 22 : 3,
+            width: 20,
+            height: 20,
+            borderRadius: 999,
+            background: 'white',
+            transition: 'left .15s ease',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.18)',
+          }}
+        />
+      </div>
+    </button>
+  )
+}
+
 export default function GenerateWebsitePage() {
   const router = useRouter()
   const sp = useSearchParams()
@@ -667,22 +738,30 @@ export default function GenerateWebsitePage() {
               <div style={{ height: 12 }} />
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <label style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <input type="checkbox" checked={constraints.cookieBar} onChange={(e) => setConstraints((c) => ({ ...c, cookieBar: e.target.checked }))} />
-                  <span>Cookie lišta (placeholder)</span>
-                </label>
-                <label style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <input type="checkbox" checked={constraints.seoBasics} onChange={(e) => setConstraints((c) => ({ ...c, seoBasics: e.target.checked }))} />
-                  <span>SEO basics</span>
-                </label>
-                <label style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <input type="checkbox" checked={constraints.accessibilityBasics} onChange={(e) => setConstraints((c) => ({ ...c, accessibilityBasics: e.target.checked }))} />
-                  <span>Přístupnost základ</span>
-                </label>
-                <label style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <input type="checkbox" checked={constraints.minimalJs} onChange={(e) => setConstraints((c) => ({ ...c, minimalJs: e.target.checked }))} />
-                  <span>Performance: minimal JS</span>
-                </label>
+                <Toggle
+                  checked={constraints.cookieBar}
+                  onChange={(v) => setConstraints((c) => ({ ...c, cookieBar: v }))}
+                  label="Cookie lišta"
+                  hint="Zatím placeholder / statický banner."
+                />
+                <Toggle
+                  checked={constraints.seoBasics}
+                  onChange={(v) => setConstraints((c) => ({ ...c, seoBasics: v }))}
+                  label="SEO basics"
+                  hint="Title/meta/OG + základní struktura."
+                />
+                <Toggle
+                  checked={constraints.accessibilityBasics}
+                  onChange={(v) => setConstraints((c) => ({ ...c, accessibilityBasics: v }))}
+                  label="Přístupnost základ"
+                  hint="Kontrast, focus states, aria-labely."
+                />
+                <Toggle
+                  checked={constraints.minimalJs}
+                  onChange={(v) => setConstraints((c) => ({ ...c, minimalJs: v }))}
+                  label="Performance: minimal JS"
+                  hint="Preferuj čisté HTML/CSS, bez těžkých skriptů."
+                />
               </div>
             </>
           )}
