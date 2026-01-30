@@ -199,6 +199,14 @@ class PackageType(str, Enum):
     custom = "custom"
 
 
+class DomainStatus(str, Enum):
+    planned = "planned"
+    purchased = "purchased"
+    deployed = "deployed"
+    not_needed = "not_needed"
+    other = "other"
+
+
 class ProjectCreate(BaseModel):
     package: PackageType = PackageType.start
     status: ProjectStatus = ProjectStatus.offer
@@ -206,6 +214,12 @@ class ProjectCreate(BaseModel):
     price_monthly: float | None = None
     domain: str | None = None
     notes: str | None = None
+    # New fields
+    required_deadline: datetime | None = None
+    budget: float | None = None
+    domain_status: DomainStatus = DomainStatus.planned
+    internal_notes: str | None = None
+    client_notes: str | None = None
 
 
 class ProjectUpdate(BaseModel):
@@ -215,6 +229,12 @@ class ProjectUpdate(BaseModel):
     price_monthly: float | None = None
     domain: str | None = None
     notes: str | None = None
+    # New fields
+    required_deadline: datetime | None = None
+    budget: float | None = None
+    domain_status: DomainStatus | None = None
+    internal_notes: str | None = None
+    client_notes: str | None = None
 
 
 class ProjectResponse(BaseModel):
@@ -226,6 +246,15 @@ class ProjectResponse(BaseModel):
     price_monthly: float | None = None
     domain: str | None = None
     notes: str | None = None
+    # New fields
+    required_deadline: datetime | None = None
+    budget: float | None = None
+    domain_status: str | None = None
+    internal_notes: str | None = None
+    client_notes: str | None = None
+    # Version info
+    versions_count: int | None = None
+    latest_version_id: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
@@ -239,11 +268,32 @@ class WebsiteVersionStatus(str, Enum):
     archived = "archived"
 
 
+class DeploymentStatus(str, Enum):
+    none = "none"
+    deploying = "deploying"
+    deployed = "deployed"
+    failed = "failed"
+    unpublished = "unpublished"
+
+
 class WebsiteVersionCreate(BaseModel):
     project_id: str
     source_bundle_path: str | None = None
     preview_image_path: str | None = None
     notes: str | None = None
+    html_content: str | None = None
+    html_content_en: str | None = None
+    parent_version_id: str | None = None
+    generation_instructions: str | None = None
+
+
+class WebsiteVersionUpdate(BaseModel):
+    status: WebsiteVersionStatus | None = None
+    notes: str | None = None
+    html_content: str | None = None
+    html_content_en: str | None = None
+    is_current: bool | None = None
+    generation_instructions: str | None = None
 
 
 class WebsiteVersionResponse(BaseModel):
@@ -254,6 +304,20 @@ class WebsiteVersionResponse(BaseModel):
     source_bundle_path: str | None = None
     preview_image_path: str | None = None
     notes: str | None = None
+    # New fields
+    html_content: str | None = None
+    html_content_en: str | None = None
+    thumbnail_url: str | None = None
+    screenshot_desktop_url: str | None = None
+    screenshot_mobile_url: str | None = None
+    public_url: str | None = None
+    deployment_status: str | None = None
+    deployment_platform: str | None = None
+    deployment_id: str | None = None
+    is_current: bool | None = None
+    published_at: datetime | None = None
+    parent_version_id: str | None = None
+    generation_instructions: str | None = None
     created_at: datetime | None = None
     created_by: str | None = None
 
@@ -261,6 +325,161 @@ class WebsiteVersionResponse(BaseModel):
 class WebsiteVersionListResponse(BaseModel):
     items: list[WebsiteVersionResponse]
     total: int
+
+
+# Version Comments schemas
+class CommentAuthorType(str, Enum):
+    client = "client"
+    internal = "internal"
+
+
+class CommentStatus(str, Enum):
+    new = "new"
+    acknowledged = "acknowledged"
+    resolved = "resolved"
+    rejected = "rejected"
+
+
+class CommentAnchorType(str, Enum):
+    element = "element"
+    coordinates = "coordinates"
+    general = "general"
+
+
+class VersionCommentCreate(BaseModel):
+    content: str
+    author_type: CommentAuthorType = CommentAuthorType.client
+    author_name: str | None = None
+    author_email: str | None = None
+    anchor_type: CommentAnchorType | None = None
+    anchor_selector: str | None = None
+    anchor_x: float | None = None
+    anchor_y: float | None = None
+
+
+class VersionCommentUpdate(BaseModel):
+    status: CommentStatus | None = None
+    resolution_note: str | None = None
+
+
+class VersionCommentResponse(BaseModel):
+    id: str
+    version_id: str
+    author_type: str
+    author_name: str | None = None
+    author_email: str | None = None
+    content: str
+    anchor_type: str | None = None
+    anchor_selector: str | None = None
+    anchor_x: float | None = None
+    anchor_y: float | None = None
+    status: str
+    resolved_by: str | None = None
+    resolved_at: datetime | None = None
+    resolution_note: str | None = None
+    created_at: datetime | None = None
+
+
+# Preview Share Link schemas
+class ShareLinkCreate(BaseModel):
+    expires_in_days: int | None = 7
+    max_views: int | None = None
+
+
+class ShareLinkResponse(BaseModel):
+    id: str
+    version_id: str
+    token: str
+    expires_at: datetime | None = None
+    view_count: int
+    max_views: int | None = None
+    is_active: bool
+    created_at: datetime | None = None
+    # Computed URL
+    preview_url: str | None = None
+
+
+# Platform Feedback schemas
+class FeedbackCategory(str, Enum):
+    bug = "bug"
+    idea = "idea"
+    ux = "ux"
+    other = "other"
+
+
+class FeedbackPriority(str, Enum):
+    low = "low"
+    medium = "medium"
+    high = "high"
+
+
+class FeedbackStatus(str, Enum):
+    open = "open"
+    in_progress = "in_progress"
+    done = "done"
+    rejected = "rejected"
+
+
+class PlatformFeedbackCreate(BaseModel):
+    content: str
+    category: FeedbackCategory = FeedbackCategory.idea
+    priority: FeedbackPriority = FeedbackPriority.medium
+    page_url: str | None = None
+
+
+class PlatformFeedbackUpdate(BaseModel):
+    status: FeedbackStatus | None = None
+    admin_note: str | None = None
+
+
+class PlatformFeedbackResponse(BaseModel):
+    id: str
+    submitted_by: str
+    submitter_name: str | None = None
+    content: str
+    category: str
+    priority: str
+    status: str
+    admin_note: str | None = None
+    handled_by: str | None = None
+    handler_name: str | None = None
+    handled_at: datetime | None = None
+    page_url: str | None = None
+    created_at: datetime | None = None
+
+
+# Background Jobs schemas
+class JobType(str, Enum):
+    screenshot_capture = "screenshot_capture"
+    deploy_version = "deploy_version"
+    undeploy_version = "undeploy_version"
+    generate_thumbnail = "generate_thumbnail"
+    send_notification = "send_notification"
+    cleanup_expired_links = "cleanup_expired_links"
+
+
+class JobStatus(str, Enum):
+    pending = "pending"
+    processing = "processing"
+    completed = "completed"
+    failed = "failed"
+    cancelled = "cancelled"
+
+
+class BackgroundJobResponse(BaseModel):
+    id: str
+    job_type: str
+    payload: dict | None = None
+    status: str
+    priority: int
+    attempts: int
+    max_attempts: int
+    result: dict | None = None
+    error_message: str | None = None
+    scheduled_for: datetime | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    created_at: datetime | None = None
 
 
 # Asset schemas

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
-from .routers import auth, admin, crm, upload, website
+from .routers import auth, admin, crm, upload, website, web_project, preview, feedback
 
 settings = get_settings()
 
@@ -27,6 +27,9 @@ app.include_router(admin.router)
 app.include_router(crm.router)
 app.include_router(upload.router)
 app.include_router(website.router)
+app.include_router(web_project.router)
+app.include_router(preview.router)
+app.include_router(feedback.router)
 
 
 @app.get("/")

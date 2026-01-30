@@ -599,11 +599,10 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
 
                   <div className="project-actions" onClick={(e) => e.stopPropagation()}>
                     <button
-                      className="btn-generate-web"
-                      onClick={() => handleGenerateWebsite(project.id)}
-                      disabled={generatingWebsite}
+                      className="btn-manage-web"
+                      onClick={() => router.push(`/dashboard/web-project/${project.id}`)}
                     >
-                      🚀 Generovat web
+                      🌐 Sprava webu
                     </button>
                   </div>
                 </div>
