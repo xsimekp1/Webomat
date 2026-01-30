@@ -497,24 +497,91 @@ export default function GenerateWebsitePage() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontWeight: 800, marginBottom: 6 }}>Primární barva</label>
-                  <input
-                    value={brand.primaryColor}
-                    onChange={(e) => setBrand((b) => ({ ...b, primaryColor: e.target.value }))}
-                    style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid #d1d5db' }}
-                    placeholder="#667eea"
-                  />
+                  <label style={{ display: 'block', fontWeight: 800, marginBottom: 6 }}>
+                    Primární barva
+                  </label>
+
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    {/* Náhled barvy */}
+                    <div
+                      style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: 10,
+                        border: '1px solid #d1d5db',
+                        background: brand.primaryColor || '#ffffff',
+                      }}
+                      title={brand.primaryColor}
+                    />
+
+                    {/* Color picker */}
+                    <input
+                      type="color"
+                      value={brand.primaryColor || '#667eea'}
+                      onChange={(e) => setBrand((b) => ({ ...b, primaryColor: e.target.value }))}
+                      style={{
+                        width: 44,
+                        height: 38,
+                        padding: 0,
+                        borderRadius: 10,
+                        border: '1px solid #d1d5db',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                      }}
+                      aria-label="Vybrat primární barvu"
+                    />
+
+                    {/* Text input (hex) */}
+                    <input
+                      value={brand.primaryColor}
+                      onChange={(e) => setBrand((b) => ({ ...b, primaryColor: e.target.value }))}
+                      style={{ flex: 1, padding: 10, borderRadius: 10, border: '1px solid #d1d5db' }}
+                      placeholder="#667eea"
+                    />
+                  </div>
                 </div>
+
                 <div>
-                  <label style={{ display: 'block', fontWeight: 800, marginBottom: 6 }}>Sekundární barva</label>
-                  <input
-                    value={brand.secondaryColor}
-                    onChange={(e) => setBrand((b) => ({ ...b, secondaryColor: e.target.value }))}
-                    style={{ width: '100%', padding: 10, borderRadius: 10, border: '1px solid #d1d5db' }}
-                    placeholder="#10b981"
-                  />
+                  <label style={{ display: 'block', fontWeight: 800, marginBottom: 6 }}>
+                    Sekundární barva
+                  </label>
+
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <div
+                      style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: 10,
+                        border: '1px solid #d1d5db',
+                        background: brand.secondaryColor || '#ffffff',
+                      }}
+                      title={brand.secondaryColor}
+                    />
+
+                    <input
+                      type="color"
+                      value={brand.secondaryColor || '#10b981'}
+                      onChange={(e) => setBrand((b) => ({ ...b, secondaryColor: e.target.value }))}
+                      style={{
+                        width: 44,
+                        height: 38,
+                        padding: 0,
+                        borderRadius: 10,
+                        border: '1px solid #d1d5db',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                      }}
+                      aria-label="Vybrat sekundární barvu"
+                    />
+
+                    <input
+                      value={brand.secondaryColor}
+                      onChange={(e) => setBrand((b) => ({ ...b, secondaryColor: e.target.value }))}
+                      style={{ flex: 1, padding: 10, borderRadius: 10, border: '1px solid #d1d5db' }}
+                      placeholder="#10b981"
+                    />
+                  </div>
                 </div>
-              </div>
 
               <div style={{ height: 12 }} />
 
