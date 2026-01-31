@@ -10,8 +10,6 @@ export default function DashboardHeader() {
   const router = useRouter()
   const [showFeedback, setShowFeedback] = useState(false)
 
-  if (!user) return null
-
   return (
     <>
       <header className="dashboard-header">
@@ -21,49 +19,56 @@ export default function DashboardHeader() {
           </h1>
         </div>
         <div className="header-right">
-          <span className="user-info">
-            {user.name} <span className="role-badge">{user.role === 'admin' ? 'Admin' : 'Obchodník'}</span>
-          </span>
+          {user ? (
+            <>
+              <span className="user-info">
+                {user.name} <span className="role-badge">{user.role === 'admin' ? 'Admin' : 'Obchodník'}</span>
+              </span>
 
-          {/* Feedback button for all users */}
-          <button
-            onClick={() => setShowFeedback(true)}
-            className="btn-feedback-text"
-            title="Připomínky k platformě"
-          >
-            💬 Připomínky
-          </button>
+              {/* Feedback button for all users */}
+              <button
+                onClick={() => setShowFeedback(true)}
+                className="btn-feedback-text"
+                title="Připomínky k platformě"
+              >
+                💬 Připomínky
+              </button>
 
-          {/* Admin: link to feedback management */}
-          {user.role === 'admin' && (
-            <button
-              onClick={() => router.push('/dashboard/admin/feedback')}
-              className="btn-icon"
-              title="Správa připomínek"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14,2 14,8 20,8"/>
-                <line x1="16" y1="13" x2="8" y2="13"/>
-                <line x1="16" y1="17" x2="8" y2="17"/>
-                <polyline points="10,9 9,9 8,9"/>
-              </svg>
-            </button>
+              {/* Admin: link to feedback management */}
+              {user.role === 'admin' && (
+                <button
+                  onClick={() => router.push('/dashboard/admin/feedback')}
+                  className="btn-icon"
+                  title="Správa připomínek"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14,2 14,8 20,8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10,9 9,9 8,9"/>
+                  </svg>
+                </button>
+              )}
+
+              <button onClick={() => router.push('/help')} className="btn-icon" title="Nápověda">
+                ?
+              </button>
+              <button onClick={() => router.push('/dashboard/profile')} className="btn-icon" title="Můj profil">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </button>
+              <button onClick={logout} className="btn-logout">
+                Odhlásit
+              </button>
+            </>
+          ) : (
+            <span className="user-info">Načítám...</span>
           )}
-
-          <button onClick={() => router.push('/help')} className="btn-icon" title="Nápověda">
-            ?
-          </button>
-          <button onClick={() => router.push('/dashboard/profile')} className="btn-icon" title="Můj profil">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-          </button>
-          <button onClick={logout} className="btn-logout">
-            Odhlásit
-          </button>
         </div>
+      </header>
 
         <style jsx>{`
           .dashboard-header {
@@ -171,7 +176,6 @@ export default function DashboardHeader() {
             }
           }
         `}</style>
-      </header>
 
       <FeedbackModal isOpen={showFeedback} onClose={() => setShowFeedback(false)} />
     </>
