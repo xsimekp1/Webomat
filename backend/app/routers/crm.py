@@ -1086,10 +1086,11 @@ async def get_seller_dashboard(
 
     # Count leads and follow-ups
     total_leads = len(businesses_data)
+    today_str = today.isoformat()
     follow_ups_today = sum(
         1 for b in businesses_data
         if b.get("next_follow_up_at")
-        and b["next_follow_up_at"] <= today.isoformat()
+        and b["next_follow_up_at"][:10] <= today_str  # Compare only date part (YYYY-MM-DD)
         and b.get("status_crm") not in ["won", "lost", "dnc"]
     )
 
@@ -1713,4 +1714,129 @@ async def create_project_asset(
         size_bytes=row["size_bytes"],
         uploaded_at=row.get("uploaded_at"),
         uploaded_by=row.get("uploaded_by"),
+    )
+
+
+@router.get("/seller/account/ledger", response_model=BalancePageResponse)
+async def get_seller_account_ledger(
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+    range: str = Query("all", description="Časový rozsah: all/month/quarter/year"),
+    type: str = Query("all", description="Typ: all/earned/payout/adjustment"),
+    status: str = Query("all", description="Status: all/pending/approved/paid")
+):
+    """Get seller account ledger with detailed entries and balance calculation."""
+    supabase = get_supabase()
+
+    # Build filters
+    entry_type_filter = []
+    if type == "earned":
+        entry_type_filter = ["commission_earned"]
+    elif type == "payout":
+        entry_type_filter = ["payout_reserved", "payout_paid"]
+    elif type == "adjustment":
+        entry_type_filter = ["admin_adjustment"]
+
+    # Get ledger entries with filters
+    query = supabase.table("ledger_entries").select("*").eq("seller_id", current_user.id)
+    
+    if entry_type_filter:
+        query = query.in_("entry_type", entry_type_filter)
+    
+    # Apply date range filter
+    if range != "all":
+        from datetime import datetime, timedelta
+        now = datetime.utcnow()
+        if range == "month":
+            start_date = (now - timedelta(days=30)).isoformat()
+        elif range == "quarter":
+            start_date = (now - timedelta(days=90)).isoformat()
+        elif range == "year":
+            start_date = (now - timedelta(days=365)).isoformat()
+        else:
+            start_date = None
+        
+        if start_date:
+            query = query.gte("created_at", start_date)
+
+    # Apply status filter for payout entries
+    if status != "all":
+        query = query.eq("status", status)
+
+    # Execute query
+    result = query.order("created_at", desc=True).execute()
+    
+    # Calculate available balance
+    earned_result = (
+        supabase.table("ledger_entries")
+        .select("amount")
+        .eq("seller_id", current_user.id)
+        .eq("entry_type", "commission_earned")
+        .execute()
+    )
+
+    payout_result = (
+        supabase.table("ledger_entries")
+        .select("amount")
+        .eq("seller_id", current_user.id)
+        .in_("entry_type", ["payout_reserved", "payout_paid"])
+        .execute()
+    )
+
+    total_earned = sum(entry.get("amount", 0) for entry in (earned_result.data or []))
+    total_payouts = sum(entry.get("amount", 0) for entry in (payout_result.data or []))
+    available_balance = total_earned - total_payouts
+
+    # Convert to response format
+    ledger_entries = []
+    for entry in result.data or []:
+        ledger_entries.append(
+            LedgerEntryResponse(
+                id=entry["id"],
+                seller_id=entry["seller_id"],
+                entry_type=entry["entry_type"],
+                amount=entry["amount"],
+                related_invoice_id=entry.get("related_invoice_id"),
+                related_project_id=entry.get("related_project_id"),
+                related_business_id=entry.get("related_business_id"),
+                description=entry.get("description"),
+                notes=entry.get("notes"),
+                is_test=entry.get("is_test", False),
+                created_at=entry.get("created_at"),
+                created_by=entry.get("created_by")
+            )
+        )
+
+    # Generate weekly rewards summary (simplified)
+    weekly_rewards = []
+    if range in ["all", "quarter", "year"]:
+        # Get last 12 weeks of data
+        for i in range(12):
+            week_date = datetime.utcnow() - timedelta(weeks=i)
+            week_start = week_date.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=week_date.weekday())
+            week_end = week_start + timedelta(days=6)
+            
+            week_result = (
+                supabase.table("ledger_entries")
+                .select("amount")
+                .eq("seller_id", current_user.id)
+                .eq("entry_type", "commission_earned")
+                .gte("created_at", week_start.isoformat())
+                .lte("created_at", week_end.isoformat())
+                .execute()
+            )
+            
+            week_total = sum(entry.get("amount", 0) for entry in (week_result.data or []))
+            if week_total > 0:
+                weekly_rewards.append(
+                    WeeklyRewardSummary(
+                        week_start=week_start,
+                        week_end=week_end,
+                        amount=week_total
+                    )
+                )
+
+    return BalancePageResponse(
+        available_balance=available_balance,
+        ledger_entries=ledger_entries,
+        weekly_rewards=weekly_rewards
     )
