@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '../../../context/AuthContext'
+import { useToast } from '../../../context/ToastContext'
 import ApiClient from '../../../lib/api'
 import './styles.css'
 
@@ -80,6 +81,7 @@ export default function WebProjectPage() {
   const router = useRouter()
   const params = useParams()
   const { user } = useAuth()
+  const { showToast } = useToast()
   const projectId = params.projectId as string
 
   const [project, setProject] = useState<Project | null>(null)
@@ -93,7 +95,9 @@ export default function WebProjectPage() {
   const [capturing, setCapturing] = useState<string | null>(null)
   const [creatingLink, setCreatingLink] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [deletingProject, setDeletingProject] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null)
+  const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false)
   const [shareLinks, setShareLinks] = useState<Record<string, ShareLink>>({})
 
   const loadProject = useCallback(async () => {
@@ -117,6 +121,19 @@ export default function WebProjectPage() {
       loadProject()
     }
   }, [projectId, loadProject])
+
+  // Testovací toasts - zobrazí se při načtení projektu
+  useEffect(() => {
+    if (project && project.id) {
+      // Zobrazí testovací toast s názvem projektu
+      setTimeout(() => showToast(`Projekt načten: ${project.id}`, 'info', 3000), 500)
+      
+      // Test dalších typů toastů
+      setTimeout(() => showToast('Success toast - vše funguje!', 'success', 2000), 1000)
+      setTimeout(() => showToast('Warning - pozor na tento projekt', 'warning', 2500), 1500)
+      setTimeout(() => showToast('Error - něco se pokazilo (test)', 'error', 2000), 2000)
+    }
+  }, [project, showToast])
 
   const handleDeploy = async (versionId: string) => {
     setDeploying(versionId)
@@ -186,6 +203,20 @@ export default function WebProjectPage() {
     }
   }
 
+  const handleDeleteProject = async () => {
+    setDeletingProject(true)
+    try {
+      await ApiClient.deleteProject(projectId)
+      setShowDeleteProjectModal(false)
+      // Redirect back to dashboard or projects list
+      router.push('/dashboard')
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Nepodarilo se smazat projekt')
+    } finally {
+      setDeletingProject(false)
+    }
+  }
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
     alert('Odkaz byl zkopirovan')
@@ -212,19 +243,28 @@ export default function WebProjectPage() {
     <div className="web-project-page">
       {/* Header */}
       <div className="page-header">
-        <button className="btn-back" onClick={() => router.back()}>
-          ← Zpet
-        </button>
-        <div className="header-info">
-          <h1>Sprava webu</h1>
-          <div className="project-meta">
-            <span className={`status-badge status-${project.status}`}>
-              {STATUS_LABELS[project.status] || project.status}
-            </span>
-            <span className="package-badge">{project.package}</span>
-            {project.domain && <span className="domain">{project.domain}</span>}
+        <div className="header-left">
+          <button className="btn-back" onClick={() => router.back()}>
+            ← Zpet
+          </button>
+          <div className="header-info">
+            <h1>Sprava webu</h1>
+            <div className="project-meta">
+              <span className={`status-badge status-${project.status}`}>
+                {STATUS_LABELS[project.status] || project.status}
+              </span>
+              <span className="package-badge">{project.package}</span>
+              {project.domain && <span className="domain">{project.domain}</span>}
+            </div>
           </div>
         </div>
+        <button 
+          className="btn-danger delete-project-btn" 
+          onClick={() => setShowDeleteProjectModal(true)}
+          disabled={deletingProject}
+        >
+          {deletingProject ? 'Mazání...' : 'Smazat projekt'}
+        </button>
       </div>
 
       {/* Tabs */}
@@ -520,6 +560,42 @@ export default function WebProjectPage() {
                 disabled={deleting === showDeleteModal}
               >
                 {deleting === showDeleteModal ? 'Mazani...' : 'Smazat'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Project Confirmation Modal */}
+      {showDeleteProjectModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Opravdu chcete smazat celý projekt?</h3>
+            <p>
+              <strong>Upozornění:</strong> Tuto akci nelze vrátit zpět.
+            </p>
+            <ul className="modal-warnings">
+              <li>Projekt bude trvale smazán (označen jako cancelled)</li>
+              <li>Všechny verze budou archivovány</li>
+              <li>Přiřazené faktury a komise zůstanou zachovány</li>
+            </ul>
+            <p>
+              Pokud máte nasazené verze, nejdříve je musíte odstranit.
+            </p>
+            <div className="modal-actions">
+              <button
+                className="btn-secondary"
+                onClick={() => setShowDeleteProjectModal(false)}
+                disabled={deletingProject}
+              >
+                Zrušit
+              </button>
+              <button
+                className="btn-danger"
+                onClick={handleDeleteProject}
+                disabled={deletingProject}
+              >
+                {deletingProject ? 'Mazání...' : 'Smazat projekt'}
               </button>
             </div>
           </div>
