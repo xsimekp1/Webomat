@@ -79,21 +79,21 @@ export default function DashboardPage() {
 
   // Load seller dashboard data
   useEffect(() => {
-    if (isAuthenticated) {
+    if (user) {
       ApiClient.getSellerDashboard()
         .then(setSellerData)
         .catch(() => {})
     }
-  }, [isAuthenticated])
+  }, [user])
 
   // Load admin stats
   useEffect(() => {
-    if (isAuthenticated && user?.role === 'admin') {
+    if (user?.role === 'admin') {
       ApiClient.getAdminDashboardStats()
         .then(setAdminStats)
         .catch(() => {})
     }
-  }, [isAuthenticated, user])
+  }, [user])
 
   const handleGenerateTest = async () => {
     setGenerating(true)
