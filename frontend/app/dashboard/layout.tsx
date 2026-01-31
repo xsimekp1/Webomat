@@ -4,7 +4,6 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../context/AuthContext'
 import DashboardHeader from '../components/DashboardHeader'
-import FeedbackButton from '../components/feedback/FeedbackButton'
 
 export default function DashboardLayout({
   children,
@@ -51,7 +50,6 @@ export default function DashboardLayout({
       <main className="dashboard-content">
         {children}
       </main>
-      <FeedbackButton />
 
       <style jsx>{`
         .dashboard-layout {
