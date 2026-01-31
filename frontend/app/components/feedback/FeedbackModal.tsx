@@ -1,7 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-import { Modal, Button, Textarea, Select } from '../ui'
+import { useState, useEffect } from 'react'
 import ApiClient from '../../lib/api'
 
 interface FeedbackModalProps {
@@ -9,26 +8,20 @@ interface FeedbackModalProps {
   onClose: () => void
 }
 
-const CATEGORIES = [
-  { value: 'bug', label: 'Chyba / Bug' },
-  { value: 'idea', label: 'Napad / Vylepseni' },
-  { value: 'ux', label: 'Uzivatelsky zazit (UX)' },
-  { value: 'other', label: 'Jine' },
-]
-
-const PRIORITIES = [
-  { value: 'low', label: 'Nizka' },
-  { value: 'medium', label: 'Stredni' },
-  { value: 'high', label: 'Vysoka' },
-]
-
 export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
   const [content, setContent] = useState('')
-  const [category, setCategory] = useState('idea')
-  const [priority, setPriority] = useState('medium')
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setContent('')
+      setError(null)
+      setSubmitted(false)
+    }
+  }, [isOpen])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,19 +37,15 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
     try {
       await ApiClient.submitFeedback({
         content: content.trim(),
-        category: category as any,
-        priority: priority as any,
+        category: 'idea',
+        priority: 'medium',
         page_url: window.location.href,
       })
 
       setSubmitted(true)
       setTimeout(() => {
-        setSubmitted(false)
-        setContent('')
-        setCategory('idea')
-        setPriority('medium')
         onClose()
-      }, 2000)
+      }, 1500)
 
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Nepodarilo se odeslat zpetnou vazbu')
@@ -67,89 +56,198 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
 
   const handleClose = () => {
     if (!submitting) {
-      setError(null)
-      setSubmitted(false)
       onClose()
     }
   }
 
+  if (!isOpen) return null
+
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Zpetna vazba" size="md">
-      {submitted ? (
-        <div className="text-center py-8">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg
-              className="w-8 h-8 text-green-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Diky za Vasi zpetnou vazbu!
-          </h3>
-          <p className="text-gray-600">
-            Vase zprava byla uspesne odeslana.
-          </p>
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <p className="text-sm text-gray-600 mb-4">
-            Pomozte nam zlepsit platformu. Podelte se o sve napady, nahlaste chyby nebo nam dejte vedet, co bychom mohli zlepsit.
-          </p>
-
-          {error && (
-            <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">
-              {error}
+    <div className="feedback-overlay" onClick={handleClose}>
+      <div className="feedback-modal" onClick={(e) => e.stopPropagation()}>
+        {submitted ? (
+          <div className="feedback-success">
+            <div className="success-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
             </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4">
-            <Select
-              label="Kategorie"
-              options={CATEGORIES}
-              value={category}
-              onChange={(e: any) => setCategory(e.target.value)}
-            />
-            <Select
-              label="Priorita"
-              options={PRIORITIES}
-              value={priority}
-              onChange={(e: any) => setPriority(e.target.value)}
-            />
+            <p>Diky za Vasi zpetnou vazbu!</p>
           </div>
+        ) : (
+          <>
+            <h3>Zpetna vazba</h3>
 
-          <Textarea
-            label="Vase zpetna vazba"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Popiste svuj napad, chybu nebo navrh na zlepseni..."
-            rows={5}
-            hint="Minimum 10 znaku"
-          />
+            {error && (
+              <div className="feedback-error">{error}</div>
+            )}
 
-          <div className="flex justify-end gap-3 pt-4">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleClose}
-              disabled={submitting}
-            >
-              Zrusit
-            </Button>
-            <Button type="submit" loading={submitting}>
-              Odeslat
-            </Button>
-          </div>
-        </form>
-      )}
-    </Modal>
+            <form onSubmit={handleSubmit}>
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Popiste svuj napad, chybu nebo navrh na zlepseni..."
+                rows={5}
+                autoFocus
+              />
+
+              <div className="feedback-actions">
+                <button
+                  type="button"
+                  className="btn-cancel"
+                  onClick={handleClose}
+                  disabled={submitting}
+                >
+                  Zrusit
+                </button>
+                <button
+                  type="submit"
+                  className="btn-submit"
+                  disabled={submitting}
+                >
+                  {submitting ? 'Odesilam...' : 'Odeslat'}
+                </button>
+              </div>
+            </form>
+          </>
+        )}
+      </div>
+
+      <style jsx>{`
+        .feedback-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 20px;
+        }
+
+        .feedback-modal {
+          background: white;
+          border-radius: 12px;
+          padding: 24px;
+          max-width: 450px;
+          width: 100%;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .feedback-modal h3 {
+          margin: 0 0 16px 0;
+          font-size: 18px;
+          font-weight: 600;
+          color: #374151;
+        }
+
+        .feedback-error {
+          padding: 10px 12px;
+          background: #fef2f2;
+          color: #dc2626;
+          border-radius: 6px;
+          font-size: 14px;
+          margin-bottom: 12px;
+        }
+
+        textarea {
+          width: 100%;
+          padding: 12px;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          font-size: 14px;
+          font-family: inherit;
+          resize: vertical;
+          min-height: 120px;
+        }
+
+        textarea:focus {
+          outline: none;
+          border-color: #667eea;
+          box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        textarea::placeholder {
+          color: #9ca3af;
+        }
+
+        .feedback-actions {
+          display: flex;
+          gap: 12px;
+          justify-content: flex-end;
+          margin-top: 16px;
+        }
+
+        .btn-cancel {
+          padding: 10px 20px;
+          background: white;
+          color: #374151;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 14px;
+          transition: all 0.2s;
+        }
+
+        .btn-cancel:hover:not(:disabled) {
+          background: #f9fafb;
+          border-color: #d1d5db;
+        }
+
+        .btn-cancel:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .btn-submit {
+          padding: 10px 20px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 500;
+          transition: all 0.2s;
+        }
+
+        .btn-submit:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-submit:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .feedback-success {
+          text-align: center;
+          padding: 24px 0;
+        }
+
+        .success-icon {
+          width: 56px;
+          height: 56px;
+          background: #d1fae5;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 16px;
+          color: #065f46;
+        }
+
+        .feedback-success p {
+          margin: 0;
+          font-size: 16px;
+          font-weight: 500;
+          color: #374151;
+        }
+      `}</style>
+    </div>
   )
 }
