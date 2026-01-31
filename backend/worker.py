@@ -15,7 +15,7 @@ import os
 import sys
 import signal
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
 
 # Add app to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -51,7 +51,7 @@ _shutdown_requested = False
 def handle_shutdown(signum, frame):
     """Handle shutdown signals."""
     global _shutdown_requested
-    print(f"\n[{datetime.utcnow().isoformat()}] Shutdown signal received, finishing current job...")
+    print(f"\n[{datetime.now(UTC).isoformat()}] Shutdown signal received, finishing current job...")
     _shutdown_requested = True
 
 
@@ -65,7 +65,7 @@ async def process_job(job: dict) -> None:
     job_id = job["id"]
     job_type = job["job_type"]
 
-    print(f"[{datetime.utcnow().isoformat()}] Processing job {job_id} ({job_type})")
+    print(f"[{datetime.now(UTC).isoformat()}] Processing job {job_id} ({job_type})")
 
     handler = get_job_handler(job_type)
     if not handler:
@@ -75,11 +75,11 @@ async def process_job(job: dict) -> None:
     try:
         result = await handler(job)
         await complete_job(job_id, result)
-        print(f"[{datetime.utcnow().isoformat()}] Job {job_id} completed successfully")
+        print(f"[{datetime.now(UTC).isoformat()}] Job {job_id} completed successfully")
 
     except Exception as e:
         error_message = f"{type(e).__name__}: {str(e)}"
-        print(f"[{datetime.utcnow().isoformat()}] Job {job_id} failed: {error_message}")
+        print(f"[{datetime.now(UTC).isoformat()}] Job {job_id} failed: {error_message}")
         await fail_job(job_id, error_message)
 
 
@@ -87,7 +87,7 @@ async def worker_loop():
     """Main worker loop."""
     global _shutdown_requested
 
-    print(f"[{datetime.utcnow().isoformat()}] Worker {WORKER_ID} starting")
+    print(f"[{datetime.now(UTC).isoformat()}] Worker {WORKER_ID} starting")
     print(f"  Poll interval: {POLL_INTERVAL}s")
     print(f"  Supported job types: {', '.join(SUPPORTED_JOB_TYPES)}")
 
@@ -113,17 +113,17 @@ async def worker_loop():
 
         except Exception as e:
             consecutive_errors += 1
-            print(f"[{datetime.utcnow().isoformat()}] Worker error: {type(e).__name__}: {e}")
+            print(f"[{datetime.now(UTC).isoformat()}] Worker error: {type(e).__name__}: {e}")
 
             if consecutive_errors >= MAX_CONSECUTIVE_ERRORS:
-                print(f"[{datetime.utcnow().isoformat()}] Too many consecutive errors, shutting down")
+                print(f"[{datetime.now(UTC).isoformat()}] Too many consecutive errors, shutting down")
                 break
 
             # Exponential backoff on errors
             wait_time = min(POLL_INTERVAL * (2 ** consecutive_errors), 300)
             await asyncio.sleep(wait_time)
 
-    print(f"[{datetime.utcnow().isoformat()}] Worker {WORKER_ID} stopped")
+    print(f"[{datetime.now(UTC).isoformat()}] Worker {WORKER_ID} stopped")
 
 
 async def print_stats():
