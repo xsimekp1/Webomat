@@ -28,12 +28,10 @@ export default function DashboardHeader() {
           {/* Feedback button for all users */}
           <button
             onClick={() => setShowFeedback(true)}
-            className="btn-icon btn-feedback"
+            className="btn-feedback-text"
             title="Připomínky k platformě"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-            </svg>
+            💬 Připomínky
           </button>
 
           {/* Admin: link to feedback management */}
@@ -131,14 +129,21 @@ export default function DashboardHeader() {
             border-color: #cbd5e1;
           }
 
-          .btn-feedback {
-            border-color: #667eea;
-            color: #667eea;
+          .btn-feedback-text {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 2px solid #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s;
           }
 
-          .btn-feedback:hover {
-            background: #f0f4ff;
-            border-color: #764ba2;
+          .btn-feedback-text:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
           }
 
           .btn-logout {
