@@ -1076,11 +1076,11 @@ async def get_seller_dashboard(
 
     available_balance = total_earned - total_payouts
 
-    # Get businesses owned by this seller
+    # Get businesses owned by this seller OR without owner (accessible to all)
     businesses_result = (
         supabase.table("businesses")
-        .select("id, name, status_crm, next_follow_up_at")
-        .eq("owner_seller_id", current_user.id)
+        .select("id, name, status_crm, next_follow_up_at, owner_seller_id")
+        .or_(f"owner_seller_id.eq.{current_user.id},owner_seller_id.is.null")
         .execute()
     )
     businesses_data = businesses_result.data if businesses_result.data else []
@@ -1101,49 +1101,87 @@ async def get_seller_dashboard(
     pending_projects: list[PendingProjectInfo] = []
     pending_amount = 0
 
+    # Get projects from businesses owned by this seller or without owner
     if business_ids:
         projects_result = (
             supabase.table("website_projects")
-            .select("id, business_id, status, package, price_setup, created_at")
+            .select("id, business_id, seller_id, status, package, price_setup, created_at")
             .in_("business_id", business_ids)
             .in_("status", ["offer", "won", "in_production"])
             .order("created_at", desc=True)
             .limit(10)
             .execute()
         )
+    else:
+        projects_result = type('obj', (object,), {'data': []})()
 
-        if projects_result.data:
-            for project in projects_result.data:
-                if project.get("price_setup"):
-                    pending_amount += project["price_setup"]
+    # Also get projects where seller_id matches (even if business not owned by this seller)
+    seller_projects_result = (
+        supabase.table("website_projects")
+        .select("id, business_id, seller_id, status, package, price_setup, created_at")
+        .eq("seller_id", current_user.id)
+        .in_("status", ["offer", "won", "in_production"])
+        .order("created_at", desc=True)
+        .limit(10)
+        .execute()
+    )
 
-                # Get latest version for this project
-                version_result = (
-                    supabase.table("website_versions")
-                    .select("version_number, created_at")
-                    .eq("project_id", project["id"])
-                    .order("version_number", desc=True)
-                    .limit(1)
-                    .execute()
-                )
+    # Merge and deduplicate projects
+    all_projects: dict = {}
+    for p in (projects_result.data or []) + (seller_projects_result.data or []):
+        if p["id"] not in all_projects:
+            all_projects[p["id"]] = p
 
-                latest_version = None
-                latest_version_date = None
-                if version_result.data:
-                    latest_version = version_result.data[0]["version_number"]
-                    latest_version_date = version_result.data[0]["created_at"]
+    # Sort by created_at desc and limit
+    projects_data = sorted(all_projects.values(), key=lambda x: x.get("created_at", ""), reverse=True)[:10]
 
-                pending_projects.append(
-                    PendingProjectInfo(
-                        id=project["id"],
-                        business_id=project["business_id"],
-                        business_name=business_names.get(project["business_id"], "Neznámá firma"),
-                        status=project["status"],
-                        package=project.get("package", "start"),
-                        latest_version_number=latest_version,
-                        latest_version_date=latest_version_date,
-                    )
-                )
+    # Get business names for projects found via seller_id (might not be in business_names yet)
+    missing_business_ids = [
+        p["business_id"] for p in projects_data
+        if p["business_id"] not in business_names
+    ]
+    if missing_business_ids:
+        extra_businesses = (
+            supabase.table("businesses")
+            .select("id, name")
+            .in_("id", missing_business_ids)
+            .execute()
+        )
+        for b in (extra_businesses.data or []):
+            business_names[b["id"]] = b["name"]
+
+    # Process projects
+    for project in projects_data:
+        if project.get("price_setup"):
+            pending_amount += project["price_setup"]
+
+        # Get latest version for this project
+        version_result = (
+            supabase.table("website_versions")
+            .select("version_number, created_at")
+            .eq("project_id", project["id"])
+            .order("version_number", desc=True)
+            .limit(1)
+            .execute()
+        )
+
+        latest_version = None
+        latest_version_date = None
+        if version_result.data:
+            latest_version = version_result.data[0]["version_number"]
+            latest_version_date = version_result.data[0]["created_at"]
+
+        pending_projects.append(
+            PendingProjectInfo(
+                id=project["id"],
+                business_id=project["business_id"],
+                business_name=business_names.get(project["business_id"], "Neznámá firma"),
+                status=project["status"],
+                package=project.get("package", "start"),
+                latest_version_number=latest_version,
+                latest_version_date=latest_version_date,
+            )
+        )
 
     # Get unpaid client invoices (invoices_issued with status issued or overdue)
     unpaid_client_invoices: list[UnpaidClientInvoice] = []
