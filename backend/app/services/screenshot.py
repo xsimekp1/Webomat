@@ -116,14 +116,15 @@ async def upload_screenshot(
     unique_filename = f"{folder}/{uuid.uuid4()}_{filename}"
 
     # Upload to storage
-    result = supabase.storage.from_("webomat").upload(
-        path=unique_filename,
-        file=image_bytes,
-        file_options={"content-type": "image/png", "upsert": "true"},
-    )
-
-    if result.data is None:
-        raise RuntimeError(f"Failed to upload screenshot: {result}")
+    # Note: supabase-py upload() raises exception on failure, no need to check .data
+    try:
+        supabase.storage.from_("webomat").upload(
+            path=unique_filename,
+            file=image_bytes,
+            file_options={"content-type": "image/png", "upsert": "true"},
+        )
+    except Exception as e:
+        raise RuntimeError(f"Failed to upload screenshot: {e}")
 
     # Get public URL
     public_url = supabase.storage.from_("webomat").get_public_url(unique_filename)
