@@ -395,6 +395,26 @@ class ApiClient {
     return response.data;
   }
 
+  static async deployTestWebsite(htmlContent: string, businessName?: string) {
+    const response = await axios.post(
+      `${API_BASE_URL}/website/deploy-test`,
+      {
+        html_content: htmlContent,
+        business_name: businessName || 'Test Preview'
+      },
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  static async getDeploymentStatus() {
+    const response = await axios.get(
+      `${API_BASE_URL}/website/deployment-status`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
   // Website Generation endpointy
   static async generateWebsite(projectId: string, dryRun: boolean = false) {
     const response = await axios.post(

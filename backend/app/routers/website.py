@@ -9,6 +9,7 @@ from ..dependencies import require_sales_or_admin, require_admin
 from ..schemas.auth import User
 from ..schemas.website import GenerateWebsiteRequest, GenerateWebsiteResponse, EnglishVersionMode
 from ..services.llm import process_translation_request, is_llm_available
+from ..services.deployment import deploy_html_to_vercel, is_vercel_configured
 
 router = APIRouter(prefix="/website", tags=["website generation"])
 
@@ -31,6 +32,20 @@ class GenerateTestResponse(BaseModel):
     strings_for_client: list[str] | None = None  # Texty k překladu klientem
 
 
+class DeployTestRequest(BaseModel):
+    """Request pro nasazení testovacího HTML na Vercel."""
+    html_content: str
+    business_name: str = "Test Preview"
+
+
+class DeployTestResponse(BaseModel):
+    """Response pro nasazení testovacího HTML."""
+    success: bool
+    message: str
+    url: str | None = None
+    deployment_id: str | None = None
+
+
 @router.get("/translation-status")
 async def get_translation_status(
     current_user: Annotated[User, Depends(require_admin)],
@@ -40,6 +55,64 @@ async def get_translation_status(
         "available": is_llm_available(),
         "message": "OpenAI API je dostupné" if is_llm_available() else "OpenAI API klíč není nastaven"
     }
+
+
+@router.get("/deployment-status")
+async def get_deployment_status(
+    current_user: Annotated[User, Depends(require_admin)],
+):
+    """Zkontroluje dostupnost Vercel deployment služby."""
+    return {
+        "available": is_vercel_configured(),
+        "message": "Vercel deployment je dostupný" if is_vercel_configured() else "VERCEL_TOKEN není nastaven"
+    }
+
+
+@router.post("/deploy-test", response_model=DeployTestResponse)
+async def deploy_test_website(
+    data: DeployTestRequest,
+    current_user: Annotated[User, Depends(require_admin)],
+):
+    """
+    Nasadit testovací HTML na Vercel.
+
+    Vrací veřejnou URL, kterou lze sdílet s klientem.
+    Admin only.
+    """
+    if not is_vercel_configured():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Vercel deployment není nakonfigurován (chybí VERCEL_TOKEN)",
+        )
+
+    if not data.html_content or len(data.html_content.strip()) < 50:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="HTML obsah je příliš krátký",
+        )
+
+    try:
+        import uuid
+        version_id = str(uuid.uuid4())[:8]
+
+        result = await deploy_html_to_vercel(
+            version_id=version_id,
+            html_content=data.html_content,
+            project_name=data.business_name,
+        )
+
+        return DeployTestResponse(
+            success=True,
+            message="Web byl úspěšně nasazen",
+            url=result.get("url"),
+            deployment_id=result.get("deployment_id"),
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Nepodařilo se nasadit web: {str(e)}",
+        )
 
 
 @router.post("/generate-test", response_model=GenerateTestResponse)
