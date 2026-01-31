@@ -294,6 +294,7 @@ async def create_version(
         "notes": data.notes,
         "html_content": data.html_content,
         "html_content_en": data.html_content_en,
+        "thumbnail_url": data.thumbnail_url,
         "parent_version_id": data.parent_version_id,
         "generation_instructions": data.generation_instructions,
         "created_by": current_user.id,

@@ -283,6 +283,7 @@ class WebsiteVersionCreate(BaseModel):
     notes: str | None = None
     html_content: str | None = None
     html_content_en: str | None = None
+    thumbnail_url: str | None = None
     parent_version_id: str | None = None
     generation_instructions: str | None = None
 
