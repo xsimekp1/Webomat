@@ -19,8 +19,9 @@ from unittest.mock import patch, MagicMock, AsyncMock
 class TestScreenshotTestEndpoint:
     """Testy pro POST /website/screenshot-test."""
 
-    def test_screenshot_test_requires_admin(self, app_client):
-        """Screenshot endpoint vyžaduje admin práva - sales user dostane 403."""
+    def test_screenshot_test_allows_sales(self, app_client):
+        """Screenshot endpoint je dostupný pro sales uživatele."""
+        # Sales user má přístup, ale HTML je příliš krátké -> 400
         response = app_client.post(
             "/website/screenshot-test",
             json={
@@ -29,8 +30,8 @@ class TestScreenshotTestEndpoint:
             }
         )
 
-        # Sales user nemá přístup k admin endpointům
-        assert response.status_code == 403
+        # Sales user má přístup (dostane 400 kvůli krátkému HTML, ne 403)
+        assert response.status_code == 400
 
     def test_screenshot_test_html_too_short(self, admin_client):
         """Screenshot s příliš krátkým HTML vrací 400."""

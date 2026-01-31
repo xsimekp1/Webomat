@@ -134,7 +134,7 @@ async def deploy_test_website(
 @router.post("/screenshot-test", response_model=ScreenshotTestResponse)
 async def screenshot_test_website(
     data: ScreenshotTestRequest,
-    current_user: Annotated[User, Depends(require_admin)],
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
 ):
     """
     Pořídí screenshot z raw HTML obsahu.
@@ -142,7 +142,7 @@ async def screenshot_test_website(
     Pokud je Playwright dostupný na serveru, screenshot se pořídí okamžitě.
     Pokud ne, vytvoří se background job a vrátí job_id.
 
-    Admin only.
+    Sales or Admin.
     """
     if not data.html_content or len(data.html_content.strip()) < 50:
         raise HTTPException(
