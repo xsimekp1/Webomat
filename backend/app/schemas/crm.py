@@ -277,7 +277,7 @@ class DeploymentStatus(str, Enum):
 
 
 class WebsiteVersionCreate(BaseModel):
-    project_id: str
+    # Note: project_id comes from URL path parameter, not request body
     source_bundle_path: str | None = None
     preview_image_path: str | None = None
     notes: str | None = None

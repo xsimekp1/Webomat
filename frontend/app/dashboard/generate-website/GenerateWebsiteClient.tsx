@@ -348,7 +348,15 @@ export default function GenerateWebsitePage() {
         setSavedVersionId(response.id)
       }
     } catch (e: any) {
-      setError(e?.response?.data?.detail || 'Nepodařilo se uložit verzi')
+      const detail = e?.response?.data?.detail
+      // Handle Pydantic validation errors (array of objects) vs simple string errors
+      if (Array.isArray(detail)) {
+        setError(detail.map((d: any) => d.msg || JSON.stringify(d)).join(', '))
+      } else if (typeof detail === 'string') {
+        setError(detail)
+      } else {
+        setError('Nepodařilo se uložit verzi')
+      }
     } finally {
       setSaving(false)
     }
