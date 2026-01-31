@@ -10,6 +10,8 @@ from ..schemas.auth import User
 from ..schemas.website import GenerateWebsiteRequest, GenerateWebsiteResponse, EnglishVersionMode
 from ..services.llm import process_translation_request, is_llm_available
 from ..services.deployment import deploy_html_to_vercel, is_vercel_configured
+from ..services.screenshot import capture_screenshot, upload_screenshot, is_playwright_available
+from ..services.jobs import enqueue_job, get_job_status
 
 router = APIRouter(prefix="/website", tags=["website generation"])
 
@@ -44,6 +46,20 @@ class DeployTestResponse(BaseModel):
     message: str
     url: str | None = None
     deployment_id: str | None = None
+
+
+class ScreenshotTestRequest(BaseModel):
+    """Request pro screenshot testovacího HTML."""
+    html_content: str
+    viewport: str = "thumbnail"  # desktop, mobile, thumbnail
+
+
+class ScreenshotTestResponse(BaseModel):
+    """Response pro screenshot testovacího HTML."""
+    success: bool
+    message: str
+    screenshot_url: str | None = None
+    job_id: str | None = None  # Pokud se používá async worker
 
 
 @router.get("/translation-status")
@@ -113,6 +129,96 @@ async def deploy_test_website(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Nepodařilo se nasadit web: {str(e)}",
         )
+
+
+@router.post("/screenshot-test", response_model=ScreenshotTestResponse)
+async def screenshot_test_website(
+    data: ScreenshotTestRequest,
+    current_user: Annotated[User, Depends(require_admin)],
+):
+    """
+    Pořídí screenshot z raw HTML obsahu.
+
+    Pokud je Playwright dostupný na serveru, screenshot se pořídí okamžitě.
+    Pokud ne, vytvoří se background job a vrátí job_id.
+
+    Admin only.
+    """
+    if not data.html_content or len(data.html_content.strip()) < 50:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="HTML obsah je příliš krátký",
+        )
+
+    # Validate viewport
+    valid_viewports = ["desktop", "mobile", "thumbnail"]
+    viewport = data.viewport if data.viewport in valid_viewports else "thumbnail"
+
+    # Try direct capture if Playwright is available
+    if is_playwright_available():
+        try:
+            import uuid
+
+            # Capture screenshot from HTML
+            screenshot_bytes = await capture_screenshot(
+                html_content=data.html_content,
+                viewport=viewport,
+            )
+
+            # Upload to Supabase Storage
+            filename = f"test_{uuid.uuid4().hex[:8]}_{viewport}.png"
+            screenshot_url = await upload_screenshot(
+                image_bytes=screenshot_bytes,
+                filename=filename,
+                folder="test-screenshots",
+            )
+
+            return ScreenshotTestResponse(
+                success=True,
+                message="Screenshot byl úspěšně pořízen",
+                screenshot_url=screenshot_url,
+            )
+
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Nepodařilo se pořídit screenshot: {str(e)}",
+            )
+
+    else:
+        # Playwright not available on API server - try to queue job
+        # This requires HTML to be accessible via URL, which we can do by:
+        # 1. First deploy to Vercel, then screenshot
+        # For now, return error with instructions
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Screenshot služba není dostupná. Playwright není nainstalován na serveru. "
+                   "Pro pořízení screenshotu nejprve nasaďte web na Vercel.",
+        )
+
+
+@router.get("/screenshot-job/{job_id}")
+async def get_screenshot_job_status(
+    job_id: str,
+    current_user: Annotated[User, Depends(require_admin)],
+):
+    """
+    Zkontroluje stav screenshot jobu.
+    """
+    job = await get_job_status(job_id)
+
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job nenalezen",
+        )
+
+    return {
+        "job_id": job_id,
+        "status": job.get("status"),
+        "result": job.get("result"),
+        "error_message": job.get("error_message"),
+    }
 
 
 @router.post("/generate-test", response_model=GenerateTestResponse)

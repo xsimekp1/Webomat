@@ -415,6 +415,18 @@ class ApiClient {
     return response.data;
   }
 
+  static async screenshotTestWebsite(htmlContent: string, viewport: string = 'thumbnail') {
+    const response = await axios.post(
+      `${API_BASE_URL}/website/screenshot-test`,
+      {
+        html_content: htmlContent,
+        viewport
+      },
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
   // Website Generation endpointy
   static async generateWebsite(projectId: string, dryRun: boolean = false) {
     const response = await axios.post(

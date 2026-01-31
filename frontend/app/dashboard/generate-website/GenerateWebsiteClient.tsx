@@ -171,6 +171,12 @@ export default function GenerateWebsitePage() {
   const [generating, setGenerating] = useState(false)
   const [result, setResult] = useState<GenerateResponse | null>(null)
 
+  // Deploy & Screenshot
+  const [deploying, setDeploying] = useState(false)
+  const [deployedUrl, setDeployedUrl] = useState<string | null>(null)
+  const [capturingScreenshot, setCapturingScreenshot] = useState(false)
+  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null)
+
   // Zadání (request)
   const [exactCopy, setExactCopy] = useState('')
   const [flexibleCopy, setFlexibleCopy] = useState('')
@@ -258,6 +264,8 @@ export default function GenerateWebsitePage() {
     setGenerating(true)
     setError('')
     setResult(null)
+    setDeployedUrl(null)
+    setScreenshotUrl(null)
 
     try {
       // ✅ DNEŠNÍ REALITA: backend už má /website/generate a ApiClient.generateWebsite(projectId, dryRun)
@@ -282,6 +290,42 @@ export default function GenerateWebsitePage() {
     a.download = `${baseName}.html`
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  const handleDeploy = async () => {
+    if (!result?.html_content) return
+    setDeploying(true)
+    setError('')
+    try {
+      const response = await ApiClient.deployTestWebsite(result.html_content, businessName || 'Test')
+      if (response.success && response.url) {
+        setDeployedUrl(response.url)
+      } else {
+        setError(response.message || 'Nepodařilo se nasadit web')
+      }
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || 'Chyba při nasazování')
+    } finally {
+      setDeploying(false)
+    }
+  }
+
+  const handleScreenshot = async () => {
+    if (!result?.html_content) return
+    setCapturingScreenshot(true)
+    setError('')
+    try {
+      const response = await ApiClient.screenshotTestWebsite(result.html_content, 'thumbnail')
+      if (response.success && response.screenshot_url) {
+        setScreenshotUrl(response.screenshot_url)
+      } else {
+        setError(response.message || 'Nepodařilo se pořídit screenshot')
+      }
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || 'Chyba při pořizování screenshotu')
+    } finally {
+      setCapturingScreenshot(false)
+    }
   }
 
   return (
@@ -325,6 +369,8 @@ export default function GenerateWebsitePage() {
               })
               setResult(null)
               setError('')
+              setDeployedUrl(null)
+              setScreenshotUrl(null)
               setTab('brief')
             }}
             style={{ padding: '10px 14px', borderRadius: 10, border: '1px solid #e5e7eb', background: '#f9fafb', cursor: 'pointer', fontWeight: 700 }}
@@ -811,7 +857,85 @@ export default function GenerateWebsitePage() {
                         >
                           🌐 Otevřít v novém okně
                         </button>
+
+                        {/* Deploy to Vercel button */}
+                        <button
+                          onClick={handleDeploy}
+                          disabled={deploying}
+                          style={{
+                            padding: '10px 14px',
+                            borderRadius: 10,
+                            border: 'none',
+                            background: deploying ? '#9ca3af' : '#3b82f6',
+                            color: 'white',
+                            fontWeight: 900,
+                            cursor: deploying ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {deploying ? '⏳ Nasazuji...' : '🚀 Nasadit na Vercel'}
+                        </button>
+
+                        {/* Screenshot button */}
+                        <button
+                          onClick={handleScreenshot}
+                          disabled={capturingScreenshot}
+                          style={{
+                            padding: '10px 14px',
+                            borderRadius: 10,
+                            border: '1px solid #d1d5db',
+                            background: capturingScreenshot ? '#f3f4f6' : 'white',
+                            fontWeight: 900,
+                            cursor: capturingScreenshot ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {capturingScreenshot ? '⏳ Fotím...' : '📷 Screenshot'}
+                        </button>
                       </div>
+
+                      {/* Show deployed URL */}
+                      {deployedUrl && (
+                        <div style={{ marginTop: 12, padding: 12, borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                          <div style={{ fontWeight: 700, color: '#1e40af', marginBottom: 6 }}>🔗 Sdílitelný odkaz:</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                            <a
+                              href={deployedUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ color: '#2563eb', wordBreak: 'break-all' }}
+                            >
+                              {deployedUrl}
+                            </a>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(deployedUrl)
+                              }}
+                              style={{
+                                padding: '4px 10px',
+                                borderRadius: 6,
+                                border: '1px solid #93c5fd',
+                                background: 'white',
+                                cursor: 'pointer',
+                                fontWeight: 700,
+                                fontSize: 12,
+                              }}
+                            >
+                              📋 Kopírovat
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Show screenshot */}
+                      {screenshotUrl && (
+                        <div style={{ marginTop: 12 }}>
+                          <div style={{ fontWeight: 700, marginBottom: 8 }}>📷 Náhled:</div>
+                          <img
+                            src={screenshotUrl}
+                            alt="Screenshot"
+                            style={{ maxWidth: 400, borderRadius: 8, border: '1px solid #e5e7eb', display: 'block' }}
+                          />
+                        </div>
+                      )}
                     </>
                   ) : (
                     <div style={{ padding: 14, borderRadius: 12, border: '1px solid #fecaca', background: '#fef2f2', color: '#991b1b' }}>
