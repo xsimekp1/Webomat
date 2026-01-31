@@ -220,6 +220,7 @@ async def list_versions(
         supabase.table("website_versions")
         .select("*")
         .eq("project_id", project_id)
+        .neq("status", "archived")  # Exclude archived versions
         .order("version_number", desc=True)
         .execute()
     )
@@ -395,6 +396,49 @@ async def update_version(
         created_at=row.get("created_at"),
         created_by=row.get("created_by"),
     )
+
+
+@router.delete("/versions/{version_id}")
+async def delete_version(
+    version_id: str,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """Soft delete a version (mark as archived)."""
+    supabase = get_supabase()
+    version = await verify_version_access(supabase, version_id, current_user)
+
+    # Check if version is currently deployed
+    if version.get("deployment_status") == "deployed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Nasazenou verzi nelze smazat. Nejdříve odeberte nasazení.",
+        )
+
+    # Check if version is marked as current
+    if version.get("is_current"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Aktuální verzi nelze smazat. Nejdříve nastavte jinou verzi jako aktuální.",
+        )
+
+    # Soft delete by marking as archived
+    result = (
+        supabase.table("website_versions")
+        .update({
+            "status": "archived",
+            "updated_at": datetime.utcnow().isoformat(),
+        })
+        .eq("id", version_id)
+        .execute()
+    )
+
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Nepodařilo se smazat verzi",
+        )
+
+    return {"message": "Verze byla smazána"}
 
 
 # ============================================

@@ -599,6 +599,14 @@ class ApiClient {
     return response.data;
   }
 
+  static async deleteVersion(versionId: string) {
+    const response = await axios.delete(
+      `${API_BASE_URL}/web-project/versions/${versionId}`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
   // ============================================
   // Public Preview endpoints (no auth)
   // ============================================

@@ -92,6 +92,8 @@ export default function WebProjectPage() {
   const [deploying, setDeploying] = useState<string | null>(null)
   const [capturing, setCapturing] = useState<string | null>(null)
   const [creatingLink, setCreatingLink] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
+  const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null)
   const [shareLinks, setShareLinks] = useState<Record<string, ShareLink>>({})
 
   const loadProject = useCallback(async () => {
@@ -168,6 +170,19 @@ export default function WebProjectPage() {
       await loadProject()
     } catch (err: any) {
       alert(err.response?.data?.detail || 'Nepodarilo se nastavit jako aktualni')
+    }
+  }
+
+  const handleDeleteVersion = async (versionId: string) => {
+    setDeleting(versionId)
+    try {
+      await ApiClient.deleteVersion(versionId)
+      await loadProject()
+      setShowDeleteModal(null)
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Nepodarilo se smazat verzi')
+    } finally {
+      setDeleting(null)
     }
   }
 
@@ -385,6 +400,15 @@ export default function WebProjectPage() {
                         Nastavit jako aktualni
                       </button>
                     )}
+
+                    {/* Delete */}
+                    <button
+                      className="btn-danger"
+                      onClick={() => setShowDeleteModal(version.id)}
+                      disabled={deleting === version.id}
+                    >
+                      Smazat
+                    </button>
                   </div>
                 </div>
               ))}
@@ -473,6 +497,32 @@ export default function WebProjectPage() {
               <p>{project.client_notes}</p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Opravdu chcete smazat verzi?</h3>
+            <p>Tato akce nelze vrátit zpět. Verze bude označena jako archivní.</p>
+            <div className="modal-actions">
+              <button
+                className="btn-secondary"
+                onClick={() => setShowDeleteModal(null)}
+                disabled={deleting === showDeleteModal}
+              >
+                Zrusit
+              </button>
+              <button
+                className="btn-danger"
+                onClick={() => handleDeleteVersion(showDeleteModal)}
+                disabled={deleting === showDeleteModal}
+              >
+                {deleting === showDeleteModal ? 'Mazani...' : 'Smazat'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
