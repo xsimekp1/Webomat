@@ -228,7 +228,7 @@ const getStatusColor = (status: string) => {
             <div className="quick-card-icon">📞</div>
             <div className="quick-card-content">
               <span className="quick-card-value">{sellerData?.follow_ups_today ?? '--'}</span>
-              <span className="quick-card-label">Dnes volat</span>
+              <span className="quick-card-label">Follow-upy</span>
             </div>
             <div className="quick-card-action">Otevřít seznam →</div>
           </div>

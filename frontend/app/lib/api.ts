@@ -111,6 +111,7 @@ class ApiClient {
     status_crm?: string;
     search?: string;
     assigned_to?: string;
+    next_follow_up_at_before?: string;
     page?: number;
     limit?: number;
   }) {
@@ -118,6 +119,7 @@ class ApiClient {
     if (params?.status_crm) queryParams.append('status_crm', params.status_crm);
     if (params?.search) queryParams.append('search', params.search);
     if (params?.assigned_to) queryParams.append('assigned_to', params.assigned_to);
+    if (params?.next_follow_up_at_before) queryParams.append('next_follow_up_at_before', params.next_follow_up_at_before);
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
 
@@ -602,6 +604,14 @@ class ApiClient {
   static async deleteVersion(versionId: string) {
     const response = await axios.delete(
       `${API_BASE_URL}/web-project/versions/${versionId}`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async deleteProject(projectId: string) {
+    const response = await axios.delete(
+      `${API_BASE_URL}/web-project/${projectId}`,
       { headers: ApiClient.getAuthHeaders() }
     );
     return response.data;
