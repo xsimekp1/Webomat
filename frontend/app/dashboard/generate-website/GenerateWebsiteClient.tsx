@@ -177,6 +177,10 @@ export default function GenerateWebsitePage() {
   const [capturingScreenshot, setCapturingScreenshot] = useState(false)
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null)
 
+  // Save version
+  const [saving, setSaving] = useState(false)
+  const [savedVersionId, setSavedVersionId] = useState<string | null>(null)
+
   // Zadání (request)
   const [exactCopy, setExactCopy] = useState('')
   const [flexibleCopy, setFlexibleCopy] = useState('')
@@ -266,6 +270,7 @@ export default function GenerateWebsitePage() {
     setResult(null)
     setDeployedUrl(null)
     setScreenshotUrl(null)
+    setSavedVersionId(null)
 
     try {
       // ✅ DNEŠNÍ REALITA: backend už má /website/generate a ApiClient.generateWebsite(projectId, dryRun)
@@ -328,6 +333,27 @@ export default function GenerateWebsitePage() {
     }
   }
 
+  const handleSaveVersion = async () => {
+    if (!result?.html_content || !projectId) return
+    setSaving(true)
+    setError('')
+    try {
+      const response = await ApiClient.createWebProjectVersion(projectId, {
+        html_content: result.html_content,
+        html_content_en: result.html_content_en || null,
+        thumbnail_url: screenshotUrl || null,
+        notes: `Vygenerováno ${new Date().toLocaleString('cs-CZ')}`
+      })
+      if (response.id) {
+        setSavedVersionId(response.id)
+      }
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || 'Nepodařilo se uložit verzi')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 16 }}>
@@ -371,6 +397,7 @@ export default function GenerateWebsitePage() {
               setError('')
               setDeployedUrl(null)
               setScreenshotUrl(null)
+              setSavedVersionId(null)
               setTab('brief')
             }}
             style={{ padding: '10px 14px', borderRadius: 10, border: '1px solid #e5e7eb', background: '#f9fafb', cursor: 'pointer', fontWeight: 700 }}
@@ -890,6 +917,23 @@ export default function GenerateWebsitePage() {
                         >
                           {capturingScreenshot ? '⏳ Fotím...' : '📷 Screenshot'}
                         </button>
+
+                        {/* Save Version button */}
+                        <button
+                          onClick={handleSaveVersion}
+                          disabled={saving || !projectId}
+                          style={{
+                            padding: '10px 14px',
+                            borderRadius: 10,
+                            border: 'none',
+                            background: saving ? '#9ca3af' : '#10b981',
+                            color: 'white',
+                            fontWeight: 900,
+                            cursor: saving || !projectId ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {saving ? '⏳ Ukládám...' : '💾 Uložit verzi'}
+                        </button>
                       </div>
 
                       {/* Show deployed URL */}
@@ -934,6 +978,16 @@ export default function GenerateWebsitePage() {
                             alt="Screenshot"
                             style={{ maxWidth: 400, borderRadius: 8, border: '1px solid #e5e7eb', display: 'block' }}
                           />
+                        </div>
+                      )}
+
+                      {/* Show saved version confirmation */}
+                      {savedVersionId && (
+                        <div style={{ marginTop: 12, padding: 12, borderRadius: 10, background: '#d1fae5', border: '1px solid #6ee7b7' }}>
+                          <div style={{ fontWeight: 700, color: '#065f46' }}>✅ Verze uložena!</div>
+                          <div style={{ color: '#047857', marginTop: 4 }}>
+                            ID: {savedVersionId}
+                          </div>
                         </div>
                       )}
                     </>
