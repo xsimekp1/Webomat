@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
 import ApiClient from '../../lib/api'
 
+// Header is provided by dashboard/layout.tsx via DashboardHeader component
+
 type MovementType =
   | 'commission'
   | 'bonus'
@@ -45,7 +47,7 @@ interface SellerAccountLedgerResponse {
 }
 
 export default function AccountMovementsPage() {
-  const { user, isLoading, isAuthenticated, logout } = useAuth()
+  const { user } = useAuth()
   const router = useRouter()
 
   const [data, setData] = useState<SellerAccountLedgerResponse | null>(null)
@@ -57,12 +59,10 @@ export default function AccountMovementsPage() {
   const [type, setType] = useState<'all' | MovementType>('all')
   const [status, setStatus] = useState<'all' | MovementStatus>('all')
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) router.push('/')
-  }, [isLoading, isAuthenticated, router])
+  // Auth is handled by dashboard layout
 
   useEffect(() => {
-    if (!isAuthenticated) return
+    if (!user) return
     setLoading(true)
     setError('')
 
@@ -72,7 +72,7 @@ export default function AccountMovementsPage() {
         setError(e?.response?.data?.detail || 'Nepodařilo se načíst pohyby na účtu.')
       })
       .finally(() => setLoading(false))
-  }, [isAuthenticated, range, type, status])
+  }, [user, range, type, status])
 
   const formatCurrency = (amount: number, currency = 'CZK') =>
     new Intl.NumberFormat('cs-CZ', {
@@ -124,35 +124,13 @@ export default function AccountMovementsPage() {
     return { credits, debits }
   }, [filteredMovements])
 
-  if (isLoading || !user) return <div className="loading">Načítám...</div>
+  if (!user) return <div className="loading">Načítám...</div>
 
   return (
     <div className="page">
-      <header className="header">
-        <div className="header-left" onClick={() => router.push('/dashboard')} role="button" tabIndex={0}>
-          <h1>Webomat</h1>
-          <span className="breadcrumb">/ Pohyby na účtu</span>
-        </div>
-
-        <div className="header-right">
-          <span className="user-info">
-            {user.name}{' '}
-            <span className="role-badge">{user.role === 'admin' ? 'Admin' : 'Obchodník'}</span>
-          </span>
-          <button onClick={() => router.push('/help')} className="btn-icon" title="Nápověda">
-            ?
-          </button>
-          <button onClick={() => router.push('/dashboard/profile')} className="btn-icon" title="Můj profil">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-          </button>
-          <button onClick={logout} className="btn-logout">
-            Odhlásit
-          </button>
-        </div>
-      </header>
+      <div className="page-header">
+        <h2>Pohyby na účtu</h2>
+      </div>
 
       <main className="main">
         <div className="top">
@@ -281,101 +259,18 @@ export default function AccountMovementsPage() {
       </main>
 
       <style jsx>{`
-        .page {
-          min-height: 100vh;
-          background: #f8fafc;
+        .page-header {
+          margin-bottom: 16px;
         }
 
-        .header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 16px 24px;
-          background: white;
-          border-bottom: 1px solid #e2e8f0;
-          position: sticky;
-          top: 0;
-          z-index: 100;
-        }
-
-        .header-left {
-          display: flex;
-          align-items: baseline;
-          gap: 10px;
-          cursor: pointer;
-        }
-
-        .header-left h1 {
+        .page-header h2 {
           font-size: 1.5rem;
           font-weight: 700;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
+          color: #0f172a;
           margin: 0;
         }
 
-        .breadcrumb {
-          color: #94a3b8;
-          font-size: 0.9rem;
-          font-weight: 500;
-        }
-
-        .header-right {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .user-info {
-          font-size: 0.9rem;
-          color: #64748b;
-        }
-
-        .role-badge {
-          background: #f1f5f9;
-          padding: 2px 8px;
-          border-radius: 12px;
-          font-size: 0.75rem;
-          margin-left: 4px;
-        }
-
-        .btn-icon {
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          border: 1px solid #e2e8f0;
-          background: white;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s;
-        }
-
-        .btn-icon:hover {
-          background: #f8fafc;
-          border-color: #cbd5e1;
-        }
-
-        .btn-logout {
-          padding: 8px 16px;
-          background: #fee2e2;
-          color: #dc2626;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 500;
-          transition: all 0.2s;
-        }
-
-        .btn-logout:hover {
-          background: #fecaca;
-        }
-
         .main {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 24px;
         }
 
         .top {
