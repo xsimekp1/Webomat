@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: str = "http://localhost:3000"
 
+    # Azure OpenAI
+    azure_openai_key: str
+    azure_openai_endpoint: str
+    azure_openai_api_version: str = "2024-02-15-preview"
+    model_version: str = "5"
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",")]

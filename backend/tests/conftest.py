@@ -101,6 +101,11 @@ class MockSupabase:
     def __init__(self):
         self.data_store = {}
 
+    @property
+    def mock_data(self):
+        """Alias pro data_store pro kompatibilitu s testy."""
+        return self.data_store
+
     def table(self, table_name: str):
         return MockSupabaseQuery(self.data_store.get(table_name, []))
 
