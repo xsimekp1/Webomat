@@ -96,7 +96,7 @@ export default function InvoiceDetailPage() {
 
     try {
       setDownloadingPdf(true)
-      const pdfUrl = ApiClient.downloadInvoicePdf(invoice.id)
+      const pdfUrl = await ApiClient.downloadInvoicePdf(invoice.id)
       window.open(pdfUrl, '_blank')
     } catch (err: any) {
       showToast(err.response?.data?.detail || 'Chyba při stahování PDF', 'error')
