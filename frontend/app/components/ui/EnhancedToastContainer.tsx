@@ -27,10 +27,10 @@ export function EnhancedToastContainer() {
     : 'fixed bottom-6 right-6 z-[9999]'
 
   // Container styles
-  const containerStyles = isMobile
+  const containerStyles: React.CSSProperties = isMobile
     ? {
         display: 'flex',
-        flexDirection: 'column',
+        flexDirection: 'column' as const,
         alignItems: 'center',
         gap: '12px',
         width: '90vw',
@@ -38,7 +38,7 @@ export function EnhancedToastContainer() {
       }
     : {
         display: 'flex',
-        flexDirection: 'column',
+        flexDirection: 'column' as const,
         alignItems: 'flex-end',
         gap: '12px',
         width: 'auto'
