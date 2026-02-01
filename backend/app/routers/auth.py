@@ -21,6 +21,7 @@ from ..schemas.auth import (
     UserUpdate,
     LoginRequest,
     OnboardingComplete,
+    LanguageUpdate,
 )
 from datetime import datetime
 from ..audit import log_login, log_login_failed, log_entity_change
@@ -115,7 +116,8 @@ async def get_current_user_info(
         onboarded_at=current_user.onboarded_at,
         bank_account=current_user.bank_account,
         bank_account_iban=current_user.bank_account_iban,
-        needs_onboarding=current_user.needs_onboarding
+        needs_onboarding=current_user.needs_onboarding,
+        preferred_language=getattr(current_user, 'preferred_language', 'cs')
     )
 
 
@@ -140,6 +142,8 @@ async def update_current_user(
         update_dict["bank_account"] = update_data.bank_account
     if update_data.bank_account_iban is not None:
         update_dict["bank_account_iban"] = update_data.bank_account_iban
+    if update_data.preferred_language is not None:
+        update_dict["preferred_language"] = update_data.preferred_language
 
     if not update_dict:
         raise HTTPException(
@@ -157,21 +161,28 @@ async def update_current_user(
             detail="Failed to update user"
         )
 
-    updated = result.data[0]
-    return UserResponse(
-        id=updated["id"],
-        name=f"{updated['first_name']} {updated['last_name']}".strip(),
-        email=updated["email"],
-        role=updated.get("role", "sales"),
-        is_active=updated.get("is_active", True),
-        phone=updated.get("phone"),
-        avatar_url=updated.get("avatar_url"),
-        must_change_password=updated.get("must_change_password", False),
-        onboarded_at=updated.get("onboarded_at"),
-        bank_account=updated.get("bank_account"),
-        bank_account_iban=updated.get("bank_account_iban"),
-        needs_onboarding=updated.get("onboarded_at") is None
-    )
+    if result.data:
+        updated = result.data[0]
+        return UserResponse(
+            id=updated.get("id", current_user.id),
+            name=f"{updated.get('first_name', '')} {updated.get('last_name', '')}".strip(),
+            email=updated.get("email", current_user.email),
+            role=updated.get("role", "sales"),
+            is_active=updated.get("is_active", True),
+            phone=updated.get("phone"),
+            avatar_url=updated.get("avatar_url"),
+            must_change_password=updated.get("must_change_password", False),
+            onboarded_at=updated.get("onboarded_at"),
+            bank_account=updated.get("bank_account"),
+            bank_account_iban=updated.get("bank_account_iban"),
+            needs_onboarding=updated.get("onboarded_at") is None,
+            preferred_language=updated.get("preferred_language", "cs")
+        )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update user"
+        )
 
 
 @router.post("/users/me/password")
@@ -285,3 +296,28 @@ async def complete_onboarding(
         bank_account_iban=updated.get("bank_account_iban"),
         needs_onboarding=False
     )
+
+
+@router.put("/users/me/language")
+async def update_user_language(
+    language_data: LanguageUpdate,
+    current_user: Annotated[User, Depends(get_current_active_user)]
+):
+    """Update user's preferred language."""
+    supabase = get_supabase()
+    
+    result = supabase.table("sellers").update({
+        "preferred_language": language_data.preferred_language
+    }).eq("id", current_user.id).execute()
+    
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update language"
+        )
+    
+    log_entity_change("user_language", current_user.id, current_user.id, {
+        "preferred_language": language_data.preferred_language
+    })
+    
+    return {"preferred_language": language_data.preferred_language}

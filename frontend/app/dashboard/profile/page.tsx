@@ -1,10 +1,13 @@
-'use client'
+'use client';
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '../../context/AuthContext'
-import { supabase } from '../../utils/supabase'
-import ApiClient from '../../lib/api'
+import { useAuth } from '../context/AuthContext'
+import { LanguageProvider } from '../context/LanguageContext'
+import { supabase } from '../utils/supabase'
+import ApiClient from '../lib/api'
+import LanguageSwitcher from '../../../components/LanguageSwitcher'
+import { useTranslations } from 'next-intl'
 
 interface ProfileData {
   first_name: string
@@ -15,7 +18,9 @@ interface ProfileData {
   avatar_url: string | null
 }
 
-export default function ProfilePage() {
+function ProfileContent() {
+  const t = useTranslations('profile')
+  const { t: ct } = useTranslations('common')
   const { user, isLoading: authLoading, isAuthenticated, refreshUser } = useAuth()
   const [profile, setProfile] = useState<ProfileData>({
     first_name: '',
@@ -91,7 +96,6 @@ const loadProfile = async (userId: string) => {
     setMessage(null)
 
     try {
-      // Update profile through backend API
       await ApiClient.updateUserProfile({
         first_name: profile.first_name,
         last_name: profile.last_name,
@@ -100,13 +104,12 @@ const loadProfile = async (userId: string) => {
         bank_account: profile.bank_account
       })
 
-      // Refresh user data in AuthContext
       await refreshUser()
 
-      setMessage({ type: 'success', text: 'Profil byl úspěšně uložen!' })
+      setMessage({ type: 'success', text: t('profileSaved') })
     } catch (err: any) {
       console.error('Error saving profile:', err)
-      setMessage({ type: 'error', text: err.message || 'Nepodařilo se uložit profil' })
+      setMessage({ type: 'error', text: err.message || t('messages.profileUpdateFailed') })
     } finally {
       setSaving(false)
     }
@@ -117,12 +120,12 @@ const loadProfile = async (userId: string) => {
     setMessage(null)
 
     if (passwordData.new !== passwordData.confirm) {
-      setMessage({ type: 'error', text: 'Nová hesla se neshodují' })
+      setMessage({ type: 'error', text: t('passwordsNotMatch') })
       return
     }
 
     if (passwordData.new.length < 6) {
-      setMessage({ type: 'error', text: 'Nové heslo musí mít alespoň 6 znaků' })
+      setMessage({ type: 'error', text: t('passwordMinLength') })
       return
     }
 
@@ -130,11 +133,11 @@ const loadProfile = async (userId: string) => {
 
     try {
       await ApiClient.changePassword(passwordData.current, passwordData.new)
-      setMessage({ type: 'success', text: 'Heslo bylo úspěšně změněno!' })
+      setMessage({ type: 'success', text: t('passwordChanged') })
       setPasswordData({ current: '', new: '', confirm: '' })
       setShowPasswordChange(false)
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.response?.data?.detail || 'Nepodařilo se změnit heslo' })
+      setMessage({ type: 'error', text: err.response?.data?.detail || t('messages.passwordChangeFailed') })
     } finally {
       setChangingPassword(false)
     }
@@ -148,15 +151,14 @@ const loadProfile = async (userId: string) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validate file
     const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp']
     if (!allowedTypes.includes(file.type)) {
-      setMessage({ type: 'error', text: 'Nepodporovaný formát. Použijte PNG, JPG, GIF nebo WEBP.' })
+      setMessage({ type: 'error', text: t('unsupportedFormat') })
       return
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setMessage({ type: 'error', text: 'Soubor je příliš velký (max 5 MB)' })
+      setMessage({ type: 'error', text: t('fileTooLarge') })
       return
     }
 
@@ -167,13 +169,12 @@ const loadProfile = async (userId: string) => {
       const result = await ApiClient.uploadAvatar(file)
       setProfile(prev => ({ ...prev, avatar_url: result.avatar_url }))
       await refreshUser()
-      setMessage({ type: 'success', text: 'Avatar byl úspěšně nahrán!' })
+      setMessage({ type: 'success', text: t('avatarUploaded') })
     } catch (err: any) {
       console.error('Error uploading avatar:', err)
-      setMessage({ type: 'error', text: err.response?.data?.detail || 'Nepodařilo se nahrát avatar' })
+      setMessage({ type: 'error', text: err.response?.data?.detail || t('messages.avatarUploadFailed') })
     } finally {
       setUploadingAvatar(false)
-      // Reset input
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
@@ -181,7 +182,7 @@ const loadProfile = async (userId: string) => {
   }
 
   const handleAvatarDelete = async () => {
-    if (!confirm('Opravdu chcete smazat profilovou fotku?')) return
+    if (!confirm(t('confirmDeleteAvatar'))) return
 
     setUploadingAvatar(true)
     setMessage(null)
@@ -190,16 +191,16 @@ const loadProfile = async (userId: string) => {
       await ApiClient.deleteAvatar()
       setProfile(prev => ({ ...prev, avatar_url: null }))
       await refreshUser()
-      setMessage({ type: 'success', text: 'Avatar byl smazán' })
+      setMessage({ type: 'success', text: t('avatarDeleted') })
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.response?.data?.detail || 'Nepodařilo se smazat avatar' })
+      setMessage({ type: 'error', text: err.response?.data?.detail || t('messages.avatarDeleteFailed') })
     } finally {
       setUploadingAvatar(false)
     }
   }
 
   if (authLoading || !user || loading) {
-    return <div className="loading">Načítám...</div>
+    return <div className="loading">{ct('loading')}</div>
   }
 
   return (
@@ -210,18 +211,19 @@ const loadProfile = async (userId: string) => {
         </div>
         <div className="header-right">
           <span className="user-info">
-            {user.name} ({user.role === 'admin' ? 'Admin' : 'Obchodník'})
+            {user.name} ({user.role === 'admin' ? t('auth.admin') : t('auth.sales')})
           </span>
+          <LanguageSwitcher />
           <button onClick={() => router.push('/dashboard')} className="btn-back">
-            Zpět
+            {ct('back')}
           </button>
         </div>
       </header>
 
       <main className="dashboard-main">
         <div className="profile-container">
-          <h2>Můj profil</h2>
-          <p className="profile-subtitle">Zde můžeš upravit své osobní údaje</p>
+          <h2>{t('title')}</h2>
+          <p className="profile-subtitle">{t('subtitle')}</p>
 
           {message && (
             <div className={`message ${message.type}`}>
@@ -232,32 +234,32 @@ const loadProfile = async (userId: string) => {
           <form onSubmit={handleSubmit} className="profile-form">
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="first_name">Jméno</label>
+                <label htmlFor="first_name">{t('firstName')}</label>
                 <input
                   type="text"
                   id="first_name"
                   name="first_name"
                   value={profile.first_name}
                   onChange={handleChange}
-                  placeholder="Vaše jméno"
+                  placeholder={t('firstName')}
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="last_name">Příjmení</label>
+                <label htmlFor="last_name">{t('lastName')}</label>
                 <input
                   type="text"
                   id="last_name"
                   name="last_name"
                   value={profile.last_name}
                   onChange={handleChange}
-                  placeholder="Vaše příjmení"
+                  placeholder={t('lastName')}
                 />
               </div>
             </div>
 
             <div className="form-group">
-              <label htmlFor="email">Email</label>
+              <label htmlFor="email">{t('email')}</label>
               <input
                 type="email"
                 id="email"
@@ -269,7 +271,7 @@ const loadProfile = async (userId: string) => {
             </div>
 
             <div className="avatar-section">
-              <label>Profilová fotka</label>
+              <label>{t('profilePhoto')}</label>
               <div className="avatar-container">
                 <div className="avatar-preview" onClick={handleAvatarClick}>
                   {profile.avatar_url ? (
@@ -284,11 +286,11 @@ const loadProfile = async (userId: string) => {
                 </div>
                 <div className="avatar-actions">
                   <button type="button" onClick={handleAvatarClick} disabled={uploadingAvatar} className="btn-secondary">
-                    {uploadingAvatar ? 'Nahrávám...' : 'Změnit fotku'}
+                    {uploadingAvatar ? ct('loading') : t('changePhoto')}
                   </button>
                   {profile.avatar_url && (
                     <button type="button" onClick={handleAvatarDelete} disabled={uploadingAvatar} className="btn-delete-avatar">
-                      Smazat
+                      {t('deletePhoto')}
                     </button>
                   )}
                 </div>
@@ -300,11 +302,11 @@ const loadProfile = async (userId: string) => {
                 onChange={handleAvatarChange}
                 style={{ display: 'none' }}
               />
-              <span className="form-hint">PNG, JPG, GIF nebo WEBP (max 5 MB)</span>
+              <span className="form-hint">{t('fileFormats')}</span>
             </div>
 
             <div className="form-group">
-              <label htmlFor="phone">Telefon</label>
+              <label htmlFor="phone">{t('phone')}</label>
               <input
                 type="tel"
                 id="phone"
@@ -316,7 +318,7 @@ const loadProfile = async (userId: string) => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="bank_account">Číslo účtu</label>
+              <label htmlFor="bank_account">{t('bankAccount')}</label>
               <input
                 type="text"
                 id="bank_account"
@@ -325,29 +327,29 @@ const loadProfile = async (userId: string) => {
                 onChange={handleChange}
                 placeholder="123456789/0100"
               />
-              <span className="form-hint">Pro vyplácení provizí</span>
+              <span className="form-hint">{t('bankAccountHint')}</span>
             </div>
 
             <div className="form-actions">
               <button type="submit" className="btn-save" disabled={saving}>
-                {saving ? 'Ukládám...' : 'Uložit změny'}
+                {saving ? t('saving') : t('saveChanges')}
               </button>
             </div>
           </form>
 
           <div className="password-section">
-            <h3>Změna hesla</h3>
+            <h3>{t('passwordChange')}</h3>
             {!showPasswordChange ? (
               <button
                 onClick={() => setShowPasswordChange(true)}
                 className="btn-secondary"
               >
-                Změnit heslo
+                {t('changePassword')}
               </button>
             ) : (
               <form onSubmit={handlePasswordChange} className="password-form">
                 <div className="form-group">
-                  <label htmlFor="current_password">Aktuální heslo</label>
+                  <label htmlFor="current_password">{t('currentPassword')}</label>
                   <input
                     type="password"
                     id="current_password"
@@ -357,7 +359,7 @@ const loadProfile = async (userId: string) => {
                   />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="new_password">Nové heslo</label>
+                  <label htmlFor="new_password">{t('newPassword')}</label>
                   <input
                     type="password"
                     id="new_password"
@@ -368,7 +370,7 @@ const loadProfile = async (userId: string) => {
                   />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="confirm_password">Potvrzení nového hesla</label>
+                  <label htmlFor="confirm_password">{t('confirmPassword')}</label>
                   <input
                     type="password"
                     id="confirm_password"
@@ -386,10 +388,10 @@ const loadProfile = async (userId: string) => {
                     }}
                     className="btn-cancel"
                   >
-                    Zrušit
+                    {ct('cancel')}
                   </button>
                   <button type="submit" className="btn-save" disabled={changingPassword}>
-                    {changingPassword ? 'Měním...' : 'Změnit heslo'}
+                    {changingPassword ? ct('saving') : t('changePassword')}
                   </button>
                 </div>
               </form>
@@ -670,5 +672,13 @@ const loadProfile = async (userId: string) => {
         }
       `}</style>
     </div>
+  )
+}
+
+export default function ProfilePage() {
+  return (
+    <LanguageProvider>
+      <ProfileContent />
+    </LanguageProvider>
   )
 }

@@ -33,6 +33,7 @@ class User(BaseModel):
     bank_account: str | None = None
     bank_account_iban: str | None = None
     created_at: datetime | None = None
+    preferred_language: str = "cs"
 
     @property
     def full_name(self) -> str:
@@ -62,6 +63,7 @@ class UserResponse(BaseModel):
     bank_account: str | None = None
     bank_account_iban: str | None = None
     needs_onboarding: bool = False
+    preferred_language: str = "cs"
 
 
 class PasswordChange(BaseModel):
@@ -80,6 +82,7 @@ class UserUpdate(BaseModel):
     phone: str | None = None
     bank_account: str | None = None
     bank_account_iban: str | None = None
+    preferred_language: str | None = None
 
 
 class OnboardingComplete(BaseModel):
@@ -92,6 +95,11 @@ class OnboardingComplete(BaseModel):
     bank_account_iban: str | None = None
 
 
+class LanguageUpdate(BaseModel):
+    """Language update model."""
+    preferred_language: Literal["cs", "en"]
+
+
 class UserListItem(BaseModel):
     """User item for admin listing."""
     id: str
@@ -101,3 +109,4 @@ class UserListItem(BaseModel):
     role: Literal["admin", "sales"]
     is_active: bool
     created_at: datetime | None = None
+    preferred_language: str = "cs"

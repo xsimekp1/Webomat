@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from ..database import get_supabase
 from ..dependencies import require_admin, get_password_hash
-from ..schemas.auth import User, UserListItem, AdminPasswordReset
+from ..schemas.auth import User, UserListItem, AdminPasswordReset, LanguageUpdate
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -282,4 +282,49 @@ async def toggle_user_active(
     return {
         "message": f"Uživatel {user_info['first_name']} {user_info['last_name']} byl {status_text}",
         "is_active": new_status
+    }
+
+
+@router.put("/users/{user_id}/language")
+async def update_user_language_admin(
+    user_id: str,
+    language_data: LanguageUpdate,
+    current_admin: Annotated[User, Depends(require_admin)]
+):
+    """Admin endpoint to update user's preferred language."""
+    supabase = get_supabase()
+    
+    # Check if user exists
+    user_result = supabase.table("sellers").select(
+        "first_name", "last_name", "preferred_language"
+    ).eq("id", user_id).limit(1).execute()
+    
+    if not user_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Update language
+    result = supabase.table("sellers").update({
+        "preferred_language": language_data.preferred_language
+    }).eq("id", user_id).execute()
+    
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update user language"
+        )
+    
+    from ..audit import log_entity_change
+    log_entity_change("user_language", user_id, current_admin.id, {
+        "preferred_language": language_data.preferred_language
+    })
+    
+    user_info = user_result.data[0]
+    language_text = "čeština" if language_data.preferred_language == "cs" else "angličtina"
+    
+    return {
+        "message": f"Jazyk uživatele {user_info['first_name']} {user_info['last_name']} byl změněn na {language_text}",
+        "preferred_language": language_data.preferred_language
     }
