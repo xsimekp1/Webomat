@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../context/AuthContext'
+import { useToast } from '../../../context/ToastContext'
 import ApiClient from '../../../lib/api'
 import { Button, Badge, Card, Select } from '../../../components/ui'
 
@@ -58,6 +59,7 @@ const PRIORITY_VARIANTS: Record<string, 'default' | 'warning' | 'danger'> = {
 export default function AdminFeedbackPage() {
   const router = useRouter()
   const { user } = useAuth()
+  const { showToast } = useToast()
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -114,8 +116,9 @@ export default function AdminFeedbackPage() {
       })
       setEditingId(null)
       loadFeedbacks()
+      showToast('Zmeny byly ulozeny', 'success')
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Nepodarilo se ulozit zmeny')
+      showToast(err.response?.data?.detail || 'Nepodarilo se ulozit zmeny', 'error')
     } finally {
       setSaving(false)
     }

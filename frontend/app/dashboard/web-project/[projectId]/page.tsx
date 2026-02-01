@@ -122,30 +122,14 @@ export default function WebProjectPage() {
     }
   }, [projectId, loadProject])
 
-  // Enhanced testovací toasts - zobrazí se při načtení projektu
-  useEffect(() => {
-    if (project && project.id) {
-      // Testování max 2 toasts - staré zmizí automaticky
-      setTimeout(() => showToast(`🎉 Nový enhanced toast systém!`, 'success', 4000), 500)
-      setTimeout(() => showToast(`Projekt ${project.id} načten s animacemi`, 'info', 3500), 800)
-      
-      // Tyto toasty nahradí předchozí (max 2 policy)
-      setTimeout(() => showToast('✅ Enhanced design s blur efektem', 'success', 3000), 1500)
-      setTimeout(() => showToast('⚠️ Mobilní verze: uprostřed dole', 'warning', 3000), 2000)
-      
-      // Další testovací scénáře
-      setTimeout(() => showToast('❌ Slide-out animace je plynulá', 'error', 2500), 3000)
-      setTimeout(() => showToast('ℹ️ Max 2 toasty najednou - nové nahrazují staré', 'info', 4000), 3500)
-    }
-  }, [project, showToast])
-
   const handleDeploy = async (versionId: string) => {
     setDeploying(versionId)
     try {
       await ApiClient.deployVersion(versionId)
       await loadProject()
+      showToast('Verze byla nasazena', 'success')
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Nepodarilo se nasadit verzi')
+      showToast(err.response?.data?.detail || 'Nepodarilo se nasadit verzi', 'error')
     } finally {
       setDeploying(null)
     }
@@ -156,8 +140,9 @@ export default function WebProjectPage() {
     try {
       await ApiClient.undeployVersion(versionId)
       await loadProject()
+      showToast('Nasazeni bylo odebrano', 'success')
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Nepodarilo se odebrat nasazeni')
+      showToast(err.response?.data?.detail || 'Nepodarilo se odebrat nasazeni', 'error')
     }
   }
 
@@ -165,9 +150,9 @@ export default function WebProjectPage() {
     setCapturing(versionId)
     try {
       await ApiClient.captureScreenshot(versionId)
-      alert('Screenshot byl zarazen do fronty')
+      showToast('Screenshot byl zarazen do fronty', 'success')
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Nepodarilo se vytvorit screenshot')
+      showToast(err.response?.data?.detail || 'Nepodarilo se vytvorit screenshot', 'error')
     } finally {
       setCapturing(null)
     }
@@ -178,8 +163,9 @@ export default function WebProjectPage() {
     try {
       const link = await ApiClient.createShareLink(versionId, { expires_in_days: 7 })
       setShareLinks(prev => ({ ...prev, [versionId]: link }))
+      showToast('Odkaz pro sdileni byl vytvoren', 'success')
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Nepodarilo se vytvorit odkaz')
+      showToast(err.response?.data?.detail || 'Nepodarilo se vytvorit odkaz', 'error')
     } finally {
       setCreatingLink(null)
     }
@@ -189,8 +175,9 @@ export default function WebProjectPage() {
     try {
       await ApiClient.markVersionAsCurrent(versionId)
       await loadProject()
+      showToast('Verze byla nastavena jako aktualni', 'success')
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Nepodarilo se nastavit jako aktualni')
+      showToast(err.response?.data?.detail || 'Nepodarilo se nastavit jako aktualni', 'error')
     }
   }
 
@@ -200,8 +187,9 @@ export default function WebProjectPage() {
       await ApiClient.deleteVersion(versionId)
       await loadProject()
       setShowDeleteModal(null)
+      showToast('Verze byla smazana', 'success')
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Nepodarilo se smazat verzi')
+      showToast(err.response?.data?.detail || 'Nepodarilo se smazat verzi', 'error')
     } finally {
       setDeleting(null)
     }
@@ -212,10 +200,10 @@ export default function WebProjectPage() {
     try {
       await ApiClient.deleteProject(projectId)
       setShowDeleteProjectModal(false)
-      // Redirect back to dashboard or projects list
+      showToast('Projekt byl smazan', 'success')
       router.push('/dashboard')
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Nepodarilo se smazat projekt')
+      showToast(err.response?.data?.detail || 'Nepodarilo se smazat projekt', 'error')
     } finally {
       setDeletingProject(false)
     }
@@ -223,7 +211,7 @@ export default function WebProjectPage() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
-    alert('Odkaz byl zkopirovan')
+    showToast('Odkaz byl zkopirovan do schranky', 'success')
   }
 
   if (loading) {

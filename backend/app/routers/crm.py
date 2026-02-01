@@ -926,6 +926,22 @@ async def list_projects(
 
     projects = []
     for row in result.data:
+        # Fetch latest version thumbnail if project has versions
+        latest_thumbnail_url = None
+        latest_version_id = row.get("latest_version_id")
+        versions_count = row.get("versions_count", 0)
+
+        if latest_version_id:
+            version_result = (
+                supabase.table("website_versions")
+                .select("thumbnail_url")
+                .eq("id", latest_version_id)
+                .limit(1)
+                .execute()
+            )
+            if version_result.data:
+                latest_thumbnail_url = version_result.data[0].get("thumbnail_url")
+
         projects.append(
             ProjectResponse(
                 id=row["id"],
@@ -936,6 +952,10 @@ async def list_projects(
                 price_monthly=row.get("price_monthly"),
                 domain=row.get("domain"),
                 notes=row.get("notes"),
+                versions_count=versions_count,
+                latest_version_id=latest_version_id,
+                latest_thumbnail_url=latest_thumbnail_url,
+                seller_id=row.get("seller_id"),
                 created_at=row.get("created_at"),
                 updated_at=row.get("updated_at"),
             )

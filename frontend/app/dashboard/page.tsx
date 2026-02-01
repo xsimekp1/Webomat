@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 import ApiClient from '../lib/api'
 
 interface SellerDashboard {
@@ -54,6 +55,7 @@ interface AdminStats {
 export default function DashboardPage() {
   const { user } = useAuth()
   const router = useRouter()
+  const { showToast } = useToast()
 
   // Seller dashboard data
   const [sellerData, setSellerData] = useState<SellerDashboard | null>(null)
@@ -577,7 +579,7 @@ const getStatusColor = (status: string) => {
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(deployedUrl)
-                          alert('URL zkopírována do schránky')
+                          showToast('URL zkopírována do schránky', 'success')
                         }}
                         className="btn-copy"
                       >

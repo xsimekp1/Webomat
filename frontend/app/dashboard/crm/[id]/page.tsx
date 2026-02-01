@@ -53,6 +53,7 @@ interface Project {
   updated_at: string | null
   latest_version_id: string | null
   versions_count: number
+  latest_thumbnail_url: string | null
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
@@ -533,12 +534,6 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
                 <div key={project.id} className="project-content" onClick={() => openProjectModal(project)} style={{ cursor: 'pointer' }}>
                   <div className="project-header">
                     <span
-                      className="package-badge"
-                      style={{ color: PACKAGE_CONFIG[project.package]?.color || '#666' }}
-                    >
-                      {PACKAGE_CONFIG[project.package]?.label || project.package}
-                    </span>
-                    <span
                       className="project-status-badge"
                       style={{
                         color: PROJECT_STATUS_CONFIG[project.status]?.color || '#666',
@@ -588,12 +583,20 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
                   {project.latest_version_id && (
                     <div className="project-preview" onClick={(e) => e.stopPropagation()}>
                       <div className="preview-header">
-                        <span className="preview-label">📸 Náhled webu</span>
+                        <span className="preview-label">Náhled webu</span>
                         <span className="preview-version">v{project.versions_count}</span>
                       </div>
-                      <div className="preview-placeholder">
-                        <span>Náhled bude zde</span>
-                      </div>
+                      {project.latest_thumbnail_url ? (
+                        <img
+                          src={project.latest_thumbnail_url}
+                          alt="Náhled"
+                          className="preview-thumbnail"
+                        />
+                      ) : (
+                        <div className="preview-placeholder">
+                          <span>Bez náhledu</span>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -644,6 +647,40 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+
+        {/* Versions Card */}
+        <div className="card versions-card">
+          <h3>Verze webů</h3>
+          {projects.filter(p => p.versions_count > 0).length > 0 ? (
+            <div className="versions-list-mini">
+              {projects.filter(p => p.versions_count > 0).map((project) => (
+                <div
+                  key={project.id}
+                  className="version-mini-card"
+                  onClick={() => router.push(`/dashboard/web-project/${project.id}`)}
+                >
+                  <div className="version-thumbnail">
+                    {project.latest_thumbnail_url ? (
+                      <img src={project.latest_thumbnail_url} alt="Náhled" />
+                    ) : (
+                      <div className="thumbnail-placeholder-mini">
+                        <span>Bez náhledu</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="version-mini-info">
+                    <span className="version-count">v{project.versions_count}</span>
+                    <span className="project-domain">{project.domain || 'Bez domény'}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-versions">
+              <p>Žádné verze</p>
             </div>
           )}
         </div>
@@ -927,7 +964,7 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
       <style jsx>{`
         .detail-page {
           padding: 20px;
-          max-width: 1200px;
+          max-width: 1400px;
           margin: 0 auto;
         }
 
@@ -1027,7 +1064,7 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
 
         .detail-grid {
           display: grid;
-          grid-template-columns: 350px 1fr;
+          grid-template-columns: 350px 1fr 280px;
           gap: 24px;
           align-items: start;
         }
@@ -1039,6 +1076,11 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
 
         .detail-grid > .activities-card {
           grid-column: 2;
+          grid-row: 1 / span 2;
+        }
+
+        .detail-grid > .versions-card {
+          grid-column: 3;
           grid-row: 1 / span 2;
         }
 
@@ -1138,6 +1180,17 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
           display: flex;
           flex-direction: column;
           gap: 12px;
+          transition: all 0.2s ease;
+          border: 1px solid transparent;
+          border-radius: 8px;
+          padding: 12px;
+          margin: -12px;
+        }
+
+        .project-content:hover {
+          background: #f8fafc;
+          border-color: #e5e7eb;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
 
         .project-header {
@@ -1379,6 +1432,102 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
           color: #9ca3af;
         }
 
+        .preview-thumbnail {
+          width: 100%;
+          height: 100px;
+          object-fit: cover;
+          object-position: top;
+          border-radius: 4px;
+          border: 1px solid #d1d5db;
+        }
+
+        /* Versions Card Styles */
+        .versions-list-mini {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .version-mini-card {
+          display: flex;
+          gap: 12px;
+          padding: 10px;
+          background: #f9fafb;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          border: 1px solid transparent;
+        }
+
+        .version-mini-card:hover {
+          background: #f1f5f9;
+          border-color: #667eea;
+          box-shadow: 0 2px 6px rgba(102, 126, 234, 0.15);
+        }
+
+        .version-thumbnail {
+          width: 80px;
+          height: 60px;
+          flex-shrink: 0;
+          border-radius: 4px;
+          overflow: hidden;
+          background: #e5e7eb;
+        }
+
+        .version-thumbnail img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: top;
+        }
+
+        .thumbnail-placeholder-mini {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #f3f4f6;
+        }
+
+        .thumbnail-placeholder-mini span {
+          font-size: 10px;
+          color: #9ca3af;
+        }
+
+        .version-mini-info {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          gap: 4px;
+          overflow: hidden;
+        }
+
+        .version-count {
+          font-size: 14px;
+          font-weight: 600;
+          color: #374151;
+        }
+
+        .project-domain {
+          font-size: 12px;
+          color: #6b7280;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .empty-versions {
+          text-align: center;
+          padding: 24px 16px;
+          color: #9ca3af;
+        }
+
+        .empty-versions p {
+          margin: 0;
+          font-size: 14px;
+        }
+
         .project-actions {
           margin-top: 12px;
           padding-top: 12px;
@@ -1590,6 +1739,17 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
           cursor: pointer;
         }
 
+        @media (max-width: 1200px) {
+          .detail-grid {
+            grid-template-columns: 350px 1fr;
+          }
+
+          .detail-grid > .versions-card {
+            grid-column: 1;
+            grid-row: 3;
+          }
+        }
+
         @media (max-width: 900px) {
           .detail-grid {
             grid-template-columns: 1fr;
@@ -1597,7 +1757,8 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
 
           .detail-grid > .info-card,
           .detail-grid > .project-card,
-          .detail-grid > .activities-card {
+          .detail-grid > .activities-card,
+          .detail-grid > .versions-card {
             grid-column: 1;
             grid-row: auto;
           }

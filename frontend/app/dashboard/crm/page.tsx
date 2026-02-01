@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/ToastContext'
 import ApiClient from '../../lib/api'
 
 
@@ -48,6 +49,7 @@ function CRMPageContent() {
   const { user, isLoading, isAuthenticated } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { showToast } = useToast()
   const filterParam = searchParams.get('filter')
 
   const [businesses, setBusinesses] = useState<Business[]>([])
@@ -169,7 +171,7 @@ function CRMPageContent() {
 
   const handleFillFromARES = async () => {
     if (!formData.ico || formData.ico.length !== 8) {
-      alert('Zadejte platné IČO (8 číslic)')
+      showToast('Zadejte platné IČO (8 číslic)', 'warning')
       return
     }
 
@@ -185,10 +187,10 @@ function CRMPageContent() {
         // You can add more fields here as needed
       }))
 
-      alert('Data z ARES byla načtena')
+      showToast('Data z ARES byla načtena', 'success')
     } catch (error: any) {
       console.error('ARES API error:', error)
-      alert('Chyba při načítání dat z ARES: ' + (error.response?.data?.detail || error.message))
+      showToast('Chyba při načítání dat z ARES: ' + (error.response?.data?.detail || error.message), 'error')
     } finally {
       setLoading(false)
     }

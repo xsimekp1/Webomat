@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
+import { useToast } from '../../context/ToastContext'
 import ApiClient from '../../lib/api'
 import './styles.css'
 
@@ -27,6 +28,7 @@ interface Comment {
 export default function PreviewPage() {
   const params = useParams()
   const token = params.token as string
+  const { showToast } = useToast()
 
   const [previewInfo, setPreviewInfo] = useState<PreviewInfo | null>(null)
   const [htmlContent, setHtmlContent] = useState<string | null>(null)
@@ -87,7 +89,7 @@ export default function PreviewPage() {
     e.preventDefault()
 
     if (!commentContent.trim()) {
-      alert('Zadejte obsah komentare')
+      showToast('Zadejte obsah komentare', 'warning')
       return
     }
 
@@ -117,7 +119,7 @@ export default function PreviewPage() {
       setTimeout(() => setSubmitSuccess(false), 3000)
 
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Nepodarilo se odeslat komentar')
+      showToast(err.response?.data?.detail || 'Nepodarilo se odeslat komentar', 'error')
     } finally {
       setSubmitting(false)
     }
