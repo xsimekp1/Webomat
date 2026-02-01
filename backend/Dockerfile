@@ -1,17 +1,9 @@
 # Dockerfile for Webomat Backend
-# With WeasyPrint dependencies for PDF generation
-
 FROM python:3.11-slim
 
-# Install system dependencies for WeasyPrint
+# Install minimal dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libcairo2 \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libgdk-pixbuf-2.0-0 \
     libffi-dev \
-    shared-mime-info \
-    fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
