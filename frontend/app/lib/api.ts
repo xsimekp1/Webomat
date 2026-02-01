@@ -31,7 +31,7 @@ class ApiClient {
     if (params.type !== 'all') queryParams.append('type', params.type)
     if (params.status !== 'all') queryParams.append('status', params.status)
 
-    const url = `${API_BASE_URL}/seller/account/ledger${queryParams.toString() ? '?' + queryParams.toString() : ''}`
+    const url = `${API_BASE_URL}/crm/seller/account/ledger${queryParams.toString() ? '?' + queryParams.toString() : ''}`
     const response = await axios.get(url, { headers: ApiClient.getAuthHeaders() })
     return response.data
   }
@@ -45,9 +45,27 @@ class ApiClient {
   }
 
   static async updateUserProfile(userData: any) {
-    const response = await axios.post(
+    const response = await axios.put(
       `${API_BASE_URL}/users/me`,
       userData,
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    )
+    return response.data
+  }
+
+  static async updateUserLanguage(language: string) {
+    const response = await axios.put(
+      `${API_BASE_URL}/users/me/language`,
+      { preferred_language: language },
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    )
+    return response.data
+  }
+
+  static async updateUserLanguageAdmin(userId: string, language: string) {
+    const response = await axios.put(
+      `${API_BASE_URL}/admin/users/${userId}/language`,
+      { preferred_language: language },
       { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
     )
     return response.data
