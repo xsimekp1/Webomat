@@ -55,10 +55,9 @@ export function AnimatedToast({ toast, onRemove, isVisible }: AnimatedToastProps
       opacity: 1,
       scale: 1,
       transition: {
-        type: 'spring',
+        type: 'spring' as const,
         stiffness: 300,
-        damping: 30,
-        duration: 0.3
+        damping: 30
       }
     },
     exit: { 
@@ -67,7 +66,7 @@ export function AnimatedToast({ toast, onRemove, isVisible }: AnimatedToastProps
       scale: 0.8,
       transition: {
         duration: 0.2,
-        ease: 'easeIn'
+        ease: "easeIn" as const
       }
     }
   }
@@ -84,10 +83,9 @@ export function AnimatedToast({ toast, onRemove, isVisible }: AnimatedToastProps
       opacity: 1,
       scale: 1,
       transition: {
-        type: 'spring',
+        type: 'spring' as const,
         stiffness: 300,
-        damping: 30,
-        duration: 0.3
+        damping: 30
       }
     },
     exit: { 
@@ -96,7 +94,7 @@ export function AnimatedToast({ toast, onRemove, isVisible }: AnimatedToastProps
       scale: 0.9,
       transition: {
         duration: 0.2,
-        ease: 'easeIn'
+        ease: "easeIn" as const
       }
     }
   }
