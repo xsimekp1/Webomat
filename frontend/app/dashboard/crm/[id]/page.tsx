@@ -335,11 +335,12 @@ setActivityForm({
     }
   }
 
-const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false) => {
-  const isTestContact = business?.name?.toLowerCase().includes('test') || 
-                         business?.name?.toLowerCase().includes('demo') ||
-                         business?.name?.toLowerCase().includes('sample')
+// Check if this is a test contact
+const isTestContact = business?.name?.toLowerCase().includes('test') ||
+                       business?.name?.toLowerCase().includes('demo') ||
+                       business?.name?.toLowerCase().includes('sample')
 
+const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false) => {
   const businessName = business?.name || 'Neznámá firma'
 
   router.push(
