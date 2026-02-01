@@ -122,16 +122,20 @@ export default function WebProjectPage() {
     }
   }, [projectId, loadProject])
 
-  // Testovací toasts - zobrazí se při načtení projektu
+  // Enhanced testovací toasts - zobrazí se při načtení projektu
   useEffect(() => {
     if (project && project.id) {
-      // Zobrazí testovací toast s názvem projektu
-      setTimeout(() => showToast(`Projekt načten: ${project.id}`, 'info', 3000), 500)
+      // Testování max 2 toasts - staré zmizí automaticky
+      setTimeout(() => showToast(`🎉 Nový enhanced toast systém!`, 'success', 4000), 500)
+      setTimeout(() => showToast(`Projekt ${project.id} načten s animacemi`, 'info', 3500), 800)
       
-      // Test dalších typů toastů
-      setTimeout(() => showToast('Success toast - vše funguje!', 'success', 2000), 1000)
-      setTimeout(() => showToast('Warning - pozor na tento projekt', 'warning', 2500), 1500)
-      setTimeout(() => showToast('Error - něco se pokazilo (test)', 'error', 2000), 2000)
+      // Tyto toasty nahradí předchozí (max 2 policy)
+      setTimeout(() => showToast('✅ Enhanced design s blur efektem', 'success', 3000), 1500)
+      setTimeout(() => showToast('⚠️ Mobilní verze: uprostřed dole', 'warning', 3000), 2000)
+      
+      // Další testovací scénáře
+      setTimeout(() => showToast('❌ Slide-out animace je plynulá', 'error', 2500), 3000)
+      setTimeout(() => showToast('ℹ️ Max 2 toasty najednou - nové nahrazují staré', 'info', 4000), 3500)
     }
   }, [project, showToast])
 

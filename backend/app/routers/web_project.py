@@ -426,7 +426,6 @@ async def delete_version(
         supabase.table("website_versions")
         .update({
             "status": "archived",
-            "updated_at": datetime.utcnow().isoformat(),
         })
         .eq("id", version_id)
         .execute()
@@ -439,6 +438,56 @@ async def delete_version(
         )
 
     return {"message": "Verze byla smazána"}
+
+
+@router.delete("/{project_id}")
+async def delete_project(
+    project_id: str,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """Delete a web project (soft delete by marking as cancelled)."""
+    supabase = get_supabase()
+    project = await verify_project_access(supabase, project_id, current_user)
+
+    # Check if any version is currently deployed
+    versions_result = (
+        supabase.table("website_versions")
+        .select("id, deployment_status")
+        .eq("project_id", project_id)
+        .eq("deployment_status", "deployed")
+        .limit(1)
+        .execute()
+    )
+
+    if versions_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Projekt nelze smazat, pokud má nasazené verze. Nejdříve odstraňte nasazení.",
+        )
+
+    # Soft delete by marking as cancelled
+    result = (
+        supabase.table("website_projects")
+        .update({
+            "status": "cancelled",
+            "updated_at": datetime.utcnow().isoformat(),
+        })
+        .eq("id", project_id)
+        .execute()
+    )
+
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Nepodařilo se smazat projekt",
+        )
+
+    # Also mark all versions as archived
+    supabase.table("website_versions").update({
+        "status": "archived"
+    }).eq("project_id", project_id).execute()
+
+    return {"message": "Projekt byl smazán"}
 
 
 # ============================================

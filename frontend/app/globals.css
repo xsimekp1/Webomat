@@ -48,6 +48,120 @@ h1 {
   text-align: center;
   color: var(--text-primary);
   margin-bottom: 30px;
+}
+
+/* Enhanced Toast Styles */
+.toast-enhanced {
+  /* Hardware acceleration for smooth animations */
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  
+  /* Enhanced backdrop blur with fallbacks */
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  
+  /* Premium shadow system */
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  
+  /* Smooth transitions */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toast-enhanced:hover {
+  transform: translateZ(0) scale(1.02);
+  box-shadow: 
+    0 25px 35px -5px rgba(0, 0, 0, 0.15),
+    0 15px 15px -5px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(255, 255, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Animation performance optimizations */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%) translateZ(0);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0) translateZ(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0) translateZ(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%) translateZ(0);
+    opacity: 0;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%) translateZ(0);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) translateZ(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutDown {
+  from {
+    transform: translateY(0) translateZ(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%) translateZ(0);
+    opacity: 0;
+  }
+}
+
+/* Reduced motion support for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .toast-enhanced,
+  .toast-enhanced:hover {
+    transform: none;
+    transition: none;
+  }
+  
+  @keyframes slideInRight {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes slideOutRight {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+  
+  @keyframes slideInUp {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes slideOutDown {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .toast-enhanced {
+    border-width: 2px;
+    backdrop-filter: none;
+    background: rgba(0, 0, 0, 0.9) !important;
+  }
+}
   font-size: 28px;
 }
 

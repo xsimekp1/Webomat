@@ -9,13 +9,20 @@ export interface Toast {
   message: string
   type: ToastType
   duration?: number
+  action?: {
+    label: string
+    onClick: () => void
+  }
 }
 
 interface ToastContextType {
   toasts: Toast[]
   showToast: (message: string, type?: ToastType, duration?: number) => void
   removeToast: (id: string) => void
+  clearAll: () => void
 }
+
+const MAX_TOASTS = 2
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined)
 
@@ -34,8 +41,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     const id = Date.now().toString()
     const newToast: Toast = { id, message, type, duration }
     
-    setToasts(prev => [...prev, newToast])
+    setToasts(prev => {
+      // If we already have MAX_TOASTS, remove the oldest one
+      const updatedToasts = prev.length >= MAX_TOASTS ? prev.slice(1) : prev
+      return [...updatedToasts, newToast]
+    })
     
+    // Auto-remove after duration
     if (duration > 0) {
       setTimeout(() => {
         removeToast(id)
@@ -47,8 +59,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts(prev => prev.filter(toast => toast.id !== id))
   }, [])
 
+  const clearAll = useCallback(() => {
+    setToasts([])
+  }, [])
+
   return (
-    <ToastContext.Provider value={{ toasts, showToast, removeToast }}>
+    <ToastContext.Provider value={{ toasts, showToast, removeToast, clearAll }}>
       {children}
     </ToastContext.Provider>
   )

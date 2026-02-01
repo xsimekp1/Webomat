@@ -255,6 +255,9 @@ class ProjectResponse(BaseModel):
     # Version info
     versions_count: int | None = None
     latest_version_id: str | None = None
+    latest_thumbnail_url: str | None = None
+    # Seller info
+    seller_id: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
