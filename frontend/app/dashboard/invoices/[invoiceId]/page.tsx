@@ -38,7 +38,7 @@ export default function InvoiceDetailPage() {
     }
   }
 
-  const updateInvoiceStatus = async (newStatus: string, paidDate?: string) => {
+  const updateInvoiceStatus = async (newStatus: 'draft' | 'issued' | 'paid' | 'overdue' | 'cancelled', paidDate?: string) => {
     if (!invoice || user?.role !== 'admin') {
       showToast('Pouze admin může měnit status faktury', 'error')
       return
