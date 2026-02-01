@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Faktura {{ invoice.invoice_number }}</title>
+    <style>
+        {% include 'css/invoice.css' %}
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="invoice-header">
+        <div class="company-info">
+            <div class="company-name">{{ platform.company_name or 'Webomat s.r.o.' }}</div>
+            <div class="company-details">
+                {% if platform.street %}<p>{{ platform.street }}</p>{% endif %}
+                {% if platform.city or platform.postal_code %}
+                    <p>{{ platform.postal_code }} {{ platform.city }}</p>
+                {% endif %}
+                {% if platform.country %}<p>{{ platform.country }}</p>{% endif %}
+                {% if platform.ico %}<p><strong>ICO:</strong> {{ platform.ico }}</p>{% endif %}
+                {% if platform.dic %}<p><strong>DIC:</strong> {{ platform.dic }}</p>{% endif %}
+            </div>
+        </div>
+        <div class="invoice-title">
+            <h1>FAKTURA</h1>
+            <div class="invoice-number">{{ invoice.invoice_number }}</div>
+            <div class="invoice-meta">
+                <p><strong>Datum vystaveni:</strong> {{ invoice.issue_date | format_date_cs }}</p>
+                <p><strong>Datum splatnosti:</strong> {{ invoice.due_date | format_date_cs }}</p>
+                {% if invoice.paid_date %}
+                    <p><strong>Uhrazeno:</strong> {{ invoice.paid_date | format_date_cs }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Parties -->
+    <div class="parties">
+        <div class="party-box">
+            <h3>Dodavatel</h3>
+            <div class="party-name">{{ platform.company_name or 'Webomat s.r.o.' }}</div>
+            <div class="party-details">
+                {% if platform.street %}<p>{{ platform.street }}</p>{% endif %}
+                {% if platform.city or platform.postal_code %}
+                    <p>{{ platform.postal_code }} {{ platform.city }}</p>
+                {% endif %}
+                {% if platform.ico %}<p>ICO: {{ platform.ico }}</p>{% endif %}
+                {% if platform.dic %}<p>DIC: {{ platform.dic }}</p>{% endif %}
+                {% if platform.email %}<p>Email: {{ platform.email }}</p>{% endif %}
+                {% if platform.phone %}<p>Tel: {{ platform.phone }}</p>{% endif %}
+            </div>
+        </div>
+        <div class="party-box">
+            <h3>Odberatel</h3>
+            <div class="party-name">{{ business.name }}</div>
+            <div class="party-details">
+                {% if business.billing_address %}
+                    <p>{{ business.billing_address }}</p>
+                {% elif business.address_full %}
+                    <p>{{ business.address_full }}</p>
+                {% endif %}
+                {% if business.city or business.postal_code %}
+                    <p>{{ business.postal_code }} {{ business.city }}</p>
+                {% endif %}
+                {% if business.ico %}<p>ICO: {{ business.ico }}</p>{% endif %}
+                {% if business.dic %}<p>DIC: {{ business.dic }}</p>{% endif %}
+                {% if business.email %}<p>Email: {{ business.email }}</p>{% endif %}
+                {% if business.phone %}<p>Tel: {{ business.phone }}</p>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Items -->
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>Popis</th>
+                <th class="amount-col">Castka bez DPH</th>
+                <th class="amount-col">DPH {{ invoice.vat_rate }}%</th>
+                <th class="amount-col">Celkem</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    {{ invoice.description or 'Webove sluzby' }}
+                    {% if project %}
+                        {% if project.domain %}
+                            <br><small>Domena: {{ project.domain }}</small>
+                        {% endif %}
+                        {% if project.package %}
+                            <br><small>Balicek: {{ project.package }}</small>
+                        {% endif %}
+                    {% endif %}
+                </td>
+                <td class="amount-col">{{ invoice.amount_without_vat | format_currency }} {{ invoice.currency }}</td>
+                <td class="amount-col">{{ invoice.vat_amount | format_currency }} {{ invoice.currency }}</td>
+                <td class="amount-col">{{ invoice.amount_total | format_currency }} {{ invoice.currency }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Totals -->
+    <div class="totals-section">
+        <table class="totals-table">
+            <tr>
+                <td>Zaklad dane</td>
+                <td>{{ invoice.amount_without_vat | format_currency }} {{ invoice.currency }}</td>
+            </tr>
+            <tr>
+                <td>DPH {{ invoice.vat_rate }}%</td>
+                <td>{{ invoice.vat_amount | format_currency }} {{ invoice.currency }}</td>
+            </tr>
+            <tr class="total-row">
+                <td>Celkem k uhrade</td>
+                <td>{{ invoice.amount_total | format_currency }} {{ invoice.currency }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Payment -->
+    <div class="payment-section">
+        <div class="payment-details">
+            <h3>Platebni udaje</h3>
+            <div class="payment-info">
+                {% if platform.bank_account %}
+                    <p><strong>Cislo uctu:</strong> {{ platform.bank_account }}</p>
+                {% endif %}
+                {% if platform.iban %}
+                    <p><strong>IBAN:</strong> {{ platform.iban }}</p>
+                {% endif %}
+                <p><strong>Variabilni symbol:</strong></p>
+                <div class="variable-symbol">{{ invoice.variable_symbol }}</div>
+                <p><strong>Castka k uhrade:</strong> <span class="highlight">{{ invoice.amount_total | format_currency }} {{ invoice.currency }}</span></p>
+            </div>
+        </div>
+        {% if qr_code %}
+        <div class="qr-section">
+            <div class="qr-code">
+                <img src="data:image/png;base64,{{ qr_code }}" alt="QR platba">
+            </div>
+            <div class="qr-label">Naskenujte pro rychlou platbu</div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if invoice.description and invoice.description|length > 50 %}
+    <div class="notes-section">
+        <h4>Poznamka</h4>
+        <p>{{ invoice.description }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Footer -->
+    <div class="invoice-footer">
+        <p>{{ platform.company_name or 'Webomat s.r.o.' }} | {{ platform.email }} | {{ platform.phone }}</p>
+        <p>Dokument byl vygenerovan elektronicky a je platny bez podpisu.</p>
+    </div>
+</body>
+</html>

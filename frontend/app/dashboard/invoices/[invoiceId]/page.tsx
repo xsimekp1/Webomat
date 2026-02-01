@@ -18,6 +18,7 @@ export default function InvoiceDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [updating, setUpdating] = useState(false)
+  const [downloadingPdf, setDownloadingPdf] = useState(false)
 
   useEffect(() => {
     if (invoiceId) {
@@ -90,6 +91,20 @@ export default function InvoiceDetailPage() {
     }
   }
 
+  const handleDownloadPdf = async () => {
+    if (!invoice) return
+
+    try {
+      setDownloadingPdf(true)
+      const pdfUrl = ApiClient.downloadInvoicePdf(invoice.id)
+      window.open(pdfUrl, '_blank')
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || 'Chyba při stahování PDF', 'error')
+    } finally {
+      setDownloadingPdf(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="page">
@@ -121,6 +136,13 @@ export default function InvoiceDetailPage() {
       <div className="page-header">
         <h1>Detail faktury</h1>
         <div className="page-header-actions">
+          <button
+            className="btn-primary"
+            onClick={handleDownloadPdf}
+            disabled={downloadingPdf}
+          >
+            {downloadingPdf ? 'Stahuji...' : 'Stáhnout PDF'}
+          </button>
           <button className="btn-secondary" onClick={() => router.back()}>
             Zpět
           </button>
