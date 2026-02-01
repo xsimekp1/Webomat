@@ -555,9 +555,9 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
         <div className="card projects-card">
           <div className="card-header-row">
             <h3>Projekty ({projects.length})</h3>
-            <button className="btn-edit-small" onClick={() => openProjectModal()}>
+            {/* <button className="btn-edit-small" onClick={() => openProjectModal()}>
               + Nový
-            </button>
+            </button> */}
           </div>
           {projects.length > 0 ? (
             <div className="projects-list-mini">
@@ -565,7 +565,7 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
                 <div
                   key={project.id}
                   className="project-mini-card"
-                  onClick={() => openProjectModal(project)}
+                  onClick={() => router.push(`/dashboard/web-project/${project.id}`)}
                 >
                   <div className="project-mini-thumbnail">
                     {project.latest_thumbnail_url ? (
@@ -705,8 +705,8 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
         </div>
       )}
 
-      {/* Project Modal */}
-      {showProjectModal && (
+      {/* Project Modal - TEMPORARILY DISABLED */}
+      {/* {showProjectModal && (
         <div className="modal-overlay" onClick={() => setShowProjectModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>{editingProject ? 'Upravit projekt' : 'Vytvořit projekt'}</h2>
@@ -790,7 +790,7 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Status Change Modal */}
       {showStatusModal && (
