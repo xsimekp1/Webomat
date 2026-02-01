@@ -776,9 +776,65 @@ class ApiClient {
     const response = await axios.put(
       `${API_BASE_URL}/crm/businesses/${businessId}/status`,
       { status },
-      { 
+      {
         headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' }
       }
+    );
+    return response.data;
+  }
+
+  // ============================================
+  // Invoice Approval Workflow endpoints
+  // ============================================
+
+  static async getAdminInvoices(params?: {
+    status?: string;
+    seller_id?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const queryParams = new URLSearchParams();
+    if (params?.status) queryParams.append('status_filter', params.status);
+    if (params?.seller_id) queryParams.append('seller_id', params.seller_id);
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+    const url = `${API_BASE_URL}/crm/admin/invoices${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    const response = await axios.get(url, { headers: ApiClient.getAuthHeaders() });
+    return response.data;
+  }
+
+  static async submitInvoiceForApproval(invoiceId: string) {
+    const response = await axios.put(
+      `${API_BASE_URL}/crm/invoices-issued/${invoiceId}/submit-for-approval`,
+      {},
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async approveInvoice(invoiceId: string) {
+    const response = await axios.put(
+      `${API_BASE_URL}/crm/invoices-issued/${invoiceId}/approve`,
+      {},
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async rejectInvoice(invoiceId: string, reason: string) {
+    const response = await axios.put(
+      `${API_BASE_URL}/crm/invoices-issued/${invoiceId}/reject`,
+      { reason },
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  static async getSellerClaims() {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/seller/claims`,
+      { headers: ApiClient.getAuthHeaders() }
     );
     return response.data;
   }

@@ -567,6 +567,7 @@ class InvoicePaymentType(str, Enum):
 
 class InvoiceIssuedStatus(str, Enum):
     draft = "draft"
+    pending_approval = "pending_approval"
     issued = "issued"
     paid = "paid"
     overdue = "overdue"
@@ -601,6 +602,7 @@ class InvoiceIssuedResponse(BaseModel):
     status: str
     description: str | None = None
     variable_symbol: str | None = None
+    rejected_reason: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
     # Related data
@@ -611,3 +613,41 @@ class InvoiceStatusUpdate(BaseModel):
     """Schema for updating invoice status."""
     status: InvoiceIssuedStatus
     paid_date: str | None = None  # Required when status is 'paid'
+
+
+class InvoiceRejectRequest(BaseModel):
+    """Schema for rejecting an invoice."""
+    reason: str
+
+
+class AdminInvoiceListItem(BaseModel):
+    """Invoice item for admin list view."""
+    id: str
+    invoice_number: str
+    business_id: str
+    business_name: str | None = None
+    seller_id: str | None = None
+    seller_name: str | None = None
+    amount_total: float
+    status: str
+    issue_date: str
+    due_date: str
+    paid_date: str | None = None
+    payment_type: str
+    rejected_reason: str | None = None
+    created_at: datetime | None = None
+
+
+class AdminInvoiceListResponse(BaseModel):
+    """Paginated list of invoices for admin view."""
+    items: list[AdminInvoiceListItem]
+    total: int
+    page: int
+    limit: int
+
+
+class SellerClaimsResponse(BaseModel):
+    """Seller's commission claims summary."""
+    total_earned: float
+    already_invoiced: float
+    available_to_claim: float

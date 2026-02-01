@@ -34,6 +34,17 @@ export default function DashboardHeader() {
                 💬 Připomínky
               </button>
 
+              {/* Admin: link to invoices management */}
+              {user.role === 'admin' && (
+                <button
+                  onClick={() => router.push('/dashboard/admin/invoices')}
+                  className="btn-nav"
+                  title="Správa faktur"
+                >
+                  Faktury
+                </button>
+              )}
+
               {/* Admin: link to feedback management */}
               {user.role === 'admin' && (
                 <button
@@ -132,6 +143,24 @@ export default function DashboardHeader() {
           .btn-icon:hover {
             background: #f8fafc;
             border-color: #cbd5e1;
+          }
+
+          .btn-nav {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            color: #374151;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+          }
+
+          .btn-nav:hover {
+            background: #f8fafc;
+            border-color: #667eea;
+            color: #667eea;
           }
 
           .btn-feedback-text {

@@ -52,6 +52,12 @@ interface AdminStats {
   weekly_invoices: WeeklyInvoice[]
 }
 
+interface SellerClaims {
+  total_earned: number
+  already_invoiced: number
+  available_to_claim: number
+}
+
 export default function DashboardPage() {
   const { user } = useAuth()
   const router = useRouter()
@@ -77,6 +83,9 @@ export default function DashboardPage() {
   const [reminderData, setReminderData] = useState<any>(null)
   const [error, setError] = useState('')
 
+  // Claims state
+  const [claims, setClaims] = useState<SellerClaims | null>(null)
+
   // Auth check is handled by layout
 
   // Load seller dashboard data
@@ -84,6 +93,10 @@ export default function DashboardPage() {
     if (user) {
       ApiClient.getSellerDashboard()
         .then(setSellerData)
+        .catch(() => {})
+      // Load claims
+      ApiClient.getSellerClaims()
+        .then(setClaims)
         .catch(() => {})
     }
   }, [user])
@@ -244,6 +257,36 @@ const getStatusColor = (status: string) => {
             <div className="quick-card-action">Jít do CRM →</div>
           </div>
         </div>
+
+        {/* Claims Section */}
+        {claims && (claims.total_earned > 0 || claims.available_to_claim > 0) && (
+          <section className="dashboard-section claims-section">
+            <div className="section-header">
+              <h3>💰 Nároky na provize</h3>
+            </div>
+            <div className="claims-grid">
+              <div className="claim-item">
+                <span className="claim-label">Celkem vyděláno:</span>
+                <span className="claim-value">{formatCurrency(claims.total_earned)}</span>
+              </div>
+              <div className="claim-item">
+                <span className="claim-label">Již vyfakturováno:</span>
+                <span className="claim-value claim-invoiced">{formatCurrency(claims.already_invoiced)}</span>
+              </div>
+              <div className="claim-divider"></div>
+              <div className="claim-item claim-available">
+                <span className="claim-label">K fakturaci:</span>
+                <span className="claim-value">{formatCurrency(claims.available_to_claim)}</span>
+                {claims.available_to_claim > 0 && <span className="claim-check">✓</span>}
+              </div>
+            </div>
+            {claims.available_to_claim > 0 && (
+              <p className="claims-hint">
+                Máte nevyfakturované provize. Kontaktujte administrátora pro vytvoření faktury.
+              </p>
+            )}
+          </section>
+        )}
 
         {/* Pending Projects */}
         {sellerData?.pending_projects && sellerData.pending_projects.length > 0 && (
@@ -693,6 +736,75 @@ const getStatusColor = (status: string) => {
         .warning-section {
           border-color: #fbbf24;
           background: #fffbeb;
+        }
+
+        /* Claims Section */
+        .claims-section {
+          border-color: #a78bfa;
+          background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+        }
+
+        .claims-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .claim-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 8px 0;
+        }
+
+        .claim-label {
+          color: #6b7280;
+          font-size: 0.95rem;
+        }
+
+        .claim-value {
+          font-weight: 600;
+          color: #1e293b;
+          font-size: 1rem;
+        }
+
+        .claim-invoiced {
+          color: #6b7280;
+        }
+
+        .claim-divider {
+          height: 1px;
+          background: #d8b4fe;
+          margin: 4px 0;
+        }
+
+        .claim-available {
+          padding-top: 12px;
+        }
+
+        .claim-available .claim-label {
+          font-weight: 600;
+          color: #1e293b;
+        }
+
+        .claim-available .claim-value {
+          font-size: 1.25rem;
+          color: #7c3aed;
+        }
+
+        .claim-check {
+          color: #22c55e;
+          font-size: 1.25rem;
+          margin-left: 8px;
+        }
+
+        .claims-hint {
+          margin-top: 12px;
+          font-size: 0.85rem;
+          color: #7c3aed;
+          background: rgba(124, 58, 237, 0.1);
+          padding: 8px 12px;
+          border-radius: 8px;
         }
 
         .section-header {

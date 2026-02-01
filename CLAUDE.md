@@ -401,13 +401,22 @@ Webomat fakturuje klientovi za web.
 | amount_total | decimal | Celková částka |
 | currency | string | Měna (default CZK) |
 | payment_type | string | Typ: setup/monthly/other |
-| status | string | Status: draft/issued/paid/overdue/cancelled |
+| status | string | Status: draft/pending_approval/issued/paid/overdue/cancelled |
+| rejected_reason | text? | Důvod zamítnutí (pokud admin zamítne) |
 | description | text? | Text faktury |
 | pdf_path | text? | Cesta k PDF |
 | variable_symbol | string? | Variabilní symbol |
 | sent_to_accountant | boolean | Odesláno účetní |
 | created_at | datetime | Vytvořeno |
 | updated_at | datetime | Upraveno |
+
+**Invoice Status Workflow:**
+- `draft` - Návrh (obchodník může upravovat)
+- `pending_approval` - Čeká na schválení (odesláno adminovi)
+- `issued` - Vystaveno (schváleno adminem, odesláno klientovi)
+- `paid` - Zaplaceno
+- `overdue` - Po splatnosti
+- `cancelled` - Stornováno
 
 ### Tabulka `invoices_received` (přijaté faktury)
 

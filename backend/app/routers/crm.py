@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status, File, Uplo
 from fastapi.responses import Response
 
 from ..database import get_supabase
-from ..dependencies import require_sales_or_admin
+from ..dependencies import require_sales_or_admin, require_admin
 from ..schemas.auth import User
 from ..schemas.crm import (
     BusinessCreate,
@@ -38,6 +38,10 @@ from ..schemas.crm import (
     InvoiceIssuedCreate,
     InvoiceIssuedResponse,
     InvoiceStatusUpdate,
+    InvoiceRejectRequest,
+    AdminInvoiceListItem,
+    AdminInvoiceListResponse,
+    SellerClaimsResponse,
 )
 
 router = APIRouter(prefix="/crm", tags=["CRM"])
@@ -2071,6 +2075,7 @@ async def get_invoice_detail(
         status=invoice["status"],
         description=invoice.get("description"),
         variable_symbol=invoice.get("variable_symbol"),
+        rejected_reason=invoice.get("rejected_reason"),
         created_at=invoice.get("created_at"),
         updated_at=invoice.get("updated_at"),
         business_name=business_name,
@@ -2206,6 +2211,7 @@ async def generate_project_invoice(
         status=row["status"],
         description=row.get("description"),
         variable_symbol=row.get("variable_symbol"),
+        rejected_reason=row.get("rejected_reason"),
         created_at=row.get("created_at"),
         updated_at=row.get("updated_at"),
         business_name=business_name,
@@ -2341,9 +2347,382 @@ async def update_invoice_status(
         status=row["status"],
         description=row.get("description"),
         variable_symbol=row.get("variable_symbol"),
+        rejected_reason=row.get("rejected_reason"),
         created_at=row.get("created_at"),
         updated_at=row.get("updated_at"),
         business_name=business_name,
+    )
+
+
+# ============== Invoice Approval Workflow ==============
+
+
+@router.put("/invoices-issued/{invoice_id}/submit-for-approval", response_model=InvoiceIssuedResponse)
+async def submit_invoice_for_approval(
+    invoice_id: str,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """
+    Submit invoice for approval (draft -> pending_approval).
+    Only sales can submit their own invoices.
+    """
+    supabase = get_supabase()
+
+    # Get current invoice
+    invoice_result = (
+        supabase.table("invoices_issued")
+        .select("*, businesses(name)")
+        .eq("id", invoice_id)
+        .single()
+        .execute()
+    )
+
+    if not invoice_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Faktura nenalezena"
+        )
+
+    invoice = invoice_result.data
+    business_name = invoice.get("businesses", {}).get("name", "Unknown")
+
+    # RBAC check - sales can only submit their own invoices
+    if current_user.role == "sales" and invoice.get("seller_id") != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Nemáte oprávnění k této faktuře"
+        )
+
+    # Only draft invoices can be submitted
+    if invoice["status"] != "draft":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Nelze odeslat fakturu ve stavu '{invoice['status']}'. Pouze faktury ve stavu 'draft' mohou být odeslány ke schválení."
+        )
+
+    # Update status
+    update_data = {
+        "status": "pending_approval",
+        "updated_at": datetime.utcnow().isoformat(),
+    }
+
+    result = (
+        supabase.table("invoices_issued")
+        .update(update_data)
+        .eq("id", invoice_id)
+        .execute()
+    )
+
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Nepodařilo se odeslat fakturu ke schválení",
+        )
+
+    row = result.data[0]
+    return InvoiceIssuedResponse(
+        id=row["id"],
+        business_id=row["business_id"],
+        project_id=row.get("project_id"),
+        seller_id=row.get("seller_id"),
+        invoice_number=row["invoice_number"],
+        issue_date=row["issue_date"],
+        due_date=row["due_date"],
+        paid_date=row.get("paid_date"),
+        amount_without_vat=row.get("amount_without_vat", 0),
+        vat_rate=row.get("vat_rate", 21),
+        vat_amount=row.get("vat_amount"),
+        amount_total=row["amount_total"],
+        currency=row.get("currency", "CZK"),
+        payment_type=row.get("payment_type", "setup"),
+        status=row["status"],
+        description=row.get("description"),
+        variable_symbol=row.get("variable_symbol"),
+        created_at=row.get("created_at"),
+        updated_at=row.get("updated_at"),
+        business_name=business_name,
+    )
+
+
+@router.get("/admin/invoices", response_model=AdminInvoiceListResponse)
+async def get_admin_invoices(
+    current_user: Annotated[User, Depends(require_admin)],
+    status_filter: str | None = Query(None, description="Filter by status (comma-separated)"),
+    seller_id: str | None = Query(None, description="Filter by seller"),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+):
+    """
+    Get list of all invoices for admin view.
+    Supports filtering by status and seller.
+    """
+    supabase = get_supabase()
+
+    # Base query
+    query = supabase.table("invoices_issued").select("*, businesses(name)", count="exact")
+
+    # Status filter
+    if status_filter:
+        statuses = [s.strip() for s in status_filter.split(",")]
+        query = query.in_("status", statuses)
+
+    # Seller filter
+    if seller_id:
+        query = query.eq("seller_id", seller_id)
+
+    # Order by created_at desc
+    query = query.order("created_at", desc=True)
+
+    # Pagination
+    offset = (page - 1) * limit
+    query = query.range(offset, offset + limit - 1)
+
+    result = query.execute()
+
+    # Get all seller IDs from results to fetch names
+    seller_ids = list(set(row.get("seller_id") for row in result.data if row.get("seller_id")))
+    seller_names = {}
+    if seller_ids:
+        sellers_result = (
+            supabase.table("sellers")
+            .select("id, first_name, last_name")
+            .in_("id", seller_ids)
+            .execute()
+        )
+        for s in (sellers_result.data or []):
+            seller_names[s["id"]] = f"{s.get('first_name', '')} {s.get('last_name', '')}".strip()
+
+    # Transform response
+    items = []
+    for row in result.data:
+        items.append(
+            AdminInvoiceListItem(
+                id=row["id"],
+                invoice_number=row["invoice_number"],
+                business_id=row["business_id"],
+                business_name=row.get("businesses", {}).get("name"),
+                seller_id=row.get("seller_id"),
+                seller_name=seller_names.get(row.get("seller_id")),
+                amount_total=row["amount_total"],
+                status=row["status"],
+                issue_date=row["issue_date"],
+                due_date=row["due_date"],
+                paid_date=row.get("paid_date"),
+                payment_type=row.get("payment_type", "setup"),
+                rejected_reason=row.get("rejected_reason"),
+                created_at=row.get("created_at"),
+            )
+        )
+
+    return AdminInvoiceListResponse(
+        items=items, total=result.count or 0, page=page, limit=limit
+    )
+
+
+@router.put("/invoices-issued/{invoice_id}/approve", response_model=InvoiceIssuedResponse)
+async def approve_invoice(
+    invoice_id: str,
+    current_user: Annotated[User, Depends(require_admin)],
+):
+    """
+    Approve an invoice (pending_approval -> issued).
+    Only admin can approve invoices.
+    """
+    supabase = get_supabase()
+
+    # Get current invoice
+    invoice_result = (
+        supabase.table("invoices_issued")
+        .select("*, businesses(name)")
+        .eq("id", invoice_id)
+        .single()
+        .execute()
+    )
+
+    if not invoice_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Faktura nenalezena"
+        )
+
+    invoice = invoice_result.data
+    business_name = invoice.get("businesses", {}).get("name", "Unknown")
+
+    # Only pending_approval invoices can be approved
+    if invoice["status"] != "pending_approval":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Nelze schválit fakturu ve stavu '{invoice['status']}'. Pouze faktury čekající na schválení mohou být schváleny."
+        )
+
+    # Update status
+    update_data = {
+        "status": "issued",
+        "updated_at": datetime.utcnow().isoformat(),
+        "rejected_reason": None,  # Clear any previous rejection reason
+    }
+
+    result = (
+        supabase.table("invoices_issued")
+        .update(update_data)
+        .eq("id", invoice_id)
+        .execute()
+    )
+
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Nepodařilo se schválit fakturu",
+        )
+
+    row = result.data[0]
+    return InvoiceIssuedResponse(
+        id=row["id"],
+        business_id=row["business_id"],
+        project_id=row.get("project_id"),
+        seller_id=row.get("seller_id"),
+        invoice_number=row["invoice_number"],
+        issue_date=row["issue_date"],
+        due_date=row["due_date"],
+        paid_date=row.get("paid_date"),
+        amount_without_vat=row.get("amount_without_vat", 0),
+        vat_rate=row.get("vat_rate", 21),
+        vat_amount=row.get("vat_amount"),
+        amount_total=row["amount_total"],
+        currency=row.get("currency", "CZK"),
+        payment_type=row.get("payment_type", "setup"),
+        status=row["status"],
+        description=row.get("description"),
+        variable_symbol=row.get("variable_symbol"),
+        created_at=row.get("created_at"),
+        updated_at=row.get("updated_at"),
+        business_name=business_name,
+    )
+
+
+@router.put("/invoices-issued/{invoice_id}/reject", response_model=InvoiceIssuedResponse)
+async def reject_invoice(
+    invoice_id: str,
+    data: InvoiceRejectRequest,
+    current_user: Annotated[User, Depends(require_admin)],
+):
+    """
+    Reject an invoice with reason (pending_approval -> draft).
+    Only admin can reject invoices.
+    """
+    supabase = get_supabase()
+
+    # Get current invoice
+    invoice_result = (
+        supabase.table("invoices_issued")
+        .select("*, businesses(name)")
+        .eq("id", invoice_id)
+        .single()
+        .execute()
+    )
+
+    if not invoice_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Faktura nenalezena"
+        )
+
+    invoice = invoice_result.data
+    business_name = invoice.get("businesses", {}).get("name", "Unknown")
+
+    # Only pending_approval invoices can be rejected
+    if invoice["status"] != "pending_approval":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Nelze zamítnout fakturu ve stavu '{invoice['status']}'. Pouze faktury čekající na schválení mohou být zamítnuty."
+        )
+
+    # Update status back to draft with rejection reason
+    update_data = {
+        "status": "draft",
+        "rejected_reason": data.reason,
+        "updated_at": datetime.utcnow().isoformat(),
+    }
+
+    result = (
+        supabase.table("invoices_issued")
+        .update(update_data)
+        .eq("id", invoice_id)
+        .execute()
+    )
+
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Nepodařilo se zamítnout fakturu",
+        )
+
+    row = result.data[0]
+    return InvoiceIssuedResponse(
+        id=row["id"],
+        business_id=row["business_id"],
+        project_id=row.get("project_id"),
+        seller_id=row.get("seller_id"),
+        invoice_number=row["invoice_number"],
+        issue_date=row["issue_date"],
+        due_date=row["due_date"],
+        paid_date=row.get("paid_date"),
+        amount_without_vat=row.get("amount_without_vat", 0),
+        vat_rate=row.get("vat_rate", 21),
+        vat_amount=row.get("vat_amount"),
+        amount_total=row["amount_total"],
+        currency=row.get("currency", "CZK"),
+        payment_type=row.get("payment_type", "setup"),
+        status=row["status"],
+        description=row.get("description"),
+        variable_symbol=row.get("variable_symbol"),
+        created_at=row.get("created_at"),
+        updated_at=row.get("updated_at"),
+        business_name=business_name,
+    )
+
+
+@router.get("/seller/claims", response_model=SellerClaimsResponse)
+async def get_seller_claims(
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """
+    Get seller's commission claims summary.
+    Returns total earned, already invoiced, and available to claim.
+    """
+    supabase = get_supabase()
+
+    # Calculate total earned from ledger entries
+    ledger_result = (
+        supabase.table("ledger_entries")
+        .select("amount")
+        .eq("seller_id", current_user.id)
+        .eq("entry_type", "commission_earned")
+        .execute()
+    )
+
+    total_earned = 0
+    if ledger_result.data:
+        for entry in ledger_result.data:
+            total_earned += entry.get("amount", 0)
+
+    # Calculate already invoiced (approved + paid invoices from invoices_received)
+    invoiced_result = (
+        supabase.table("invoices_received")
+        .select("amount_total")
+        .eq("seller_id", current_user.id)
+        .in_("status", ["approved", "paid"])
+        .execute()
+    )
+
+    already_invoiced = 0
+    if invoiced_result.data:
+        for inv in invoiced_result.data:
+            already_invoiced += inv.get("amount_total", 0)
+
+    # Available to claim
+    available_to_claim = total_earned - already_invoiced
+
+    return SellerClaimsResponse(
+        total_earned=total_earned,
+        already_invoiced=already_invoiced,
+        available_to_claim=max(0, available_to_claim),  # Can't be negative
     )
 
 

@@ -19,6 +19,11 @@ export default function InvoiceDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [updating, setUpdating] = useState(false)
   const [downloadingPdf, setDownloadingPdf] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [approving, setApproving] = useState(false)
+  const [rejecting, setRejecting] = useState(false)
+  const [showRejectModal, setShowRejectModal] = useState(false)
+  const [rejectReason, setRejectReason] = useState('')
 
   useEffect(() => {
     if (invoiceId) {
@@ -60,9 +65,57 @@ export default function InvoiceDetailPage() {
     }
   }
 
+  const handleSubmitForApproval = async () => {
+    if (!invoice) return
+    try {
+      setSubmitting(true)
+      await ApiClient.submitInvoiceForApproval(invoice.id)
+      await loadInvoice()
+      showToast('Faktura odeslána ke schválení', 'success')
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || 'Chyba při odesílání ke schválení', 'error')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleApprove = async () => {
+    if (!invoice) return
+    try {
+      setApproving(true)
+      await ApiClient.approveInvoice(invoice.id)
+      await loadInvoice()
+      showToast('Faktura byla schválena', 'success')
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || 'Chyba při schvalování', 'error')
+    } finally {
+      setApproving(false)
+    }
+  }
+
+  const handleReject = async () => {
+    if (!invoice || !rejectReason.trim()) {
+      showToast('Zadejte důvod zamítnutí', 'error')
+      return
+    }
+    try {
+      setRejecting(true)
+      await ApiClient.rejectInvoice(invoice.id, rejectReason.trim())
+      setShowRejectModal(false)
+      setRejectReason('')
+      await loadInvoice()
+      showToast('Faktura byla zamítnuta', 'success')
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || 'Chyba při zamítání', 'error')
+    } finally {
+      setRejecting(false)
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft': return '#666'
+      case 'pending_approval': return '#eab308'
       case 'issued': return '#2563eb'
       case 'paid': return '#16a34a'
       case 'overdue': return '#dc2626'
@@ -74,6 +127,7 @@ export default function InvoiceDetailPage() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'draft': return 'Návrh'
+      case 'pending_approval': return 'Čeká na schválení'
       case 'issued': return 'Vystaveno'
       case 'paid': return 'Zaplaceno'
       case 'overdue': return 'Po splatnosti'
@@ -240,17 +294,74 @@ export default function InvoiceDetailPage() {
           </div>
         )}
 
-        {user?.role === 'admin' && (
+        {/* Show rejection reason if invoice was rejected */}
+        {invoice.rejected_reason && (
+          <div className="info-section rejection-section">
+            <h3>Důvod zamítnutí</h3>
+            <p className="rejection-reason">{invoice.rejected_reason}</p>
+          </div>
+        )}
+
+        {/* Actions for Sales - Submit for approval */}
+        {invoice.status === 'draft' && (
           <div className="invoice-actions">
             <h3>Akce</h3>
             <div className="action-buttons">
+              <button
+                className="btn-primary"
+                onClick={handleSubmitForApproval}
+                disabled={submitting}
+              >
+                {submitting ? 'Odesílám...' : 'Odeslat ke schválení'}
+              </button>
+            </div>
+            {invoice.rejected_reason && (
+              <p className="action-hint">
+                Faktura byla vrácena k úpravě. Po opravě ji můžete znovu odeslat ke schválení.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Status info for pending approval (sales view) */}
+        {invoice.status === 'pending_approval' && user?.role !== 'admin' && (
+          <div className="invoice-actions">
+            <h3>Stav</h3>
+            <p className="pending-info">
+              Faktura čeká na schválení administrátorem.
+            </p>
+          </div>
+        )}
+
+        {/* Admin actions */}
+        {user?.role === 'admin' && (
+          <div className="invoice-actions">
+            <h3>Admin akce</h3>
+            <div className="action-buttons">
+              {invoice.status === 'pending_approval' && (
+                <>
+                  <button
+                    className="btn-success"
+                    onClick={handleApprove}
+                    disabled={approving}
+                  >
+                    {approving ? 'Schvaluji...' : 'Schválit'}
+                  </button>
+                  <button
+                    className="btn-danger"
+                    onClick={() => setShowRejectModal(true)}
+                  >
+                    Zamítnout
+                  </button>
+                </>
+              )}
               {invoice.status === 'draft' && (
                 <button
                   className="btn-primary"
                   onClick={() => updateInvoiceStatus('issued')}
                   disabled={updating}
                 >
-                  {updating ? 'Aktualizuji...' : 'Vystavit'}
+                  {updating ? 'Aktualizuji...' : 'Vystavit přímo'}
                 </button>
               )}
               {(invoice.status === 'issued' || invoice.status === 'overdue') && (
@@ -282,6 +393,45 @@ export default function InvoiceDetailPage() {
           </small>
         </div>
       </div>
+
+      {/* Reject Modal */}
+      {showRejectModal && (
+        <div className="modal-overlay" onClick={() => setShowRejectModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Zamítnout fakturu</h2>
+            <p>Zamítnout fakturu: <strong>#{invoice.invoice_number}</strong></p>
+            <div className="field">
+              <label htmlFor="rejectReason">Důvod zamítnutí *</label>
+              <textarea
+                id="rejectReason"
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="Zadejte důvod zamítnutí..."
+                rows={4}
+              />
+            </div>
+            <div className="modal-actions">
+              <button
+                onClick={() => {
+                  setShowRejectModal(false)
+                  setRejectReason('')
+                }}
+                className="btn-secondary"
+                disabled={rejecting}
+              >
+                Zrušit
+              </button>
+              <button
+                onClick={handleReject}
+                className="btn-danger"
+                disabled={rejecting || !rejectReason.trim()}
+              >
+                {rejecting ? 'Zamítám...' : 'Zamítnout'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         .invoice-detail-card {
@@ -406,6 +556,113 @@ export default function InvoiceDetailPage() {
           display: flex;
           gap: 0.75rem;
           flex-wrap: wrap;
+        }
+
+        .action-hint {
+          margin-top: 0.75rem;
+          color: #6b7280;
+          font-size: 0.875rem;
+        }
+
+        .pending-info {
+          color: #eab308;
+          font-weight: 500;
+        }
+
+        .rejection-section {
+          background: #fef2f2;
+          padding: 1rem;
+          border-radius: 0.5rem;
+          border: 1px solid #fecaca;
+        }
+
+        .rejection-reason {
+          color: #dc2626;
+          font-weight: 500;
+        }
+
+        .btn-success {
+          background: #22c55e;
+          color: white;
+          border: none;
+          padding: 0.75rem 1.5rem;
+          border-radius: 4px;
+          cursor: pointer;
+          font-weight: 500;
+        }
+
+        .btn-success:hover {
+          background: #16a34a;
+        }
+
+        .btn-success:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        /* Modal */
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+        }
+
+        .modal {
+          background: white;
+          padding: 2rem;
+          border-radius: 8px;
+          max-width: 500px;
+          width: 90%;
+        }
+
+        .modal h2 {
+          margin-top: 0;
+        }
+
+        .field {
+          margin: 1rem 0;
+        }
+
+        .field label {
+          display: block;
+          margin-bottom: 0.5rem;
+          font-weight: 500;
+        }
+
+        .field textarea {
+          width: 100%;
+          padding: 0.75rem;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 1rem;
+          resize: vertical;
+        }
+
+        .modal-actions {
+          display: flex;
+          gap: 1rem;
+          justify-content: flex-end;
+          margin-top: 1.5rem;
+        }
+
+        .btn-secondary {
+          background: #6c757d;
+          color: white;
+          border: none;
+          padding: 0.75rem 1.5rem;
+          border-radius: 4px;
+          cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+          background: #5a6268;
         }
 
         .invoice-meta {
