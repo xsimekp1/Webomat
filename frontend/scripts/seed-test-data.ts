@@ -138,28 +138,54 @@ async function seedTestData() {
 
     console.log(`✅ Vytvořeno ${insertedProjects?.length || 0} projektů`)
 
-    // 3. Vytvoř testovací komise
-    console.log('💰 Vytvářím testovací komise...')
+    // 3. Vytvoř testovací komise (ledger entries)
+    // Expected balance: 5000 + 3000 + 500 + 1000 - 2000 = 7500 Kč
+    console.log('💰 Vytvářím testovací ledger entries...')
     const commissions = [
       {
         seller_id: andyId,
         entry_type: 'commission_earned',
         amount: 5000,
-        description: 'Provize za Veterinární kliniku',
+        description: 'Provize za Veterinární kliniku - setup',
+        related_business_id: insertedBusinesses?.[0]?.id,
+        related_project_id: insertedProjects?.[0]?.id,
+        is_test: true,
       },
       {
         seller_id: andyId,
         entry_type: 'commission_earned',
         amount: 3000,
-        description: 'Provize za Kadeřnictví Elegant',
+        description: 'Provize za Kadeřnictví Elegant - setup',
+        related_business_id: insertedBusinesses?.[1]?.id,
+        related_project_id: insertedProjects?.[1]?.id,
+        is_test: true,
       },
       {
         seller_id: andyId,
-        entry_type: 'payout_reserved',
-        amount: -8000,
-        description: 'Vyplacení provizí',
+        entry_type: 'commission_earned',
+        amount: 500,
+        description: 'Provize za měsíční provoz webu',
+        related_business_id: insertedBusinesses?.[0]?.id,
+        is_test: true,
+      },
+      {
+        seller_id: andyId,
+        entry_type: 'admin_adjustment',
+        amount: 1000,
+        description: 'Bonus za výkon Q4 2024',
+        notes: 'Mimořádná odměna za překročení cílů',
+        is_test: true,
+      },
+      {
+        seller_id: andyId,
+        entry_type: 'payout_paid',
+        amount: -2000,
+        description: 'Vyplaceno na účet - leden 2025',
+        notes: 'VS: 20250101',
+        is_test: true,
       },
     ]
+    // Note: Expected balance = 5000 + 3000 + 500 + 1000 - 2000 = 7500 Kč
 
     const { data: insertedCommissions, error: commissionError } = await supabase
       .from('ledger_entries')
@@ -168,7 +194,8 @@ async function seedTestData() {
 
     if (commissionError) throw commissionError
 
-    console.log(`✅ Vytvořeno ${insertedCommissions?.length || 0} komisačních záznamů`)
+    console.log(`✅ Vytvořeno ${insertedCommissions?.length || 0} ledger záznamů`)
+    console.log(`   📊 Očekávaný zůstatek: 7500 Kč (5000 + 3000 + 500 + 1000 - 2000)`)
 
     // 4. Vytvoř testovací faktury
     console.log('📄 Vytvářím testovací faktury...')
@@ -340,10 +367,11 @@ async function seedTestData() {
     console.log('\n📊 Shrnutí:')
     console.log(`   Firmy: ${insertedBusinesses?.length || 0}`)
     console.log(`   Projekty: ${insertedProjects?.length || 0}`)
-    console.log(`   Komise: ${insertedCommissions?.length || 0}`)
+    console.log(`   Ledger entries: ${insertedCommissions?.length || 0}`)
     console.log(`   Faktury přijaté (invoices_received): ${insertedInvoices?.length || 0}`)
     console.log(`   Faktury vydané (invoices_issued): ${insertedInvoicesIssued?.length || 0}`)
     console.log(`   Aktivity: ${insertedActivities?.length || 0}`)
+    console.log('\n💰 Očekávaný zůstatek "K vyplacení": 7500 Kč')
 
   } catch (error) {
     console.error('❌ Chyba při seedování:', error)

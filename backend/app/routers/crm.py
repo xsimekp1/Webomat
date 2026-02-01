@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import Annotated, Optional
 from urllib.request import urlopen
 
@@ -33,6 +33,9 @@ from ..schemas.crm import (
     BalancePageResponse,
     LedgerEntryResponse,
     WeeklyRewardSummary,
+    InvoiceIssuedCreate,
+    InvoiceIssuedResponse,
+    InvoiceStatusUpdate,
 )
 
 router = APIRouter(prefix="/crm", tags=["CRM"])
@@ -1071,30 +1074,21 @@ async def get_seller_dashboard(
     supabase = get_supabase()
     today = date.today()
 
-    # Calculate available balance: sum of earned commissions minus payouts
-    earned_result = (
+    # Calculate available balance: sum of all ledger entries
+    # Positive entries: commission_earned, admin_adjustment
+    # Negative entries: payout_reserved, payout_paid (stored as negative amounts)
+    ledger_result = (
         supabase.table("ledger_entries")
-        .select("amount")
+        .select("amount, entry_type")
         .eq("seller_id", current_user.id)
-        .eq("entry_type", "commission_earned")
         .execute()
     )
-    total_earned = (
-        sum(row["amount"] for row in earned_result.data) if earned_result.data else 0
-    )
 
-    payout_result = (
-        supabase.table("ledger_entries")
-        .select("amount")
-        .eq("seller_id", current_user.id)
-        .in_("entry_type", ["payout_reserved", "payout_paid"])
-        .execute()
-    )
-    total_payouts = (
-        sum(row["amount"] for row in payout_result.data) if payout_result.data else 0
-    )
-
-    available_balance = total_earned - total_payouts
+    available_balance = 0
+    if ledger_result.data:
+        for entry in ledger_result.data:
+            # All amounts are already signed (positive for earned, negative for payouts)
+            available_balance += entry.get("amount", 0)
 
     # Get businesses owned by this seller OR without owner (accessible to all)
     businesses_result = (
@@ -1825,27 +1819,17 @@ async def get_seller_account_ledger(
 
     # Execute query
     result = query.order("created_at", desc=True).execute()
-    
-    # Calculate available balance
-    earned_result = (
+
+    # Calculate available balance: sum of all ledger entries
+    # All amounts are signed (positive for earned/adjustment, negative for payouts)
+    all_ledger_result = (
         supabase.table("ledger_entries")
         .select("amount")
         .eq("seller_id", current_user.id)
-        .eq("entry_type", "commission_earned")
         .execute()
     )
 
-    payout_result = (
-        supabase.table("ledger_entries")
-        .select("amount")
-        .eq("seller_id", current_user.id)
-        .in_("entry_type", ["payout_reserved", "payout_paid"])
-        .execute()
-    )
-
-    total_earned = sum(entry.get("amount", 0) for entry in (earned_result.data or []))
-    total_payouts = sum(entry.get("amount", 0) for entry in (payout_result.data or []))
-    available_balance = total_earned - total_payouts
+    available_balance = sum(entry.get("amount", 0) for entry in (all_ledger_result.data or []))
 
     # Convert to response format
     ledger_entries = []
@@ -1900,4 +1884,328 @@ async def get_seller_account_ledger(
         available_balance=available_balance,
         ledger_entries=ledger_entries,
         weekly_rewards=weekly_rewards
+    )
+
+
+# ============================================
+# Invoice Management Endpoints
+# ============================================
+
+
+@router.get("/projects/{project_id}/invoices", response_model=list[InvoiceIssuedResponse])
+async def list_project_invoices(
+    project_id: str,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """Get all invoices for a project."""
+    supabase = get_supabase()
+
+    # Verify access to project
+    project_result = (
+        supabase.table("website_projects")
+        .select("business_id")
+        .eq("id", project_id)
+        .single()
+        .execute()
+    )
+
+    if not project_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Projekt nenalezen"
+        )
+
+    # Check access to business
+    await get_business(project_result.data["business_id"], current_user)
+
+    # Get invoices
+    result = (
+        supabase.table("invoices_issued")
+        .select("*")
+        .eq("project_id", project_id)
+        .order("created_at", desc=True)
+        .execute()
+    )
+
+    # Get business name
+    business_result = (
+        supabase.table("businesses")
+        .select("name")
+        .eq("id", project_result.data["business_id"])
+        .single()
+        .execute()
+    )
+    business_name = business_result.data.get("name") if business_result.data else None
+
+    invoices = []
+    for row in result.data or []:
+        invoices.append(
+            InvoiceIssuedResponse(
+                id=row["id"],
+                business_id=row["business_id"],
+                project_id=row.get("project_id"),
+                seller_id=row.get("seller_id"),
+                invoice_number=row["invoice_number"],
+                issue_date=row["issue_date"],
+                due_date=row["due_date"],
+                paid_date=row.get("paid_date"),
+                amount_without_vat=row.get("amount_without_vat", 0),
+                vat_rate=row.get("vat_rate", 21),
+                vat_amount=row.get("vat_amount"),
+                amount_total=row["amount_total"],
+                currency=row.get("currency", "CZK"),
+                payment_type=row.get("payment_type", "setup"),
+                status=row["status"],
+                description=row.get("description"),
+                variable_symbol=row.get("variable_symbol"),
+                created_at=row.get("created_at"),
+                updated_at=row.get("updated_at"),
+                business_name=business_name,
+            )
+        )
+
+    return invoices
+
+
+@router.post(
+    "/projects/{project_id}/generate-invoice",
+    response_model=InvoiceIssuedResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def generate_project_invoice(
+    project_id: str,
+    data: InvoiceIssuedCreate,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """Generate an invoice for a project."""
+    supabase = get_supabase()
+
+    # Verify access to project and get business_id
+    project_result = (
+        supabase.table("website_projects")
+        .select("id, business_id, seller_id, domain, package, price_setup")
+        .eq("id", project_id)
+        .single()
+        .execute()
+    )
+
+    if not project_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Projekt nenalezen"
+        )
+
+    project = project_result.data
+    business_id = project["business_id"]
+
+    # Check access to business
+    await get_business(business_id, current_user)
+
+    # Get business name
+    business_result = (
+        supabase.table("businesses")
+        .select("name")
+        .eq("id", business_id)
+        .single()
+        .execute()
+    )
+    business_name = business_result.data.get("name") if business_result.data else None
+
+    # Generate invoice number using database function
+    # Format: YYYY-NNNN (e.g., 2025-0001)
+    current_year = datetime.utcnow().year
+
+    # Get the count of invoices this year to generate next number
+    count_result = (
+        supabase.table("invoices_issued")
+        .select("id", count="exact")
+        .like("invoice_number", f"{current_year}-%")
+        .execute()
+    )
+    next_number = (count_result.count or 0) + 1
+    invoice_number = f"{current_year}-{next_number:04d}"
+
+    # Calculate dates
+    issue_date = date.today()
+    due_date = issue_date + timedelta(days=data.due_days)
+
+    # Calculate VAT
+    vat_amount = round(data.amount_without_vat * (data.vat_rate / 100), 2)
+    amount_total = round(data.amount_without_vat + vat_amount, 2)
+
+    # Create invoice
+    insert_data = {
+        "business_id": business_id,
+        "project_id": project_id,
+        "seller_id": project.get("seller_id") or current_user.id,
+        "invoice_number": invoice_number,
+        "issue_date": issue_date.isoformat(),
+        "due_date": due_date.isoformat(),
+        "amount_without_vat": data.amount_without_vat,
+        "vat_rate": data.vat_rate,
+        "vat_amount": vat_amount,
+        "amount_total": amount_total,
+        "currency": "CZK",
+        "payment_type": data.payment_type.value,
+        "status": "draft",
+        "description": data.description,
+        "variable_symbol": invoice_number.replace("-", ""),
+    }
+
+    result = supabase.table("invoices_issued").insert(insert_data).execute()
+
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Nepodařilo se vytvořit fakturu",
+        )
+
+    row = result.data[0]
+    return InvoiceIssuedResponse(
+        id=row["id"],
+        business_id=row["business_id"],
+        project_id=row.get("project_id"),
+        seller_id=row.get("seller_id"),
+        invoice_number=row["invoice_number"],
+        issue_date=row["issue_date"],
+        due_date=row["due_date"],
+        paid_date=row.get("paid_date"),
+        amount_without_vat=row.get("amount_without_vat", 0),
+        vat_rate=row.get("vat_rate", 21),
+        vat_amount=row.get("vat_amount"),
+        amount_total=row["amount_total"],
+        currency=row.get("currency", "CZK"),
+        payment_type=row.get("payment_type", "setup"),
+        status=row["status"],
+        description=row.get("description"),
+        variable_symbol=row.get("variable_symbol"),
+        created_at=row.get("created_at"),
+        updated_at=row.get("updated_at"),
+        business_name=business_name,
+    )
+
+
+@router.put("/invoices-issued/{invoice_id}/status", response_model=InvoiceIssuedResponse)
+async def update_invoice_status(
+    invoice_id: str,
+    data: InvoiceStatusUpdate,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """
+    Update invoice status. When status changes to 'paid', automatically creates
+    a commission entry in the seller's ledger.
+    """
+    supabase = get_supabase()
+
+    # Get current invoice
+    invoice_result = (
+        supabase.table("invoices_issued")
+        .select("*")
+        .eq("id", invoice_id)
+        .single()
+        .execute()
+    )
+
+    if not invoice_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Faktura nenalezena"
+        )
+
+    invoice = invoice_result.data
+    old_status = invoice["status"]
+    new_status = data.status.value
+
+    # Check access to business
+    await get_business(invoice["business_id"], current_user)
+
+    # Get business name for response
+    business_result = (
+        supabase.table("businesses")
+        .select("name")
+        .eq("id", invoice["business_id"])
+        .single()
+        .execute()
+    )
+    business_name = business_result.data.get("name") if business_result.data else None
+
+    # Prepare update data
+    update_data = {
+        "status": new_status,
+        "updated_at": datetime.utcnow().isoformat(),
+    }
+
+    # If marking as paid, set paid_date
+    if new_status == "paid":
+        update_data["paid_date"] = data.paid_date or date.today().isoformat()
+
+    # Update invoice
+    result = (
+        supabase.table("invoices_issued")
+        .update(update_data)
+        .eq("id", invoice_id)
+        .execute()
+    )
+
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Nepodařilo se aktualizovat fakturu",
+        )
+
+    # If status changed to 'paid', create commission entry
+    if old_status != "paid" and new_status == "paid":
+        seller_id = invoice.get("seller_id")
+
+        if seller_id:
+            # Get seller's commission rate
+            seller_result = (
+                supabase.table("sellers")
+                .select("default_commission_rate")
+                .eq("id", seller_id)
+                .single()
+                .execute()
+            )
+
+            commission_rate = 0.10  # Default 10%
+            if seller_result.data and seller_result.data.get("default_commission_rate"):
+                commission_rate = seller_result.data["default_commission_rate"] / 100
+
+            # Calculate commission
+            commission_amount = round(invoice["amount_total"] * commission_rate, 2)
+
+            # Create ledger entry
+            ledger_entry = {
+                "seller_id": seller_id,
+                "entry_type": "commission_earned",
+                "amount": commission_amount,
+                "related_invoice_id": invoice_id,
+                "related_project_id": invoice.get("project_id"),
+                "related_business_id": invoice["business_id"],
+                "description": f"Provize za fakturu {invoice['invoice_number']} - {business_name}",
+                "is_test": False,
+                "created_by": current_user.id,
+            }
+
+            supabase.table("ledger_entries").insert(ledger_entry).execute()
+
+    row = result.data[0]
+    return InvoiceIssuedResponse(
+        id=row["id"],
+        business_id=row["business_id"],
+        project_id=row.get("project_id"),
+        seller_id=row.get("seller_id"),
+        invoice_number=row["invoice_number"],
+        issue_date=row["issue_date"],
+        due_date=row["due_date"],
+        paid_date=row.get("paid_date"),
+        amount_without_vat=row.get("amount_without_vat", 0),
+        vat_rate=row.get("vat_rate", 21),
+        vat_amount=row.get("vat_amount"),
+        amount_total=row["amount_total"],
+        currency=row.get("currency", "CZK"),
+        payment_type=row.get("payment_type", "setup"),
+        status=row["status"],
+        description=row.get("description"),
+        variable_symbol=row.get("variable_symbol"),
+        created_at=row.get("created_at"),
+        updated_at=row.get("updated_at"),
+        business_name=business_name,
     )

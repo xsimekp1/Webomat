@@ -696,6 +696,45 @@ class ApiClient {
     );
     return response.data;
   }
+
+  // ============================================
+  // Invoice Management endpoints
+  // ============================================
+
+  static async getProjectInvoices(projectId: string) {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/projects/${projectId}/invoices`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async generateProjectInvoice(projectId: string, data: {
+    amount_without_vat: number;
+    payment_type?: 'setup' | 'monthly' | 'other';
+    description?: string;
+    vat_rate?: number;
+    due_days?: number;
+  }) {
+    const response = await axios.post(
+      `${API_BASE_URL}/crm/projects/${projectId}/generate-invoice`,
+      data,
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  static async updateInvoiceStatus(invoiceId: string, data: {
+    status: 'draft' | 'issued' | 'paid' | 'overdue' | 'cancelled';
+    paid_date?: string;
+  }) {
+    const response = await axios.put(
+      `${API_BASE_URL}/crm/invoices-issued/${invoiceId}/status`,
+      data,
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
 }
 
 export default ApiClient;
