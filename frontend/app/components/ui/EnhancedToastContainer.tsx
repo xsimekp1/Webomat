@@ -1,14 +1,13 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 import { useToast } from '../../context/ToastContext'
 import { AnimatedToast } from './AnimatedToast'
 
 export function EnhancedToastContainer() {
   const { toasts, removeToast } = useToast()
   const [isMobile, setIsMobile] = useState(false)
-  const [mountedToasts, setMountedToasts] = useState<Set<string>>(new Set())
 
   // Detect mobile vs desktop
   useEffect(() => {
@@ -44,63 +43,25 @@ export function EnhancedToastContainer() {
         width: 'auto'
       }
 
-  // Staggered animation for multiple toasts
-  const containerVariants = {
-    initial: {},
-    animate: {
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  }
-
-  // Handle toast lifecycle
-  const handleToastMount = (toastId: string) => {
-    setMountedToasts(prev => new Set(prev).add(toastId))
-  }
-
-  const handleToastUnmount = (toastId: string) => {
-    setMountedToasts(prev => {
-      const newSet = new Set(prev)
-      newSet.delete(toastId)
-      return newSet
-    })
-    removeToast(toastId)
-  }
-
   if (toasts.length === 0) {
     return null
   }
 
   return (
-    <div 
+    <div
       className={containerClasses}
       style={containerStyles}
       role="alert"
       aria-live="polite"
     >
-      <AnimatePresence>
+      <AnimatePresence mode="popLayout">
         {toasts.map((toast) => (
-          <motion.div
+          <AnimatedToast
             key={toast.id}
-            variants={containerVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            layout
-            onAnimationStart={() => handleToastMount(toast.id)}
-            onAnimationComplete={() => {
-              if (!mountedToasts.has(toast.id)) {
-                handleToastUnmount(toast.id)
-              }
-            }}
-          >
-            <AnimatedToast
-              toast={toast}
-              onRemove={handleToastUnmount}
-              isVisible={mountedToasts.has(toast.id)}
-            />
-          </motion.div>
+            toast={toast}
+            onRemove={removeToast}
+            isVisible={true}
+          />
         ))}
       </AnimatePresence>
     </div>

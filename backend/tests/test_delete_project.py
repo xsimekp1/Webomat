@@ -70,7 +70,7 @@ class TestDeleteProject:
         
         # Verify project was marked as cancelled
         mock_supabase.table.return_value.update.assert_any_call(
-            {"status": "cancelled", "updated_at": mock_supabase.table.return_value.update.return_value.eq.return_value.execute.call_args[0][1]["updated_at"]},
+            {"status": "cancelled", "updated_at": mock.ANY},
             {"id": "789e0123-e89b-12d3-a456-426614174000"}
         )
         

@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Toast, ToastType } from '../../context/ToastContext'
 
@@ -11,6 +11,15 @@ interface AnimatedToastProps {
 }
 
 export function AnimatedToast({ toast, onRemove, isVisible }: AnimatedToastProps) {
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
   const getToastStyles = (type: ToastType) => {
     switch (type) {
       case 'success':
@@ -99,19 +108,19 @@ export function AnimatedToast({ toast, onRemove, isVisible }: AnimatedToastProps
     }
   }
 
-  const variants = window.innerWidth >= 768 ? desktopVariants : mobileVariants
+  const variants = isMobile ? mobileVariants : desktopVariants
 
   return (
     <motion.div
       className={`
         relative overflow-hidden cursor-pointer
-        backdrop-blur-md 
+        backdrop-blur-md
         shadow-2xl
         border border-white/20
         text-white
-        px-4 py-3 
+        px-4 py-3
         rounded-2xl
-        flex items-center gap-3 
+        flex items-center gap-3
         min-w-[320px] max-w-[400px]
         select-none
         transform-gpu
@@ -127,14 +136,15 @@ export function AnimatedToast({ toast, onRemove, isVisible }: AnimatedToastProps
       }}
       variants={variants}
       initial="initial"
-      animate={isVisible ? "animate" : "initial"}
+      animate="animate"
       exit="exit"
+      layout
       onClick={() => onRemove(toast.id)}
-      whileHover={{ 
+      whileHover={{
         scale: 1.02,
         transition: { duration: 0.1 }
       }}
-      whileTap={{ 
+      whileTap={{
         scale: 0.98,
         transition: { duration: 0.1 }
       }}

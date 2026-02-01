@@ -606,7 +606,9 @@
 
 /* Invoice Modal */
 .invoice-modal {
-  max-width: 500px;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .invoice-form {
@@ -713,5 +715,35 @@
 
   .invoice-actions button {
     width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 10px;
+  }
+
+  .modal {
+    padding: 16px;
+  }
+
+  .invoice-modal {
+    max-width: 100%;
+  }
+
+  .invoice-form .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .invoice-preview {
+    padding: 12px;
+  }
+
+  .preview-row {
+    font-size: 13px;
+  }
+
+  .preview-row.total {
+    font-size: 14px;
   }
 }

@@ -129,7 +129,6 @@ export default function WebProjectPage() {
 
   // Action states
   const [deploying, setDeploying] = useState<string | null>(null)
-  const [capturing, setCapturing] = useState<string | null>(null)
   const [creatingLink, setCreatingLink] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [deletingProject, setDeletingProject] = useState(false)
@@ -198,18 +197,6 @@ export default function WebProjectPage() {
       showToast('Nasazeni bylo odebrano', 'success')
     } catch (err: any) {
       showToast(err.response?.data?.detail || 'Nepodarilo se odebrat nasazeni', 'error')
-    }
-  }
-
-  const handleCaptureScreenshot = async (versionId: string) => {
-    setCapturing(versionId)
-    try {
-      await ApiClient.captureScreenshot(versionId)
-      showToast('Screenshot byl zarazen do fronty', 'success')
-    } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Nepodarilo se vytvorit screenshot', 'error')
-    } finally {
-      setCapturing(null)
     }
   }
 
@@ -506,15 +493,6 @@ export default function WebProjectPage() {
                         {deploying === version.id ? 'Nasazuje se...' : 'Nasadit'}
                       </button>
                     )}
-
-                    {/* Screenshot */}
-                    <button
-                      className="btn-secondary"
-                      onClick={() => handleCaptureScreenshot(version.id)}
-                      disabled={capturing === version.id}
-                    >
-                      {capturing === version.id ? 'Zachycuje...' : 'Screenshot'}
-                    </button>
 
                     {/* Share Link */}
                     <button

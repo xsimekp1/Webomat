@@ -12,6 +12,7 @@ from ..services.llm import process_translation_request, is_llm_available
 from ..services.deployment import deploy_html_to_vercel, is_vercel_configured
 from ..services.screenshot import capture_screenshot, upload_screenshot, is_playwright_available
 from ..services.jobs import enqueue_job, get_job_status
+from ..services.generator_tracking import create_run
 
 router = APIRouter(prefix="/website", tags=["website generation"])
 
@@ -154,6 +155,14 @@ async def screenshot_test_website(
     valid_viewports = ["desktop", "mobile", "thumbnail"]
     viewport = data.viewport if data.viewport in valid_viewports else "thumbnail"
 
+    # Track screenshot run
+    run = create_run(
+        run_type="screenshot",
+        seller_id=current_user.id,
+        seller_email=current_user.email,
+    )
+    run.add_metadata("viewport", viewport)
+
     # Try direct capture if Playwright is available
     if is_playwright_available():
         try:
@@ -173,6 +182,10 @@ async def screenshot_test_website(
                 folder="test-screenshots",
             )
 
+            # Track completed
+            run.add_metadata("screenshot_url", screenshot_url)
+            await run.save_completed()
+
             return ScreenshotTestResponse(
                 success=True,
                 message="Screenshot byl úspěšně pořízen",
@@ -180,6 +193,7 @@ async def screenshot_test_website(
             )
 
         except Exception as e:
+            await run.save_failed(str(e))
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Nepodařilo se pořídit screenshot: {str(e)}",
@@ -190,6 +204,7 @@ async def screenshot_test_website(
         # This requires HTML to be accessible via URL, which we can do by:
         # 1. First deploy to Vercel, then screenshot
         # For now, return error with instructions
+        await run.save_failed("Playwright není nainstalován na serveru")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Screenshot služba není dostupná. Playwright není nainstalován na serveru. "
@@ -237,6 +252,16 @@ async def generate_test_website(
     - "auto": Automatický překlad pomocí AI (vyžaduje OPENAI_API_KEY)
     - "client": Vrátí seznam textů k překladu klientem
     """
+    # Track generator run
+    run = create_run(
+        run_type="dry_run" if data.dry_run else "claude_ai",
+        seller_id=current_user.id,
+        seller_email=current_user.email,
+    )
+    run.set_prompt_summary(f"Test: {data.business_name} ({data.business_type})")
+    run.add_metadata("business_name", data.business_name)
+    run.add_metadata("business_type", data.business_type)
+    run.add_metadata("include_english", data.include_english.value)
 
     if data.dry_run:
         # Dry run - vrátíme pěknou testovací stránku
@@ -382,6 +407,9 @@ async def generate_test_website(
                 strings_for_client = translation_result.strings_for_client
                 translation_status = "client_required"
 
+        # Track completed run
+        await run.save_completed()
+
         return GenerateTestResponse(
             success=True,
             message=f"DRY RUN: Testovací stránka pro '{data.business_name}' ({data.business_type})",
@@ -392,6 +420,7 @@ async def generate_test_website(
         )
 
     # AI generování - zatím není implementováno
+    await run.save_failed("AI generování zatím není implementováno")
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
         detail="AI generování zatím není implementováno. Použijte dry_run=true.",
@@ -448,6 +477,16 @@ async def generate_website(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Nemáte oprávnění k tomuto projektu",
                 )
+
+    # Track generator run
+    run = create_run(
+        run_type="dry_run" if data.dry_run else "claude_ai",
+        seller_id=current_user.id,
+        seller_email=current_user.email,
+        project_id=data.project_id,
+        business_id=project["business_id"],
+    )
+    run.add_metadata("include_english", data.include_english.value)
 
     # DRY RUN mode - return dummy HTML
     if data.dry_run:
@@ -527,6 +566,9 @@ async def generate_website(
             elif data.include_english == EnglishVersionMode.client:
                 translation_status = "client_required"
 
+        # Track completed run
+        await run.save_completed()
+
         return GenerateWebsiteResponse(
             success=True,
             message="DRY RUN: Vygenerována testovací stránka",
@@ -537,6 +579,7 @@ async def generate_website(
 
     # TODO: Implement actual Claude API call for production generation
     # For now, return error indicating this is not implemented yet
+    await run.save_failed("Vlastní generování webu zatím není implementováno")
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
         detail="Vlastní generování webu zatím není implementováno. Použijte DRY RUN režim.",
