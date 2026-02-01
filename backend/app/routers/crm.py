@@ -4,7 +4,8 @@ from typing import Annotated, Optional
 from urllib.request import urlopen
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Query, status, File, UploadFile, Body
+from fastapi.responses import Response
 
 from ..database import get_supabase
 from ..dependencies import require_sales_or_admin
@@ -1957,22 +1958,25 @@ async def list_project_invoices(
                 amount_without_vat=row.get("amount_without_vat", 0),
                 vat_rate=row.get("vat_rate", 21),
                 vat_amount=row.get("vat_amount"),
-        amount_total=row["amount_total"],
-        currency=row.get("currency", "CZK"),
-        payment_type=row.get("payment_type", "setup"),
-        status=row["status"],
-        description=row.get("description"),
-        variable_symbol=row.get("variable_symbol"),
-        created_at=row.get("created_at"),
-        updated_at=row.get("updated_at"),
-        business_name=business_name,
-    )
+                amount_total=row["amount_total"],
+                currency=row.get("currency", "CZK"),
+                payment_type=row.get("payment_type", "setup"),
+                status=row["status"],
+                description=row.get("description"),
+                variable_symbol=row.get("variable_symbol"),
+                created_at=row.get("created_at"),
+                updated_at=row.get("updated_at"),
+                business_name=business_name,
+            )
+        )
+
+    return invoices
 
 
 @router.put("/businesses/{business_id}/status", response_model=dict)
 async def update_business_status(
     business_id: str,
-    new_status: str,
+    status_data: dict,
     current_user: Annotated[User, Depends(require_sales_or_admin)],
 ):
     """Update business CRM status."""
@@ -1995,6 +1999,8 @@ async def update_business_status(
     
     # Check access to business
     await get_business(business_id, current_user)
+    
+    new_status = status_data.get("status", "")
     
     # Validate status change - only allow to change to "designed" from specific statuses
     allowed_from_statuses = ["new", "calling", "interested"]
@@ -2069,9 +2075,6 @@ async def get_invoice_detail(
         updated_at=invoice.get("updated_at"),
         business_name=business_name,
     )
-        )
-
-    return invoices
 
 
 @router.post(
@@ -2341,4 +2344,421 @@ async def update_invoice_status(
         created_at=row.get("created_at"),
         updated_at=row.get("updated_at"),
         business_name=business_name,
+    )
+
+
+# ============== PDF Invoice Generation ==============
+
+
+@router.post("/invoices-issued/{invoice_id}/generate-pdf")
+async def generate_invoice_issued_pdf_endpoint(
+    invoice_id: str,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """
+    Generate PDF for an issued invoice (Webomat -> Client).
+    Uploads to Supabase Storage and updates pdf_path in database.
+    Returns the public URL of the generated PDF.
+    """
+    from ..services.pdf import generate_invoice_issued_pdf, upload_pdf_to_storage
+
+    supabase = get_supabase()
+
+    # Get invoice
+    invoice_result = (
+        supabase.table("invoices_issued")
+        .select("*")
+        .eq("id", invoice_id)
+        .single()
+        .execute()
+    )
+
+    if not invoice_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Faktura nenalezena"
+        )
+
+    invoice = invoice_result.data
+
+    # Check access to business
+    await get_business(invoice["business_id"], current_user)
+
+    # Get business data
+    business_result = (
+        supabase.table("businesses")
+        .select("*")
+        .eq("id", invoice["business_id"])
+        .single()
+        .execute()
+    )
+
+    if not business_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Firma nenalezena"
+        )
+
+    business = business_result.data
+
+    # Get project data if exists
+    project = None
+    if invoice.get("project_id"):
+        project_result = (
+            supabase.table("website_projects")
+            .select("*")
+            .eq("id", invoice["project_id"])
+            .single()
+            .execute()
+        )
+        if project_result.data:
+            project = project_result.data
+
+    # Get platform billing info
+    settings_result = (
+        supabase.table("platform_settings")
+        .select("value")
+        .eq("key", "billing_info")
+        .single()
+        .execute()
+    )
+
+    platform_billing = {}
+    if settings_result.data and settings_result.data.get("value"):
+        platform_billing = settings_result.data["value"]
+
+    # Generate PDF
+    try:
+        pdf_bytes = generate_invoice_issued_pdf(
+            invoice=invoice,
+            business=business,
+            platform_billing=platform_billing,
+            project=project,
+        )
+    except ImportError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"PDF knihovna není nainstalována: {str(e)}",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Chyba při generování PDF: {str(e)}",
+        )
+
+    # Upload to storage
+    year = invoice["invoice_number"].split("-")[0] if "-" in invoice["invoice_number"] else str(date.today().year)
+    storage_path = f"invoices/issued/{year}/{invoice['invoice_number']}.pdf"
+
+    pdf_url = await upload_pdf_to_storage(
+        supabase_client=supabase,
+        pdf_bytes=pdf_bytes,
+        storage_path=storage_path,
+    )
+
+    if not pdf_url:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Nepodařilo se nahrát PDF do úložiště",
+        )
+
+    # Update invoice with pdf_path
+    supabase.table("invoices_issued").update({
+        "pdf_path": pdf_url,
+        "updated_at": datetime.utcnow().isoformat(),
+    }).eq("id", invoice_id).execute()
+
+    return {"pdf_url": pdf_url, "storage_path": storage_path}
+
+
+@router.get("/invoices-issued/{invoice_id}/pdf")
+async def download_invoice_issued_pdf(
+    invoice_id: str,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """
+    Download PDF for an issued invoice.
+    If PDF doesn't exist, generates it first.
+    """
+    from ..services.pdf import generate_invoice_issued_pdf
+
+    supabase = get_supabase()
+
+    # Get invoice
+    invoice_result = (
+        supabase.table("invoices_issued")
+        .select("*")
+        .eq("id", invoice_id)
+        .single()
+        .execute()
+    )
+
+    if not invoice_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Faktura nenalezena"
+        )
+
+    invoice = invoice_result.data
+
+    # Check access to business
+    await get_business(invoice["business_id"], current_user)
+
+    # If PDF already exists, redirect to it
+    if invoice.get("pdf_path"):
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=invoice["pdf_path"])
+
+    # Generate PDF on-the-fly
+    business_result = (
+        supabase.table("businesses")
+        .select("*")
+        .eq("id", invoice["business_id"])
+        .single()
+        .execute()
+    )
+
+    if not business_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Firma nenalezena"
+        )
+
+    business = business_result.data
+
+    project = None
+    if invoice.get("project_id"):
+        project_result = (
+            supabase.table("website_projects")
+            .select("*")
+            .eq("id", invoice["project_id"])
+            .single()
+            .execute()
+        )
+        if project_result.data:
+            project = project_result.data
+
+    settings_result = (
+        supabase.table("platform_settings")
+        .select("value")
+        .eq("key", "billing_info")
+        .single()
+        .execute()
+    )
+
+    platform_billing = {}
+    if settings_result.data and settings_result.data.get("value"):
+        platform_billing = settings_result.data["value"]
+
+    try:
+        pdf_bytes = generate_invoice_issued_pdf(
+            invoice=invoice,
+            business=business,
+            platform_billing=platform_billing,
+            project=project,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Chyba při generování PDF: {str(e)}",
+        )
+
+    filename = f"faktura-{invoice['invoice_number']}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.post("/invoices-received/{invoice_id}/generate-pdf")
+async def generate_invoice_received_pdf_endpoint(
+    invoice_id: str,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """
+    Generate PDF for a received invoice (Seller -> Webomat).
+    Only the seller who owns the invoice or admin can generate it.
+    """
+    from ..services.pdf import generate_invoice_received_pdf, upload_pdf_to_storage
+
+    supabase = get_supabase()
+
+    # Get invoice
+    invoice_result = (
+        supabase.table("invoices_received")
+        .select("*")
+        .eq("id", invoice_id)
+        .single()
+        .execute()
+    )
+
+    if not invoice_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Faktura nenalezena"
+        )
+
+    invoice = invoice_result.data
+
+    # Check access - only owner or admin
+    if current_user.role != "admin" and invoice.get("seller_id") != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Nemáte oprávnění k této faktuře",
+        )
+
+    # Get seller data
+    seller_result = (
+        supabase.table("sellers")
+        .select("*")
+        .eq("id", invoice["seller_id"])
+        .single()
+        .execute()
+    )
+
+    if not seller_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Obchodník nenalezen"
+        )
+
+    seller = seller_result.data
+
+    # Get platform billing info
+    settings_result = (
+        supabase.table("platform_settings")
+        .select("value")
+        .eq("key", "billing_info")
+        .single()
+        .execute()
+    )
+
+    platform_billing = {}
+    if settings_result.data and settings_result.data.get("value"):
+        platform_billing = settings_result.data["value"]
+
+    # Generate PDF
+    try:
+        pdf_bytes = generate_invoice_received_pdf(
+            invoice=invoice,
+            seller=seller,
+            platform_billing=platform_billing,
+        )
+    except ImportError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"PDF knihovna není nainstalována: {str(e)}",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Chyba při generování PDF: {str(e)}",
+        )
+
+    # Upload to storage
+    storage_path = f"invoices/received/{seller['id']}/{invoice['invoice_number']}.pdf"
+
+    pdf_url = await upload_pdf_to_storage(
+        supabase_client=supabase,
+        pdf_bytes=pdf_bytes,
+        storage_path=storage_path,
+    )
+
+    if not pdf_url:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Nepodařilo se nahrát PDF do úložiště",
+        )
+
+    # Update invoice with pdf_path
+    supabase.table("invoices_received").update({
+        "pdf_path": pdf_url,
+        "updated_at": datetime.utcnow().isoformat(),
+    }).eq("id", invoice_id).execute()
+
+    return {"pdf_url": pdf_url, "storage_path": storage_path}
+
+
+@router.get("/invoices-received/{invoice_id}/pdf")
+async def download_invoice_received_pdf(
+    invoice_id: str,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """
+    Download PDF for a received invoice.
+    If PDF doesn't exist, generates it first.
+    """
+    from ..services.pdf import generate_invoice_received_pdf
+
+    supabase = get_supabase()
+
+    # Get invoice
+    invoice_result = (
+        supabase.table("invoices_received")
+        .select("*")
+        .eq("id", invoice_id)
+        .single()
+        .execute()
+    )
+
+    if not invoice_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Faktura nenalezena"
+        )
+
+    invoice = invoice_result.data
+
+    # Check access - only owner or admin
+    if current_user.role != "admin" and invoice.get("seller_id") != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Nemáte oprávnění k této faktuře",
+        )
+
+    # If PDF already exists, redirect to it
+    if invoice.get("pdf_path"):
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=invoice["pdf_path"])
+
+    # Get seller data
+    seller_result = (
+        supabase.table("sellers")
+        .select("*")
+        .eq("id", invoice["seller_id"])
+        .single()
+        .execute()
+    )
+
+    if not seller_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Obchodník nenalezen"
+        )
+
+    seller = seller_result.data
+
+    # Get platform billing info
+    settings_result = (
+        supabase.table("platform_settings")
+        .select("value")
+        .eq("key", "billing_info")
+        .single()
+        .execute()
+    )
+
+    platform_billing = {}
+    if settings_result.data and settings_result.data.get("value"):
+        platform_billing = settings_result.data["value"]
+
+    try:
+        pdf_bytes = generate_invoice_received_pdf(
+            invoice=invoice,
+            seller=seller,
+            platform_billing=platform_billing,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Chyba při generování PDF: {str(e)}",
+        )
+
+    filename = f"faktura-{invoice['invoice_number']}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
