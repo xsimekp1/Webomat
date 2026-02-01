@@ -259,7 +259,7 @@ const getStatusColor = (status: string) => {
                 <div
                   key={project.id}
                   className={`project-card ${getProjectCardClass(project.status)}`}
-                  onClick={() => router.push(`/dashboard/crm/${project.business_id}`)}
+                  onClick={() => router.push(`/dashboard/web-project/${project.id}`)}
                 >
                   <div className="project-name">{project.business_name}</div>
                   <div className="project-status" style={{ color: getStatusColor(project.status) }}>
@@ -309,7 +309,7 @@ const getStatusColor = (status: string) => {
                 <div
                   key={invoice.id}
                   className={`invoice-row ${invoice.days_overdue > 0 ? 'overdue' : ''}`}
-                  onClick={() => router.push(`/dashboard/crm/${invoice.business_id}`)}
+                  onClick={() => router.push(`/dashboard/invoices/${invoice.id}`)}
                 >
                   <div className="invoice-business">{invoice.business_name}</div>
                   <div className="invoice-number">{invoice.invoice_number}</div>

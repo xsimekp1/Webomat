@@ -61,6 +61,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   calling: { label: 'Voláno', color: '#eab308', bg: '#fef9c3' },
   interested: { label: 'Zájem', color: '#f97316', bg: '#ffedd5' },
   offer_sent: { label: 'Nabídka', color: '#8b5cf6', bg: '#ede9fe' },
+  designed: { label: 'Designováno', color: '#06b6d4', bg: '#cffafe' },
   won: { label: 'Vyhráno', color: '#22c55e', bg: '#dcfce7' },
   lost: { label: 'Ztraceno', color: '#6b7280', bg: '#f3f4f6' },
   dnc: { label: 'DNC', color: '#ef4444', bg: '#fee2e2' },
@@ -153,7 +154,11 @@ const [activityForm, setActivityForm] = useState({
       ])
       setBusiness(businessRes)
       setActivities(activitiesRes)
-      setProjects(projectsRes || [])
+      // Filter out cancelled projects for sales users
+      const filteredProjects = (projectsRes || []).filter(project => 
+        user?.role === 'admin' || project.status !== 'cancelled'
+      )
+      setProjects(filteredProjects)
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Chyba při načítání dat')
     } finally {
@@ -331,6 +336,10 @@ setActivityForm({
   }
 
 const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false) => {
+  const isTestContact = business?.name?.toLowerCase().includes('test') || 
+                         business?.name?.toLowerCase().includes('demo') ||
+                         business?.name?.toLowerCase().includes('sample')
+
   const businessName = business?.name || 'Neznámá firma'
 
   router.push(
@@ -381,7 +390,14 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
             ← Zpět
           </button>
           <div className="business-title">
-            <h1>{business.name}</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <h1>{business.name}</h1>
+              {isTestContact && (
+                <span className="test-badge" title="Testovací kontakt">
+                  🧪 TEST
+                </span>
+              )}
+            </div>
             <span
               className="status-badge"
               style={{
@@ -1583,6 +1599,35 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
 
           .form-row {
             grid-template-columns: 1fr;
+          }
+
+          .test-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+            color: white;
+            border-radius: 9999px;
+            font-size: 0.625rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            box-shadow: 0 2px 4px rgba(255, 107, 107, 0.3);
+            animation: pulse 2s infinite;
+          }
+
+          @keyframes pulse {
+            0% {
+              transform: scale(1);
+              opacity: 1;
+            }
+            50% {
+              transform: scale(1.05);
+              opacity: 0.9;
+            }
+            100% {
+              transform: scale(1);
+              opacity: 1;
+            }
           }
         }
       `}</style>

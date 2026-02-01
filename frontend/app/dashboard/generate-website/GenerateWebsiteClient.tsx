@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import ApiClient from '../../lib/api'
+import { useToast } from '../../context/ToastContext'
 
 type TabKey = 'brief' | 'structure' | 'brand' | 'constraints' | 'preview'
 
@@ -154,6 +155,7 @@ function Toggle({
 export default function GenerateWebsitePage() {
   const router = useRouter()
   const sp = useSearchParams()
+  const { showToast } = useToast()
 
   const qpBusinessId = sp.get('businessId') || ''
   const qpProjectId = sp.get('projectId') || ''
@@ -280,6 +282,17 @@ export default function GenerateWebsitePage() {
       // resp u vás typicky vrací { html_content, message, ... } (podle toho co už používáte jinde)
       setResult(resp || { message: 'Hotovo.' })
       setTab('preview')
+
+      // Automatická změna statusu na "designováno" při úspěšném generování
+      if (resp && businessId) {
+        try {
+          await ApiClient.updateBusinessStatus(businessId, 'designed')
+          showToast('Status změněn na "Designováno"', 'success')
+        } catch (statusError: any) {
+          console.error('Failed to update business status:', statusError)
+          // Nezobrazovat chybu uživateli, hlavní funkce (generování) proběhla úspěšně
+        }
+      }
     } catch (e: any) {
       setError(e?.response?.data?.detail || 'Chyba při generování')
     } finally {

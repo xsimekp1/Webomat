@@ -71,6 +71,15 @@ function CRMPageContent() {
     setPage(1)
   }, [filterParam])
 
+  // Auto-open new lead modal when action=new
+  useEffect(() => {
+    if (searchParams.get('action') === 'new') {
+      openNewModal()
+      // Clean URL to remove action parameter
+      router.replace('/dashboard/crm')
+    }
+  }, [searchParams])
+
   // Modal states
   const [showNewModal, setShowNewModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState<Business | null>(null)

@@ -735,6 +735,25 @@ class ApiClient {
     );
     return response.data;
   }
+
+  static async getInvoiceDetail(invoiceId: string) {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/invoices-issued/${invoiceId}`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async updateBusinessStatus(businessId: string, status: string) {
+    const response = await axios.put(
+      `${API_BASE_URL}/crm/businesses/${businessId}/status`,
+      status,
+      { 
+        headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'text/plain' }
+      }
+    );
+    return response.data;
+  }
 }
 
 export default ApiClient;

@@ -221,7 +221,7 @@ export default function PreviewPage() {
                 </div>
 
                 <div className="form-group">
-                  <label>Vase zpetna vazba *</label>
+                  <label>Vaše zpětná vazba *</label>
                   <textarea
                     value={commentContent}
                     onChange={(e) => setCommentContent(e.target.value)}

@@ -189,7 +189,7 @@ export default function AdminFeedbackPage() {
         </div>
       ) : feedbacks.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
-          Zadna zpetna vazba
+          Žádná zpětná vazba
         </div>
       ) : (
         <div className="space-y-4">

@@ -791,7 +791,12 @@ async def create_activity(
         business_update_data["status_crm"] = data.new_status.value
     
     if data.next_follow_up_at:
-        business_update_data["next_follow_up_at"] = data.next_follow_up_at.isoformat()
+        # Handle both string and datetime inputs
+        if isinstance(data.next_follow_up_at, str):
+            # Convert string from datetime-local input to proper datetime format
+            business_update_data["next_follow_up_at"] = data.next_follow_up_at
+        else:
+            business_update_data["next_follow_up_at"] = data.next_follow_up_at.isoformat()
     
     if business_update_data:
         business_update_data["updated_at"] = datetime.utcnow().isoformat()
@@ -1952,16 +1957,118 @@ async def list_project_invoices(
                 amount_without_vat=row.get("amount_without_vat", 0),
                 vat_rate=row.get("vat_rate", 21),
                 vat_amount=row.get("vat_amount"),
-                amount_total=row["amount_total"],
-                currency=row.get("currency", "CZK"),
-                payment_type=row.get("payment_type", "setup"),
-                status=row["status"],
-                description=row.get("description"),
-                variable_symbol=row.get("variable_symbol"),
-                created_at=row.get("created_at"),
-                updated_at=row.get("updated_at"),
-                business_name=business_name,
-            )
+        amount_total=row["amount_total"],
+        currency=row.get("currency", "CZK"),
+        payment_type=row.get("payment_type", "setup"),
+        status=row["status"],
+        description=row.get("description"),
+        variable_symbol=row.get("variable_symbol"),
+        created_at=row.get("created_at"),
+        updated_at=row.get("updated_at"),
+        business_name=business_name,
+    )
+
+
+@router.put("/businesses/{business_id}/status", response_model=dict)
+async def update_business_status(
+    business_id: str,
+    new_status: str,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """Update business CRM status."""
+    supabase = get_supabase()
+    
+    # Get current business
+    result = (
+        supabase.table("businesses")
+        .select("*")
+        .eq("id", business_id)
+        .single()
+        .execute()
+    )
+    
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Business not found")
+    
+    business = result.data
+    current_status = business["status_crm"]
+    
+    # Check access to business
+    await get_business(business_id, current_user)
+    
+    # Validate status change - only allow to change to "designed" from specific statuses
+    allowed_from_statuses = ["new", "calling", "interested"]
+    if new_status == "designed" and current_status not in allowed_from_statuses:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot change status from '{current_status}' to 'designed'"
+        )
+    
+    # Update business status
+    update_data = {
+        "status_crm": new_status,
+        "updated_at": datetime.utcnow().isoformat()
+    }
+    
+    result = (
+        supabase.table("businesses")
+        .update(update_data)
+        .eq("id", business_id)
+        .execute()
+    )
+    
+    return {"message": f"Status updated to '{new_status}'"}
+
+
+@router.get("/invoices-issued/{invoice_id}", response_model=InvoiceResponse)
+async def get_invoice_detail(
+    invoice_id: str,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """Get invoice detail by ID."""
+    supabase = get_supabase()
+    
+    result = (
+        supabase.table("invoices_issued")
+        .select("*, businesses!inner(name)")
+        .eq("id", invoice_id)
+        .single()
+        .execute()
+    )
+    
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    
+    invoice = result.data
+    business_name = invoice.get("businesses", {}).get("name", "Unknown Business")
+    
+    # RBAC Check - user must have access to this business
+    if current_user.role == "sales":
+        if invoice["seller_id"] != current_user.id:
+            raise HTTPException(status_code=403, detail="Access denied")
+    
+    return InvoiceResponse(
+        id=invoice["id"],
+        business_id=invoice["business_id"],
+        project_id=invoice.get("project_id"),
+        seller_id=invoice.get("seller_id"),
+        invoice_number=invoice["invoice_number"],
+        issue_date=invoice["issue_date"],
+        due_date=invoice["due_date"],
+        paid_date=invoice.get("paid_date"),
+        amount_without_vat=invoice.get("amount_without_vat", 0),
+        vat_rate=invoice.get("vat_rate", 21),
+        vat_amount=invoice.get("vat_amount"),
+        amount_total=invoice["amount_total"],
+        currency=invoice.get("currency", "CZK"),
+        payment_type=invoice.get("payment_type", "setup"),
+        status=invoice["status"],
+        description=invoice.get("description"),
+        variable_symbol=invoice.get("variable_symbol"),
+        created_at=invoice.get("created_at"),
+        updated_at=invoice.get("updated_at"),
+        business_name=business_name,
+    )
         )
 
     return invoices
@@ -2131,6 +2238,13 @@ async def update_invoice_status(
     invoice = invoice_result.data
     old_status = invoice["status"]
     new_status = data.status.value
+
+    # Only admin can mark invoice as paid
+    if new_status == "paid" and current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Pouze administrátor může označit fakturu jako zaplacenou"
+        )
 
     # Check access to business
     await get_business(invoice["business_id"], current_user)
