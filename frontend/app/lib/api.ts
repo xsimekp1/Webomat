@@ -744,12 +744,40 @@ class ApiClient {
     return response.data;
   }
 
+  // PDF Invoice Generation
+  static async generateInvoicePdf(invoiceId: string): Promise<{ pdf_url: string; storage_path: string }> {
+    const response = await axios.post(
+      `${API_BASE_URL}/crm/invoices-issued/${invoiceId}/generate-pdf`,
+      {},
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async downloadInvoicePdf(invoiceId: string): Promise<string> {
+    // Returns URL for redirect/download
+    return `${API_BASE_URL}/crm/invoices-issued/${invoiceId}/pdf`;
+  }
+
+  static async generateReceivedInvoicePdf(invoiceId: string): Promise<{ pdf_url: string; storage_path: string }> {
+    const response = await axios.post(
+      `${API_BASE_URL}/crm/invoices-received/${invoiceId}/generate-pdf`,
+      {},
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async downloadReceivedInvoicePdf(invoiceId: string): Promise<string> {
+    return `${API_BASE_URL}/crm/invoices-received/${invoiceId}/pdf`;
+  }
+
   static async updateBusinessStatus(businessId: string, status: string) {
     const response = await axios.put(
       `${API_BASE_URL}/crm/businesses/${businessId}/status`,
-      status,
+      { status },
       { 
-        headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'text/plain' }
+        headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' }
       }
     );
     return response.data;
