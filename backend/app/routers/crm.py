@@ -2026,7 +2026,7 @@ async def update_business_status(
     return {"message": f"Status updated to '{new_status}'"}
 
 
-@router.get("/invoices-issued/{invoice_id}", response_model=InvoiceResponse)
+@router.get("/invoices-issued/{invoice_id}", response_model=InvoiceIssuedResponse)
 async def get_invoice_detail(
     invoice_id: str,
     current_user: Annotated[User, Depends(require_sales_or_admin)],
@@ -2053,7 +2053,7 @@ async def get_invoice_detail(
         if invoice["seller_id"] != current_user.id:
             raise HTTPException(status_code=403, detail="Access denied")
     
-    return InvoiceResponse(
+    return InvoiceIssuedResponse(
         id=invoice["id"],
         business_id=invoice["business_id"],
         project_id=invoice.get("project_id"),
