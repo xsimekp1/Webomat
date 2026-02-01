@@ -1,35 +1,36 @@
-FROM python:3.13-slim
+# Dockerfile for Webomat Backend
+# With WeasyPrint dependencies for PDF generation
 
-WORKDIR /app
+FROM python:3.11-slim
 
-# Install system dependencies for Playwright/Chromium
+# Install system dependencies for WeasyPrint
 RUN apt-get update && apt-get install -y \
-    libnss3 \
-    libnspr4 \
-    libatk1.0-0 \
-    libatk-bridge2.0-0 \
-    libcups2 \
-    libdrm2 \
-    libdbus-1-3 \
-    libxkbcommon0 \
-    libatspi2.0-0 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxfixes3 \
-    libxrandr2 \
-    libgbm1 \
-    libasound2 \
-    libpango-1.0-0 \
     libcairo2 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libgdk-pixbuf2.0-0 \
+    libffi-dev \
+    shared-mime-info \
+    fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
+# Set working directory
+WORKDIR /app
+
+# Copy requirements first (for better caching)
 COPY requirements.txt .
+
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright browsers
-RUN playwright install chromium
+# Copy application code
+COPY . .
 
-COPY app ./app
-COPY worker.py .
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
 
-CMD sh -c "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+# Expose port
+EXPOSE 8000
+
+# Run the application
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
