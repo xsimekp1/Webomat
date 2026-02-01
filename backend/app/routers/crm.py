@@ -2,6 +2,7 @@ import json
 from datetime import datetime, date, timedelta
 from typing import Annotated, Optional
 from urllib.request import urlopen
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status, File, UploadFile
 
@@ -507,8 +508,8 @@ async def update_business(
         update_data["status_crm"] = data.status_crm.value
     if data.owner_seller_id is not None:
         update_data["owner_seller_id"] = data.owner_seller_id
-    if data.next_follow_up_at is not None:
-        update_data["next_follow_up_at"] = data.next_follow_up_at.isoformat()
+    # NOTE: next_follow_up_at is intentionally NOT updatable directly
+    # It can only be set through activities (crm_activities table)
 
     # Fakturační údaje
     if data.ico is not None:
@@ -2057,6 +2058,24 @@ async def generate_project_invoice(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Nepodařilo se vytvořit fakturu",
         )
+
+    # Create follow-up activity for invoice
+    activity_data = {
+        "id": str(uuid4()),
+        "business_id": business_id,
+        "seller_id": current_user.id,
+        "type": "note",
+        "content": f"Faktura {invoice_number} vystavena - splatnost {due_date.strftime('%d.%m.%Y')}",
+        "outcome": f"Částka: {amount_total:,.0f} Kč",
+        "occurred_at": datetime.utcnow().isoformat(),
+    }
+    supabase.table("crm_activities").insert(activity_data).execute()
+
+    # Update business follow-up date to invoice due date
+    supabase.table("businesses").update({
+        "next_follow_up_at": due_date.isoformat(),
+        "updated_at": datetime.utcnow().isoformat(),
+    }).eq("id", business_id).execute()
 
     row = result.data[0]
     return InvoiceIssuedResponse(

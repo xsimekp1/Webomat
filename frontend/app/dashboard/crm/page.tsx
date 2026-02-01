@@ -435,7 +435,7 @@ function CRMPageContent() {
                      onChange={(e) => setFormData({ ...formData, ico: e.target.value })}
                      placeholder="12345678"
                      maxLength={8}
-                     style={{ flex: 1 }}
+                     style={{ flex: 1, minWidth: '120px' }}
                    />
                    <button
                      type="button"
@@ -451,7 +451,7 @@ function CRMPageContent() {
                      ) : (
                        <>
                          <span className="icon">🔍</span>
-                         Vyplnit z ARES
+                         ARES
                        </>
                      )}
                    </button>
