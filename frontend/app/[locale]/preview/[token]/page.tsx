@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
-import { useToast } from '../../../../context/ToastContext'
-import ApiClient from '../../../../lib/api'
+import { useToast } from '@/context/ToastContext'
+import ApiClient from '@/lib/api'
 import './styles.css'
 
 interface PreviewInfo {

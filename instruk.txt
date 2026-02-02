@@ -1,0 +1,51 @@
+Plan to implement                                                                                                                                                    │
+│                                                                                                                                                                      │
+│ Oprava import paths po přesunu do [locale]                                                                                                                           │
+│                                                                                                                                                                      │
+│ Problém                                                                                                                                                              │
+│                                                                                                                                                                      │
+│ Po přesunu souborů z app/dashboard/ do app/[locale]/dashboard/ jsou rozházené relativní importy. Soubory context/ a lib/ zůstaly v app/, ale importy nebyly správně  │
+│ upraveny.                                                                                                                                                            │
+│                                                                                                                                                                      │
+│ Chybné soubory a opravy                                                                                                                                              │
+│                                                                                                                                                                      │
+│ 1. app/[locale]/dashboard/admin/page.tsx (4 úrovně od app/)                                                                                                          │
+│                                                                                                                                                                      │
+│ - Aktuálně: ../../../../context/AuthContext (4 úrovně = mimo app/)                                                                                                   │
+│ - Správně: ../../../context/AuthContext (3 úrovně = app/)                                                                                                            │
+│                                                                                                                                                                      │
+│ 2. app/[locale]/dashboard/crm/[id]/page.tsx (5 úrovní od app/)                                                                                                       │
+│                                                                                                                                                                      │
+│ - Aktuálně: ../../../context/AuthContext (3 úrovně = [locale]/)                                                                                                      │
+│ - Správně: ../../../../context/AuthContext (4 úrovně = app/)                                                                                                         │
+│                                                                                                                                                                      │
+│ 3. app/[locale]/dashboard/invoices/[invoiceId]/page.tsx (5 úrovní od app/)                                                                                           │
+│                                                                                                                                                                      │
+│ - Aktuálně: ../../../lib/api (3 úrovně)                                                                                                                              │
+│ - Správně: ../../../../lib/api a ../../../../context/* (4 úrovně)                                                                                                    │
+│                                                                                                                                                                      │
+│ Další soubory ke kontrole                                                                                                                                            │
+│                                                                                                                                                                      │
+│ - app/[locale]/dashboard/admin/feedback/page.tsx (5 úrovní)                                                                                                          │
+│ - app/[locale]/dashboard/admin/invoices/page.tsx (5 úrovní)                                                                                                          │
+│ - Všechny ostatní soubory pod [locale]/dashboard/                                                                                                                    │
+│                                                                                                                                                                      │
+│ Řešení                                                                                                                                                               │
+│                                                                                                                                                                      │
+│ 1. Projít všechny .tsx soubory pod app/[locale]/                                                                                                                     │
+│ 2. Spočítat hloubku každého souboru                                                                                                                                  │
+│ 3. Opravit relativní cesty na ../context/, ../lib/ atd.                                                                                                              │
+│                                                                                                                                                                      │
+│ Alternativa (tsconfig path aliases)                                                                                                                                  │
+│                                                                                                                                                                      │
+│ Přidat do tsconfig.json:                                                                                                                                             │
+│ "baseUrl": ".",                                                                                                                                                      │
+│ "paths": {                                                                                                                                                           │
+│   "@/*": ["app/*"]                                                                                                                                                   │
+│ }                                                                                                                                                                    │
+│ Pak použít @/context/AuthContext místo relativních cest.                                                                                                             │
+│                                                                                                                                                                      │
+│ Verifikace                                                                                                                                                           │
+│                                                                                                                                                                      │
+│ 1. npm run build v frontend/ adresáři                                                                                                                                │
+│ 2. Push a Vercel automaticky deployuje
