@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from './context/AuthContext'
+import { useAuth } from '../../context/AuthContext'
+import { useTranslations } from 'next-intl'
 
 export default function LoginPage() {
+  const t = useTranslations('login')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -29,7 +31,7 @@ export default function LoginPage() {
     setLoading(false)
 
     if (!result.success) {
-      setError(result.error || 'Nesprávné přihlašovací údaje')
+      setError(result.error || t('invalidCredentials'))
       return
     }
 
@@ -40,33 +42,33 @@ export default function LoginPage() {
     <div className="container">
       <div className="card">
         <h1>Webomat CRM</h1>
-        <p className="subtitle">Přihlaste se do systému</p>
+        <p className="subtitle">{t('subtitle')}</p>
         <form onSubmit={handleLogin}>
           <div className="field">
-            <label htmlFor="username">Uživatel</label>
+            <label htmlFor="username">{t('username')}</label>
             <input
               id="username"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Zadejte uživatelské jméno"
+              placeholder={t('usernamePlaceholder')}
               required
             />
           </div>
           <div className="field">
-            <label htmlFor="password">Heslo</label>
+            <label htmlFor="password">{t('password')}</label>
             <input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Zadejte heslo"
+              placeholder={t('passwordPlaceholder')}
               required
             />
           </div>
           {error && <p className="error">{error}</p>}
           <button type="submit" className="btn" disabled={loading}>
-            {loading ? 'Přihlašuji...' : 'Přihlásit se'}
+            {loading ? t('signingIn') : t('signIn')}
           </button>
         </form>
       </div>

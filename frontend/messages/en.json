@@ -14,6 +14,16 @@
     "yes": "Yes",
     "no": "No"
   },
+  "login": {
+    "subtitle": "Sign in to the system",
+    "username": "Username",
+    "usernamePlaceholder": "Enter username",
+    "password": "Password",
+    "passwordPlaceholder": "Enter password", 
+    "signIn": "Sign In",
+    "signingIn": "Signing in...",
+    "invalidCredentials": "Invalid credentials"
+  },
   "auth": {
     "login": "Login",
     "logout": "Logout",

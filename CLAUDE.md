@@ -695,3 +695,32 @@ backend/tests/
 - `sample_version` - Testovací website verze
 - `app_client` - FastAPI TestClient s sales rolí
 - `admin_client` - FastAPI TestClient s admin rolí
+
+## Test Driven Development (TDD)
+
+**IMPORTANT:** Při vývoji nových funkcí VŽDY používej Test Driven Development:
+
+1. **Napiš testy nejdříve** - Před implementací jakékoliv funkce napiš unit testy
+2. **Testy musí selhat** - Ujisti se, že testy selhávají (RED fáze)
+3. **Implementuj minimální kód** - Napiš jen tolik kódu, aby testy prošly (GREEN fáze)  
+4. **Refaktoruj** - Vylepši kód, dokud testy stále procházejí (REFACTOR fáze)
+
+**Testovací frameworky:**
+- Backend: `pytest` v `backend/tests/`
+- Frontend: `jest` a `@testing-library/react`
+
+**Struktura testů:**
+- `backend/tests/test_nazev_funkce.py` - unit testy backend funkcí
+- `frontend/components/__tests__/` - testy React komponent
+- Tests by měly pokrývat: happy path, error cases, edge cases
+
+**Povinné pokrytí:**
+- Všechny API endpointy musí mít testy
+- Klíčové business logiky musí mít testy
+- Auth a RBAC musí mít testy
+- Nové komponenty musí mít testy
+
+**Spuštění testů:**
+- Backend: `cd backend && pytest`
+- Frontend: `cd frontend && npm test`
+- Před commitem: Vždy spusť všechny testy
