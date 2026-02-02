@@ -6,7 +6,7 @@ import { useAuth } from '../../../context/AuthContext'
 import { LanguageProvider } from '../../../context/LanguageContext'
 import { supabase } from '../../../utils/supabase'
 import ApiClient from '../../../lib/api'
-import LanguageSwitcher from '../components/../'
+import LanguageSwitcher from '../../../../components/LanguageSwitcher'
 import { useTranslations } from 'next-intl'
 
 interface ProfileData {

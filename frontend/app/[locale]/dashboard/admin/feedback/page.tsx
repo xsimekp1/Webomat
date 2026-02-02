@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../context/AuthContext'
 import { useToast } from '../../../context/ToastContext'
 import ApiClient from '../../../lib/api'
-import { Button, Badge, Card, Select } from '../../../components/../'
+import { Button, Badge, Card, Select } from '../../../components/ui'
 
 interface Feedback {
   id: string
