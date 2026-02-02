@@ -255,6 +255,9 @@ class ProjectResponse(BaseModel):
     # Version info
     versions_count: int | None = None
     latest_version_id: str | None = None
+    latest_thumbnail_url: str | None = None
+    # Seller info
+    seller_id: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
@@ -277,12 +280,13 @@ class DeploymentStatus(str, Enum):
 
 
 class WebsiteVersionCreate(BaseModel):
-    project_id: str
+    # Note: project_id comes from URL path parameter, not request body
     source_bundle_path: str | None = None
     preview_image_path: str | None = None
     notes: str | None = None
     html_content: str | None = None
     html_content_en: str | None = None
+    thumbnail_url: str | None = None
     parent_version_id: str | None = None
     generation_instructions: str | None = None
 
@@ -507,13 +511,17 @@ class ProjectAssetResponse(BaseModel):
 # Ledger entries for account movements
 class LedgerEntryResponse(BaseModel):
     id: str
+    seller_id: str | None = None
     entry_type: str
     amount: float
     description: str | None = None
     notes: str | None = None
     created_at: datetime | None = None
+    created_by: str | None = None
+    related_invoice_id: str | None = None
     related_project_id: str | None = None
     related_business_id: str | None = None
+    is_test: bool = False
 
 
 class WeeklyRewardSummary(BaseModel):
@@ -548,3 +556,98 @@ class ARESCompany(BaseModel):
     sidlo: ARESAddress | None = None
     pravniForma: str | None = None
     dic: str | None = None
+
+
+# Invoice Issued schemas (faktury vystavené klientům)
+class InvoicePaymentType(str, Enum):
+    setup = "setup"
+    monthly = "monthly"
+    other = "other"
+
+
+class InvoiceIssuedStatus(str, Enum):
+    draft = "draft"
+    pending_approval = "pending_approval"
+    issued = "issued"
+    paid = "paid"
+    overdue = "overdue"
+    cancelled = "cancelled"
+
+
+class InvoiceIssuedCreate(BaseModel):
+    """Schema for creating a new invoice for a client."""
+    amount_without_vat: float
+    payment_type: InvoicePaymentType = InvoicePaymentType.setup
+    description: str | None = None
+    vat_rate: float = 21.0
+    due_days: int = 14
+
+
+class InvoiceIssuedResponse(BaseModel):
+    """Full invoice response."""
+    id: str
+    business_id: str
+    project_id: str | None = None
+    seller_id: str | None = None
+    invoice_number: str
+    issue_date: str
+    due_date: str
+    paid_date: str | None = None
+    amount_without_vat: float
+    vat_rate: float
+    vat_amount: float | None = None
+    amount_total: float
+    currency: str
+    payment_type: str
+    status: str
+    description: str | None = None
+    variable_symbol: str | None = None
+    rejected_reason: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    # Related data
+    business_name: str | None = None
+
+
+class InvoiceStatusUpdate(BaseModel):
+    """Schema for updating invoice status."""
+    status: InvoiceIssuedStatus
+    paid_date: str | None = None  # Required when status is 'paid'
+
+
+class InvoiceRejectRequest(BaseModel):
+    """Schema for rejecting an invoice."""
+    reason: str
+
+
+class AdminInvoiceListItem(BaseModel):
+    """Invoice item for admin list view."""
+    id: str
+    invoice_number: str
+    business_id: str
+    business_name: str | None = None
+    seller_id: str | None = None
+    seller_name: str | None = None
+    amount_total: float
+    status: str
+    issue_date: str
+    due_date: str
+    paid_date: str | None = None
+    payment_type: str
+    rejected_reason: str | None = None
+    created_at: datetime | None = None
+
+
+class AdminInvoiceListResponse(BaseModel):
+    """Paginated list of invoices for admin view."""
+    items: list[AdminInvoiceListItem]
+    total: int
+    page: int
+    limit: int
+
+
+class SellerClaimsResponse(BaseModel):
+    """Seller's commission claims summary."""
+    total_earned: float
+    already_invoiced: float
+    available_to_claim: float

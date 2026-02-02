@@ -401,13 +401,22 @@ Webomat fakturuje klientovi za web.
 | amount_total | decimal | Celková částka |
 | currency | string | Měna (default CZK) |
 | payment_type | string | Typ: setup/monthly/other |
-| status | string | Status: draft/issued/paid/overdue/cancelled |
+| status | string | Status: draft/pending_approval/issued/paid/overdue/cancelled |
+| rejected_reason | text? | Důvod zamítnutí (pokud admin zamítne) |
 | description | text? | Text faktury |
 | pdf_path | text? | Cesta k PDF |
 | variable_symbol | string? | Variabilní symbol |
 | sent_to_accountant | boolean | Odesláno účetní |
 | created_at | datetime | Vytvořeno |
 | updated_at | datetime | Upraveno |
+
+**Invoice Status Workflow:**
+- `draft` - Návrh (obchodník může upravovat)
+- `pending_approval` - Čeká na schválení (odesláno adminovi)
+- `issued` - Vystaveno (schváleno adminem, odesláno klientovi)
+- `paid` - Zaplaceno
+- `overdue` - Po splatnosti
+- `cancelled` - Stornováno
 
 ### Tabulka `invoices_received` (přijaté faktury)
 
@@ -451,6 +460,42 @@ Faktury přijaté platformou - od obchodníků za provize nebo od externích dod
 **Klíče:**
 - `billing_info` - Fakturační údaje Webomatu (company_name, ico, dic, address...)
 - `invoice_settings` - Nastavení faktur (default_due_days, vat_rate, min_payout_threshold...)
+
+### Tabulka `generator_runs` (běhy generátoru)
+
+**SQL:** `sql/create_generator_runs.sql`
+
+Sleduje všechna spuštění generátoru webů s metriky nákladů a výkonu.
+
+| Sloupec | Typ | Popis |
+|---------|-----|-------|
+| id | uuid | Primární klíč |
+| seller_id | uuid? | FK na sellers (kdo spustil) |
+| seller_email | string? | Email uživatele |
+| project_id | uuid? | FK na website_projects |
+| business_id | uuid? | FK na businesses |
+| version_id | uuid? | FK na website_versions (vytvořená verze) |
+| run_type | string | Typ: dry_run/claude_ai/openai/screenshot |
+| status | string | Status: started/completed/failed |
+| input_tokens | integer | Počet vstupních tokenů |
+| output_tokens | integer | Počet výstupních tokenů |
+| total_tokens | integer | Celkový počet tokenů |
+| cost_usd | decimal | Náklady v USD (6 desetinných míst) |
+| cost_czk | decimal | Náklady v CZK |
+| model_used | string? | Model: claude-3-opus, gpt-4, etc. |
+| started_at | datetime | Začátek běhu |
+| completed_at | datetime? | Konec běhu |
+| duration_ms | integer? | Trvání v milisekundách |
+| prompt_summary | text? | Shrnutí požadavku |
+| error_message | text? | Chybová zpráva (pokud failed) |
+| metadata | jsonb? | Další metadata |
+| created_at | datetime | Vytvořeno |
+
+**run_type hodnoty:**
+- `dry_run` - Testovací běh bez AI (zdarma)
+- `claude_ai` - Plné AI generování s Claude
+- `openai` - Překlad nebo jiné OpenAI úlohy
+- `screenshot` - Zachycení screenshotu
 
 ### Databázové funkce
 

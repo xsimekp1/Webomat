@@ -9,6 +9,10 @@ from ..dependencies import require_sales_or_admin, require_admin
 from ..schemas.auth import User
 from ..schemas.website import GenerateWebsiteRequest, GenerateWebsiteResponse, EnglishVersionMode
 from ..services.llm import process_translation_request, is_llm_available
+from ..services.deployment import deploy_html_to_vercel, is_vercel_configured
+from ..services.screenshot import capture_screenshot, upload_screenshot, is_playwright_available
+from ..services.jobs import enqueue_job, get_job_status
+from ..services.generator_tracking import create_run
 
 router = APIRouter(prefix="/website", tags=["website generation"])
 
@@ -31,6 +35,34 @@ class GenerateTestResponse(BaseModel):
     strings_for_client: list[str] | None = None  # Texty k překladu klientem
 
 
+class DeployTestRequest(BaseModel):
+    """Request pro nasazení testovacího HTML na Vercel."""
+    html_content: str
+    business_name: str = "Test Preview"
+
+
+class DeployTestResponse(BaseModel):
+    """Response pro nasazení testovacího HTML."""
+    success: bool
+    message: str
+    url: str | None = None
+    deployment_id: str | None = None
+
+
+class ScreenshotTestRequest(BaseModel):
+    """Request pro screenshot testovacího HTML."""
+    html_content: str
+    viewport: str = "thumbnail"  # desktop, mobile, thumbnail
+
+
+class ScreenshotTestResponse(BaseModel):
+    """Response pro screenshot testovacího HTML."""
+    success: bool
+    message: str
+    screenshot_url: str | None = None
+    job_id: str | None = None  # Pokud se používá async worker
+
+
 @router.get("/translation-status")
 async def get_translation_status(
     current_user: Annotated[User, Depends(require_admin)],
@@ -39,6 +71,168 @@ async def get_translation_status(
     return {
         "available": is_llm_available(),
         "message": "OpenAI API je dostupné" if is_llm_available() else "OpenAI API klíč není nastaven"
+    }
+
+
+@router.get("/deployment-status")
+async def get_deployment_status(
+    current_user: Annotated[User, Depends(require_admin)],
+):
+    """Zkontroluje dostupnost Vercel deployment služby."""
+    return {
+        "available": is_vercel_configured(),
+        "message": "Vercel deployment je dostupný" if is_vercel_configured() else "VERCEL_TOKEN není nastaven"
+    }
+
+
+@router.post("/deploy-test", response_model=DeployTestResponse)
+async def deploy_test_website(
+    data: DeployTestRequest,
+    current_user: Annotated[User, Depends(require_admin)],
+):
+    """
+    Nasadit testovací HTML na Vercel.
+
+    Vrací veřejnou URL, kterou lze sdílet s klientem.
+    Admin only.
+    """
+    if not is_vercel_configured():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Vercel deployment není nakonfigurován (chybí VERCEL_TOKEN)",
+        )
+
+    if not data.html_content or len(data.html_content.strip()) < 50:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="HTML obsah je příliš krátký",
+        )
+
+    try:
+        import uuid
+        version_id = str(uuid.uuid4())[:8]
+
+        result = await deploy_html_to_vercel(
+            version_id=version_id,
+            html_content=data.html_content,
+            project_name=data.business_name,
+        )
+
+        return DeployTestResponse(
+            success=True,
+            message="Web byl úspěšně nasazen",
+            url=result.get("url"),
+            deployment_id=result.get("deployment_id"),
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Nepodařilo se nasadit web: {str(e)}",
+        )
+
+
+@router.post("/screenshot-test", response_model=ScreenshotTestResponse)
+async def screenshot_test_website(
+    data: ScreenshotTestRequest,
+    current_user: Annotated[User, Depends(require_sales_or_admin)],
+):
+    """
+    Pořídí screenshot z raw HTML obsahu.
+
+    Pokud je Playwright dostupný na serveru, screenshot se pořídí okamžitě.
+    Pokud ne, vytvoří se background job a vrátí job_id.
+
+    Sales or Admin.
+    """
+    if not data.html_content or len(data.html_content.strip()) < 50:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="HTML obsah je příliš krátký",
+        )
+
+    # Validate viewport
+    valid_viewports = ["desktop", "mobile", "thumbnail"]
+    viewport = data.viewport if data.viewport in valid_viewports else "thumbnail"
+
+    # Track screenshot run
+    run = create_run(
+        run_type="screenshot",
+        seller_id=current_user.id,
+        seller_email=current_user.email,
+    )
+    run.add_metadata("viewport", viewport)
+
+    # Try direct capture if Playwright is available
+    if is_playwright_available():
+        try:
+            import uuid
+
+            # Capture screenshot from HTML
+            screenshot_bytes = await capture_screenshot(
+                html_content=data.html_content,
+                viewport=viewport,
+            )
+
+            # Upload to Supabase Storage
+            filename = f"test_{uuid.uuid4().hex[:8]}_{viewport}.png"
+            screenshot_url = await upload_screenshot(
+                image_bytes=screenshot_bytes,
+                filename=filename,
+                folder="test-screenshots",
+            )
+
+            # Track completed
+            run.add_metadata("screenshot_url", screenshot_url)
+            await run.save_completed()
+
+            return ScreenshotTestResponse(
+                success=True,
+                message="Screenshot byl úspěšně pořízen",
+                screenshot_url=screenshot_url,
+            )
+
+        except Exception as e:
+            await run.save_failed(str(e))
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Nepodařilo se pořídit screenshot: {str(e)}",
+            )
+
+    else:
+        # Playwright not available on API server - try to queue job
+        # This requires HTML to be accessible via URL, which we can do by:
+        # 1. First deploy to Vercel, then screenshot
+        # For now, return error with instructions
+        await run.save_failed("Playwright není nainstalován na serveru")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Screenshot služba není dostupná. Playwright není nainstalován na serveru. "
+                   "Pro pořízení screenshotu nejprve nasaďte web na Vercel.",
+        )
+
+
+@router.get("/screenshot-job/{job_id}")
+async def get_screenshot_job_status(
+    job_id: str,
+    current_user: Annotated[User, Depends(require_admin)],
+):
+    """
+    Zkontroluje stav screenshot jobu.
+    """
+    job = await get_job_status(job_id)
+
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job nenalezen",
+        )
+
+    return {
+        "job_id": job_id,
+        "status": job.get("status"),
+        "result": job.get("result"),
+        "error_message": job.get("error_message"),
     }
 
 
@@ -58,6 +252,16 @@ async def generate_test_website(
     - "auto": Automatický překlad pomocí AI (vyžaduje OPENAI_API_KEY)
     - "client": Vrátí seznam textů k překladu klientem
     """
+    # Track generator run
+    run = create_run(
+        run_type="dry_run" if data.dry_run else "claude_ai",
+        seller_id=current_user.id,
+        seller_email=current_user.email,
+    )
+    run.set_prompt_summary(f"Test: {data.business_name} ({data.business_type})")
+    run.add_metadata("business_name", data.business_name)
+    run.add_metadata("business_type", data.business_type)
+    run.add_metadata("include_english", data.include_english.value)
 
     if data.dry_run:
         # Dry run - vrátíme pěknou testovací stránku
@@ -203,6 +407,9 @@ async def generate_test_website(
                 strings_for_client = translation_result.strings_for_client
                 translation_status = "client_required"
 
+        # Track completed run
+        await run.save_completed()
+
         return GenerateTestResponse(
             success=True,
             message=f"DRY RUN: Testovací stránka pro '{data.business_name}' ({data.business_type})",
@@ -213,6 +420,7 @@ async def generate_test_website(
         )
 
     # AI generování - zatím není implementováno
+    await run.save_failed("AI generování zatím není implementováno")
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
         detail="AI generování zatím není implementováno. Použijte dry_run=true.",
@@ -269,6 +477,16 @@ async def generate_website(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Nemáte oprávnění k tomuto projektu",
                 )
+
+    # Track generator run
+    run = create_run(
+        run_type="dry_run" if data.dry_run else "claude_ai",
+        seller_id=current_user.id,
+        seller_email=current_user.email,
+        project_id=data.project_id,
+        business_id=project["business_id"],
+    )
+    run.add_metadata("include_english", data.include_english.value)
 
     # DRY RUN mode - return dummy HTML
     if data.dry_run:
@@ -348,6 +566,9 @@ async def generate_website(
             elif data.include_english == EnglishVersionMode.client:
                 translation_status = "client_required"
 
+        # Track completed run
+        await run.save_completed()
+
         return GenerateWebsiteResponse(
             success=True,
             message="DRY RUN: Vygenerována testovací stránka",
@@ -358,6 +579,7 @@ async def generate_website(
 
     # TODO: Implement actual Claude API call for production generation
     # For now, return error indicating this is not implemented yet
+    await run.save_failed("Vlastní generování webu zatím není implementováno")
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
         detail="Vlastní generování webu zatím není implementováno. Použijte DRY RUN režim.",

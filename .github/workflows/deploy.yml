@@ -29,19 +29,3 @@ jobs:
           npm install -g vercel
           cd frontend
           vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
-
-  build-mobile:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      - name: Build Mobile App
-        run: |
-          npm install -g @expo/eas-cli
-          cd mobile
-          eas build --profile preview --platform all --non-interactive
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}

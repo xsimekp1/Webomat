@@ -53,6 +53,7 @@ interface Project {
   updated_at: string | null
   latest_version_id: string | null
   versions_count: number
+  latest_thumbnail_url: string | null
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
@@ -60,6 +61,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   calling: { label: 'Voláno', color: '#eab308', bg: '#fef9c3' },
   interested: { label: 'Zájem', color: '#f97316', bg: '#ffedd5' },
   offer_sent: { label: 'Nabídka', color: '#8b5cf6', bg: '#ede9fe' },
+  designed: { label: 'Designováno', color: '#06b6d4', bg: '#cffafe' },
   won: { label: 'Vyhráno', color: '#22c55e', bg: '#dcfce7' },
   lost: { label: 'Ztraceno', color: '#6b7280', bg: '#f3f4f6' },
   dnc: { label: 'DNC', color: '#ef4444', bg: '#fee2e2' },
@@ -152,7 +154,11 @@ const [activityForm, setActivityForm] = useState({
       ])
       setBusiness(businessRes)
       setActivities(activitiesRes)
-      setProjects(projectsRes || [])
+      // Filter out cancelled projects for sales users
+      const filteredProjects = (projectsRes || []).filter(project => 
+        user?.role === 'admin' || project.status !== 'cancelled'
+      )
+      setProjects(filteredProjects)
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Chyba při načítání dat')
     } finally {
@@ -329,6 +335,11 @@ setActivityForm({
     }
   }
 
+// Check if this is a test contact
+const isTestContact = business?.name?.toLowerCase().includes('test') ||
+                       business?.name?.toLowerCase().includes('demo') ||
+                       business?.name?.toLowerCase().includes('sample')
+
 const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false) => {
   const businessName = business?.name || 'Neznámá firma'
 
@@ -380,7 +391,14 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
             ← Zpět
           </button>
           <div className="business-title">
-            <h1>{business.name}</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <h1>{business.name}</h1>
+              {isTestContact && (
+                <span className="test-badge" title="Testovací kontakt">
+                  🧪 TEST
+                </span>
+              )}
+            </div>
             <span
               className="status-badge"
               style={{
@@ -518,104 +536,6 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
           </div>
         </div>
 
-        {/* Projects Card */}
-        <div className="card project-card">
-          <div className="card-header-row">
-            <h3>Projekty ({projects.length})</h3>
-            <button className="btn-edit-small" onClick={() => openProjectModal()}>
-              + Nový projekt
-            </button>
-          </div>
-
-          {projects.length > 0 ? (
-            <div className="projects-list">
-              {projects.map((project) => (
-                <div key={project.id} className="project-content" onClick={() => openProjectModal(project)} style={{ cursor: 'pointer' }}>
-                  <div className="project-header">
-                    <span
-                      className="package-badge"
-                      style={{ color: PACKAGE_CONFIG[project.package]?.color || '#666' }}
-                    >
-                      {PACKAGE_CONFIG[project.package]?.label || project.package}
-                    </span>
-                    <span
-                      className="project-status-badge"
-                      style={{
-                        color: PROJECT_STATUS_CONFIG[project.status]?.color || '#666',
-                        backgroundColor: PROJECT_STATUS_CONFIG[project.status]?.bg || '#f5f5f5',
-                      }}
-                    >
-                      {PROJECT_STATUS_CONFIG[project.status]?.label || project.status}
-                    </span>
-                    {project.versions_count > 0 && (
-                      <span className="versions-badge">
-                        {project.versions_count} verzí
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="project-prices">
-                    {project.price_setup !== null && (
-                      <div className="price-item">
-                        <span className="price-label">Jednorázově:</span>
-                        <span className="price-value">{project.price_setup.toLocaleString('cs-CZ')} Kč</span>
-                      </div>
-                    )}
-                    {project.price_monthly !== null && (
-                      <div className="price-item">
-                        <span className="price-label">Měsíčně:</span>
-                        <span className="price-value">{project.price_monthly.toLocaleString('cs-CZ')} Kč</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {project.domain && (
-                    <div className="info-row">
-                      <span className="label">Doména:</span>
-                      <a href={`https://${project.domain}`} target="_blank" rel="noopener noreferrer" className="web-link" onClick={(e) => e.stopPropagation()}>
-                        {project.domain}
-                      </a>
-                    </div>
-                  )}
-
-                  {project.notes && (
-                    <div className="project-notes">
-                      <p>{project.notes}</p>
-                    </div>
-                  )}
-
-                  {/* Website Preview */}
-                  {project.latest_version_id && (
-                    <div className="project-preview" onClick={(e) => e.stopPropagation()}>
-                      <div className="preview-header">
-                        <span className="preview-label">📸 Náhled webu</span>
-                        <span className="preview-version">v{project.versions_count}</span>
-                      </div>
-                      <div className="preview-placeholder">
-                        <span>Náhled bude zde</span>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="project-actions" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      className="btn-manage-web"
-                      onClick={() => router.push(`/dashboard/web-project/${project.id}`)}
-                    >
-                      🌐 Sprava webu
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="empty-project">
-              <p>Zatím žádný projekt</p>
-              <span className="hint">Vytvořte projekt po uzavření dealu</span>
-            </div>
-          )}
-        </div>
-
         {/* Activities Card */}
         <div className="card activities-card">
           <h3>Komunikační log ({activities.length})</h3>
@@ -644,6 +564,75 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+
+        {/* Projects Card (Right Column) */}
+        <div className="card projects-card">
+          <div className="card-header-row">
+            <h3>Projekty ({projects.length})</h3>
+            {/* <button className="btn-edit-small" onClick={() => openProjectModal()}>
+              + Nový
+            </button> */}
+          </div>
+          {projects.length > 0 ? (
+            <div className="projects-list-mini">
+              {projects.map((project) => (
+                <div
+                  key={project.id}
+                  className="project-mini-card"
+                  onClick={() => router.push(`/dashboard/web-project/${project.id}`)}
+                >
+                  <div className="project-mini-thumbnail">
+                    {project.latest_thumbnail_url ? (
+                      <img src={project.latest_thumbnail_url} alt="Náhled" />
+                    ) : (
+                      <div className="thumbnail-placeholder-mini">
+                        <span>Bez náhledu</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="project-mini-info">
+                    <div className="project-mini-header">
+                      <span
+                        className="project-status-badge-mini"
+                        style={{
+                          color: PROJECT_STATUS_CONFIG[project.status]?.color || '#666',
+                          backgroundColor: PROJECT_STATUS_CONFIG[project.status]?.bg || '#f5f5f5',
+                        }}
+                      >
+                        {PROJECT_STATUS_CONFIG[project.status]?.label || project.status}
+                      </span>
+                      <span
+                        className="package-badge-mini"
+                        style={{ color: PACKAGE_CONFIG[project.package]?.color || '#666' }}
+                      >
+                        {PACKAGE_CONFIG[project.package]?.label || project.package}
+                      </span>
+                    </div>
+                    <span className="project-domain-mini">{project.domain || 'Bez domény'}</span>
+                    {project.versions_count > 0 && (
+                      <span className="versions-count-mini">{project.versions_count} verzí</span>
+                    )}
+                  </div>
+                  <button
+                    className="btn-manage-mini"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      router.push(`/dashboard/web-project/${project.id}`)
+                    }}
+                    title="Správa webu"
+                  >
+                    🌐
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-projects">
+              <p>Žádné projekty</p>
+              <span className="hint">Klikněte + pro vytvoření</span>
             </div>
           )}
         </div>
@@ -733,8 +722,8 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
         </div>
       )}
 
-      {/* Project Modal */}
-      {showProjectModal && (
+      {/* Project Modal - TEMPORARILY DISABLED */}
+      {/* {showProjectModal && (
         <div className="modal-overlay" onClick={() => setShowProjectModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>{editingProject ? 'Upravit projekt' : 'Vytvořit projekt'}</h2>
@@ -818,7 +807,7 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Status Change Modal */}
       {showStatusModal && (
@@ -927,7 +916,7 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
       <style jsx>{`
         .detail-page {
           padding: 20px;
-          max-width: 1200px;
+          max-width: 1400px;
           margin: 0 auto;
         }
 
@@ -1027,19 +1016,23 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
 
         .detail-grid {
           display: grid;
-          grid-template-columns: 350px 1fr;
+          grid-template-columns: 350px 1fr 300px;
           gap: 24px;
           align-items: start;
         }
 
-        .detail-grid > .info-card,
-        .detail-grid > .project-card {
+        .detail-grid > .info-card {
           grid-column: 1;
         }
 
         .detail-grid > .activities-card {
           grid-column: 2;
-          grid-row: 1 / span 2;
+          grid-row: 1;
+        }
+
+        .detail-grid > .projects-card {
+          grid-column: 3;
+          grid-row: 1;
         }
 
         .card {
@@ -1132,92 +1125,6 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
 
         .btn-edit-small:hover {
           background: #e5e5e5;
-        }
-
-        .project-content {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-
-        .project-header {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .package-badge {
-          font-size: 18px;
-          font-weight: 700;
-        }
-
-        .project-status-badge {
-          padding: 4px 10px;
-          border-radius: 12px;
-          font-size: 12px;
-          font-weight: 500;
-        }
-
-        .versions-badge {
-          padding: 4px 10px;
-          border-radius: 12px;
-          font-size: 12px;
-          font-weight: 500;
-          background-color: #e0f2fe;
-          color: #0369a1;
-          margin-left: 8px;
-        }
-
-        .project-prices {
-          display: flex;
-          gap: 20px;
-          padding: 12px;
-          background: #f9fafb;
-          border-radius: 8px;
-        }
-
-        .price-item {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-
-        .price-label {
-          font-size: 12px;
-          color: #666;
-        }
-
-        .price-value {
-          font-size: 16px;
-          font-weight: 600;
-          color: #1a1a2e;
-        }
-
-        .project-notes {
-          font-size: 14px;
-          color: #374151;
-          line-height: 1.5;
-          padding-top: 8px;
-          border-top: 1px solid #f0f0f0;
-        }
-
-        .project-notes p {
-          margin: 0;
-        }
-
-        .empty-project {
-          text-align: center;
-          padding: 24px 16px;
-          color: #666;
-        }
-
-        .empty-project p {
-          margin: 0 0 4px;
-        }
-
-        .empty-project .hint {
-          font-size: 12px;
-          color: #999;
         }
 
         .form-row {
@@ -1335,75 +1242,139 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
           color: #999;
         }
 
-        .project-preview {
-          margin-top: 12px;
-          padding: 12px;
-          background: #f8fafc;
-          border-radius: 8px;
-          border: 1px solid #e5e7eb;
-        }
-
-        .preview-header {
+        /* Projects Card Styles (Right Column) */
+        .projects-list-mini {
           display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 8px;
+          flex-direction: column;
+          gap: 12px;
         }
 
-        .preview-label {
-          font-size: 12px;
-          font-weight: 600;
-          color: #374151;
+        .project-mini-card {
+          display: flex;
+          gap: 12px;
+          padding: 10px;
+          background: #f9fafb;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          border: 1px solid transparent;
+          position: relative;
         }
 
-        .preview-version {
-          font-size: 10px;
-          color: #6b7280;
-          background: #e5e7eb;
-          padding: 2px 6px;
-          border-radius: 4px;
+        .project-mini-card:hover {
+          background: #f1f5f9;
+          border-color: #667eea;
+          box-shadow: 0 2px 6px rgba(102, 126, 234, 0.15);
         }
 
-        .preview-placeholder {
+        .project-mini-thumbnail {
+          width: 80px;
           height: 60px;
-          background: #fff;
-          border: 1px solid #d1d5db;
+          flex-shrink: 0;
           border-radius: 4px;
+          overflow: hidden;
+          background: #e5e7eb;
+        }
+
+        .project-mini-thumbnail img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: top;
+        }
+
+        .thumbnail-placeholder-mini {
+          width: 100%;
+          height: 100%;
           display: flex;
           align-items: center;
           justify-content: center;
+          background: #f3f4f6;
         }
 
-        .preview-placeholder span {
-          font-size: 12px;
+        .thumbnail-placeholder-mini span {
+          font-size: 10px;
           color: #9ca3af;
         }
 
-        .project-actions {
-          margin-top: 12px;
-          padding-top: 12px;
-          border-top: 1px solid #f0f0f0;
+        .project-mini-info {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          gap: 4px;
+          overflow: hidden;
+          flex: 1;
         }
 
-        .btn-generate-web {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
+        .project-mini-header {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .project-status-badge-mini {
+          padding: 2px 6px;
+          border-radius: 8px;
+          font-size: 10px;
+          font-weight: 500;
+        }
+
+        .package-badge-mini {
+          font-size: 10px;
+          font-weight: 600;
+        }
+
+        .project-domain-mini {
+          font-size: 12px;
+          color: #374151;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          font-weight: 500;
+        }
+
+        .versions-count-mini {
+          font-size: 11px;
+          color: #6b7280;
+        }
+
+        .btn-manage-mini {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          width: 28px;
+          height: 28px;
           border: none;
-          padding: 8px 16px;
+          background: white;
           border-radius: 6px;
           cursor: pointer;
-          font-size: 13px;
-          font-weight: 500;
-          transition: opacity 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          transition: all 0.2s ease;
         }
 
-        .btn-generate-web:hover:not(:disabled) {
-          opacity: 0.9;
+        .btn-manage-mini:hover {
+          background: #667eea;
+          transform: scale(1.1);
         }
 
-        .btn-generate-web:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
+        .empty-projects {
+          text-align: center;
+          padding: 24px 16px;
+          color: #9ca3af;
+        }
+
+        .empty-projects p {
+          margin: 0 0 4px;
+          font-size: 14px;
+        }
+
+        .empty-projects .hint {
+          font-size: 12px;
+          color: #9ca3af;
         }
 
         .website-gen-options {
@@ -1590,14 +1561,29 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
           cursor: pointer;
         }
 
+        @media (max-width: 1200px) {
+          .detail-grid {
+            grid-template-columns: 350px 1fr;
+          }
+
+          .detail-grid > .projects-card {
+            grid-column: 1;
+            grid-row: 2;
+          }
+
+          .detail-grid > .activities-card {
+            grid-row: 1 / span 2;
+          }
+        }
+
         @media (max-width: 900px) {
           .detail-grid {
             grid-template-columns: 1fr;
           }
 
           .detail-grid > .info-card,
-          .detail-grid > .project-card,
-          .detail-grid > .activities-card {
+          .detail-grid > .activities-card,
+          .detail-grid > .projects-card {
             grid-column: 1;
             grid-row: auto;
           }
@@ -1616,9 +1602,33 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
             grid-template-columns: 1fr;
           }
 
-          .project-prices {
-            flex-direction: column;
-            gap: 12px;
+          .test-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+            color: white;
+            border-radius: 9999px;
+            font-size: 0.625rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            box-shadow: 0 2px 4px rgba(255, 107, 107, 0.3);
+            animation: pulse 2s infinite;
+          }
+
+          @keyframes pulse {
+            0% {
+              transform: scale(1);
+              opacity: 1;
+            }
+            50% {
+              transform: scale(1.05);
+              opacity: 0.9;
+            }
+            100% {
+              transform: scale(1);
+              opacity: 1;
+            }
           }
         }
       `}</style>

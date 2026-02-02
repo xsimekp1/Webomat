@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import ApiClient from '../../lib/api'
+import { useToast } from '../../context/ToastContext'
 
 type TabKey = 'brief' | 'structure' | 'brand' | 'constraints' | 'preview'
 
@@ -154,6 +155,7 @@ function Toggle({
 export default function GenerateWebsitePage() {
   const router = useRouter()
   const sp = useSearchParams()
+  const { showToast } = useToast()
 
   const qpBusinessId = sp.get('businessId') || ''
   const qpProjectId = sp.get('projectId') || ''
@@ -170,6 +172,16 @@ export default function GenerateWebsitePage() {
   const [error, setError] = useState<string>('')
   const [generating, setGenerating] = useState(false)
   const [result, setResult] = useState<GenerateResponse | null>(null)
+
+  // Deploy & Screenshot
+  const [deploying, setDeploying] = useState(false)
+  const [deployedUrl, setDeployedUrl] = useState<string | null>(null)
+  const [capturingScreenshot, setCapturingScreenshot] = useState(false)
+  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null)
+
+  // Save version
+  const [saving, setSaving] = useState(false)
+  const [savedVersionId, setSavedVersionId] = useState<string | null>(null)
 
   // Zadání (request)
   const [exactCopy, setExactCopy] = useState('')
@@ -258,6 +270,9 @@ export default function GenerateWebsitePage() {
     setGenerating(true)
     setError('')
     setResult(null)
+    setDeployedUrl(null)
+    setScreenshotUrl(null)
+    setSavedVersionId(null)
 
     try {
       // ✅ DNEŠNÍ REALITA: backend už má /website/generate a ApiClient.generateWebsite(projectId, dryRun)
@@ -267,6 +282,17 @@ export default function GenerateWebsitePage() {
       // resp u vás typicky vrací { html_content, message, ... } (podle toho co už používáte jinde)
       setResult(resp || { message: 'Hotovo.' })
       setTab('preview')
+
+      // Automatická změna statusu na "designováno" při úspěšném generování
+      if (resp && businessId) {
+        try {
+          await ApiClient.updateBusinessStatus(businessId, 'designed')
+          showToast('Status změněn na "Designováno"', 'success')
+        } catch (statusError: any) {
+          console.error('Failed to update business status:', statusError)
+          // Nezobrazovat chybu uživateli, hlavní funkce (generování) proběhla úspěšně
+        }
+      }
     } catch (e: any) {
       setError(e?.response?.data?.detail || 'Chyba při generování')
     } finally {
@@ -282,6 +308,71 @@ export default function GenerateWebsitePage() {
     a.download = `${baseName}.html`
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  const handleDeploy = async () => {
+    if (!result?.html_content) return
+    setDeploying(true)
+    setError('')
+    try {
+      const response = await ApiClient.deployTestWebsite(result.html_content, businessName || 'Test')
+      if (response.success && response.url) {
+        setDeployedUrl(response.url)
+      } else {
+        setError(response.message || 'Nepodařilo se nasadit web')
+      }
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || 'Chyba při nasazování')
+    } finally {
+      setDeploying(false)
+    }
+  }
+
+  const handleScreenshot = async () => {
+    if (!result?.html_content) return
+    setCapturingScreenshot(true)
+    setError('')
+    try {
+      const response = await ApiClient.screenshotTestWebsite(result.html_content, 'thumbnail')
+      if (response.success && response.screenshot_url) {
+        setScreenshotUrl(response.screenshot_url)
+      } else {
+        setError(response.message || 'Nepodařilo se pořídit screenshot')
+      }
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || 'Chyba při pořizování screenshotu')
+    } finally {
+      setCapturingScreenshot(false)
+    }
+  }
+
+  const handleSaveVersion = async () => {
+    if (!result?.html_content || !projectId) return
+    setSaving(true)
+    setError('')
+    try {
+      const response = await ApiClient.createWebProjectVersion(projectId, {
+        html_content: result.html_content,
+        html_content_en: result.html_content_en || null,
+        thumbnail_url: screenshotUrl || null,
+        notes: `Vygenerováno ${new Date().toLocaleString('cs-CZ')}`
+      })
+      if (response.id) {
+        setSavedVersionId(response.id)
+      }
+    } catch (e: any) {
+      const detail = e?.response?.data?.detail
+      // Handle Pydantic validation errors (array of objects) vs simple string errors
+      if (Array.isArray(detail)) {
+        setError(detail.map((d: any) => d.msg || JSON.stringify(d)).join(', '))
+      } else if (typeof detail === 'string') {
+        setError(detail)
+      } else {
+        setError('Nepodařilo se uložit verzi')
+      }
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -325,6 +416,9 @@ export default function GenerateWebsitePage() {
               })
               setResult(null)
               setError('')
+              setDeployedUrl(null)
+              setScreenshotUrl(null)
+              setSavedVersionId(null)
               setTab('brief')
             }}
             style={{ padding: '10px 14px', borderRadius: 10, border: '1px solid #e5e7eb', background: '#f9fafb', cursor: 'pointer', fontWeight: 700 }}
@@ -811,7 +905,112 @@ export default function GenerateWebsitePage() {
                         >
                           🌐 Otevřít v novém okně
                         </button>
+
+                        {/* Deploy to Vercel button */}
+                        <button
+                          onClick={handleDeploy}
+                          disabled={deploying}
+                          style={{
+                            padding: '10px 14px',
+                            borderRadius: 10,
+                            border: 'none',
+                            background: deploying ? '#9ca3af' : '#3b82f6',
+                            color: 'white',
+                            fontWeight: 900,
+                            cursor: deploying ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {deploying ? '⏳ Nasazuji...' : '🚀 Nasadit na Vercel'}
+                        </button>
+
+                        {/* Screenshot button */}
+                        <button
+                          onClick={handleScreenshot}
+                          disabled={capturingScreenshot}
+                          style={{
+                            padding: '10px 14px',
+                            borderRadius: 10,
+                            border: '1px solid #d1d5db',
+                            background: capturingScreenshot ? '#f3f4f6' : 'white',
+                            fontWeight: 900,
+                            cursor: capturingScreenshot ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {capturingScreenshot ? '⏳ Fotím...' : '📷 Screenshot'}
+                        </button>
+
+                        {/* Save Version button */}
+                        <button
+                          onClick={handleSaveVersion}
+                          disabled={saving || !projectId}
+                          style={{
+                            padding: '10px 14px',
+                            borderRadius: 10,
+                            border: 'none',
+                            background: saving ? '#9ca3af' : '#10b981',
+                            color: 'white',
+                            fontWeight: 900,
+                            cursor: saving || !projectId ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {saving ? '⏳ Ukládám...' : '💾 Uložit verzi'}
+                        </button>
                       </div>
+
+                      {/* Show deployed URL */}
+                      {deployedUrl && (
+                        <div style={{ marginTop: 12, padding: 12, borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                          <div style={{ fontWeight: 700, color: '#1e40af', marginBottom: 6 }}>🔗 Sdílitelný odkaz:</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                            <a
+                              href={deployedUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ color: '#2563eb', wordBreak: 'break-all' }}
+                            >
+                              {deployedUrl}
+                            </a>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(deployedUrl)
+                              }}
+                              style={{
+                                padding: '4px 10px',
+                                borderRadius: 6,
+                                border: '1px solid #93c5fd',
+                                background: 'white',
+                                cursor: 'pointer',
+                                fontWeight: 700,
+                                fontSize: 12,
+                              }}
+                            >
+                              📋 Kopírovat
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Show screenshot */}
+                      {screenshotUrl && (
+                        <div style={{ marginTop: 12 }}>
+                          <div style={{ fontWeight: 700, marginBottom: 8 }}>📷 Náhled:</div>
+                          <img
+                            src={screenshotUrl}
+                            alt="Screenshot"
+                            style={{ maxWidth: 400, borderRadius: 8, border: '1px solid #e5e7eb', display: 'block' }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Show saved version confirmation */}
+                      {savedVersionId && (
+                        <div style={{ marginTop: 12, padding: 12, borderRadius: 10, background: '#d1fae5', border: '1px solid #6ee7b7' }}>
+                          <div style={{ fontWeight: 700, color: '#065f46' }}>✅ Verze uložena!</div>
+                          <div style={{ color: '#047857', marginTop: 4 }}>
+                            ID: {savedVersionId}
+                          </div>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <div style={{ padding: 14, borderRadius: 12, border: '1px solid #fecaca', background: '#fef2f2', color: '#991b1b' }}>

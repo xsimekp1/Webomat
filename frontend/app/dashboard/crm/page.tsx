@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/ToastContext'
 import ApiClient from '../../lib/api'
 
 
@@ -44,9 +45,12 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   dnc: { label: 'DNC', color: '#ef4444', bg: '#fee2e2' },
 }
 
-export default function CRMPage() {
+function CRMPageContent() {
   const { user, isLoading, isAuthenticated } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const { showToast } = useToast()
+  const filterParam = searchParams.get('filter')
 
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [stats, setStats] = useState<CRMStats | null>(null)
@@ -56,9 +60,25 @@ export default function CRMPage() {
   // Filters
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [followUpFilter, setFollowUpFilter] = useState(filterParam === 'followup')
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const limit = 20
+
+  // Update followUpFilter when URL param changes
+  useEffect(() => {
+    setFollowUpFilter(filterParam === 'followup')
+    setPage(1)
+  }, [filterParam])
+
+  // Auto-open new lead modal when action=new
+  useEffect(() => {
+    if (searchParams.get('action') === 'new') {
+      openNewModal()
+      // Clean URL to remove action parameter
+      router.replace('/dashboard/crm')
+    }
+  }, [searchParams])
 
   // Modal states
   const [showNewModal, setShowNewModal] = useState(false)
@@ -84,13 +104,23 @@ export default function CRMPage() {
   const fetchData = async () => {
     try {
       setLoading(true)
+
+      // Build API params
+      const apiParams: any = {
+        search: search || undefined,
+        status_crm: statusFilter || undefined,
+        page,
+        limit,
+      }
+
+      // Add follow-up filter if active (today's date)
+      if (followUpFilter) {
+        const today = new Date().toISOString().split('T')[0]
+        apiParams.next_follow_up_at_before = today
+      }
+
       const [businessesRes, statsRes] = await Promise.all([
-        ApiClient.getBusinesses({
-          search: search || undefined,
-          status_crm: statusFilter || undefined,
-          page,
-          limit,
-        }),
+        ApiClient.getBusinesses(apiParams),
         ApiClient.getCRMStats(),
       ])
       setBusinesses(businessesRes.items)
@@ -107,7 +137,12 @@ export default function CRMPage() {
     if (isAuthenticated) {
       fetchData()
     }
-  }, [isAuthenticated, search, statusFilter, page])
+  }, [isAuthenticated, search, statusFilter, followUpFilter, page])
+
+  const clearFollowUpFilter = () => {
+    setFollowUpFilter(false)
+    router.push('/dashboard/crm')
+  }
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -145,7 +180,7 @@ export default function CRMPage() {
 
   const handleFillFromARES = async () => {
     if (!formData.ico || formData.ico.length !== 8) {
-      alert('Zadejte platné IČO (8 číslic)')
+      showToast('Zadejte platné IČO (8 číslic)', 'warning')
       return
     }
 
@@ -161,10 +196,10 @@ export default function CRMPage() {
         // You can add more fields here as needed
       }))
 
-      alert('Data z ARES byla načtena')
+      showToast('Data z ARES byla načtena', 'success')
     } catch (error: any) {
       console.error('ARES API error:', error)
-      alert('Chyba při načítání dat z ARES: ' + (error.response?.data?.detail || error.message))
+      showToast('Chyba při načítání dat z ARES: ' + (error.response?.data?.detail || error.message), 'error')
     } finally {
       setLoading(false)
     }
@@ -224,7 +259,7 @@ export default function CRMPage() {
           <button className="btn-back" onClick={() => router.push('/dashboard')}>
             ← Zpět
           </button>
-          <h1>CRM Pipeline</h1>
+          <h1>{followUpFilter ? 'Follow-upy k vyřízení' : 'CRM Pipeline'}</h1>
         </div>
         <div className="header-right">
           <span className="user-info">{user.name} ({user.role})</span>
@@ -290,6 +325,18 @@ export default function CRMPage() {
           <option value="dnc">DNC</option>
         </select>
       </div>
+
+      {/* Active filter indicator */}
+      {followUpFilter && (
+        <div className="filter-indicator">
+          <span className="filter-badge">
+            📋 Zobrazeny pouze kontakty s follow-up do dneška
+          </span>
+          <button className="btn-clear-filter" onClick={clearFollowUpFilter}>
+            × Zrušit filtr
+          </button>
+        </div>
+      )}
 
       {error && <div className="error-message">{error}</div>}
 
@@ -397,7 +444,7 @@ export default function CRMPage() {
                      onChange={(e) => setFormData({ ...formData, ico: e.target.value })}
                      placeholder="12345678"
                      maxLength={8}
-                     style={{ flex: 1 }}
+                     style={{ flex: 1, minWidth: '120px' }}
                    />
                    <button
                      type="button"
@@ -413,7 +460,7 @@ export default function CRMPage() {
                      ) : (
                        <>
                          <span className="icon">🔍</span>
-                         Vyplnit z ARES
+                         ARES
                        </>
                      )}
                    </button>
@@ -645,6 +692,38 @@ export default function CRMPage() {
           border-radius: 6px;
           font-size: 14px;
           min-width: 180px;
+        }
+
+        .filter-indicator {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 16px;
+          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          border: 1px solid #f59e0b;
+          border-radius: 8px;
+          margin-bottom: 16px;
+        }
+
+        .filter-badge {
+          font-weight: 500;
+          color: #92400e;
+        }
+
+        .btn-clear-filter {
+          padding: 6px 12px;
+          background: white;
+          border: 1px solid #f59e0b;
+          border-radius: 6px;
+          color: #92400e;
+          font-size: 13px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .btn-clear-filter:hover {
+          background: #fffbeb;
+          border-color: #d97706;
         }
 
         .error-message {
@@ -1042,5 +1121,14 @@ export default function CRMPage() {
         }
       `}</style>
     </div>
+  )
+}
+
+// Wrap with Suspense for useSearchParams
+export default function CRMPage() {
+  return (
+    <Suspense fallback={<div className="loading">Načítám...</div>}>
+      <CRMPageContent />
+    </Suspense>
   )
 }

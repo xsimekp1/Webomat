@@ -1,24 +1,39 @@
+# Vercel Frontend Redeploy Script
+# This script triggers a new deployment from the git repository (master branch)
+#
+# NOTE: Vercel auto-deploys on git push. Only use this script if you need
+# to manually trigger a redeploy without pushing new code.
+
 $VERCEL_TOKEN = "uanxoOOLz8mCzrjFupSNoznD"
 
-$deployments = Invoke-RestMethod -Uri "https://api.vercel.com/v6/deployments?app=webomat&limit=10" -Method Get -Headers @{"Authorization" = "Bearer $VERCEL_TOKEN"}
+Write-Host "Triggering Vercel deployment from git repository..."
 
-$lastReady = $deployments.deployments | Where-Object { $_.readyState -eq "READY" } | Select-Object -First 1
+# Change to frontend directory where vercel.json is located
+Push-Location "$PSScriptRoot\..\frontend"
 
-if ($lastReady) {
-    Write-Host "Redeploying from: $($lastReady.uid)"
-    $body = @{
-        name = "webomat"
-        deploymentId = $lastReady.uid
-        target = "production"
-    } | ConvertTo-Json
+try {
+    # Use Vercel CLI to deploy - this pulls fresh from the connected git repo
+    # --prod deploys to production
+    # --yes skips confirmation prompts
+    $env:VERCEL_TOKEN = $VERCEL_TOKEN
 
-    $result = Invoke-RestMethod -Uri "https://api.vercel.com/v13/deployments?forceNew=1&withCache=1" -Method Post -Headers @{
-        "Authorization" = "Bearer $VERCEL_TOKEN"
-        "Content-Type" = "application/json"
-    } -Body $body
+    # Check if vercel CLI is installed
+    $vercelPath = Get-Command vercel -ErrorAction SilentlyContinue
+    if ($vercelPath) {
+        Write-Host "Using Vercel CLI..."
+        vercel --prod --yes --token $VERCEL_TOKEN
+    } else {
+        # Fallback: Use npx to run vercel
+        Write-Host "Using npx vercel..."
+        npx vercel --prod --yes --token $VERCEL_TOKEN
+    }
 
-    Write-Host "Deployment started: $($result.id)"
-    Write-Host "URL: $($result.url)"
-} else {
-    Write-Host "No ready deployment found"
+    Write-Host ""
+    Write-Host "Deployment triggered successfully!"
+    Write-Host "Check https://vercel.com/dashboard for deployment status"
+} catch {
+    Write-Host "Error: $_"
+    exit 1
+} finally {
+    Pop-Location
 }

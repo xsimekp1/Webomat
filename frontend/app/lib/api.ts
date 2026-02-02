@@ -31,7 +31,7 @@ class ApiClient {
     if (params.type !== 'all') queryParams.append('type', params.type)
     if (params.status !== 'all') queryParams.append('status', params.status)
 
-    const url = `${API_BASE_URL}/seller/account/ledger${queryParams.toString() ? '?' + queryParams.toString() : ''}`
+    const url = `${API_BASE_URL}/crm/seller/account/ledger${queryParams.toString() ? '?' + queryParams.toString() : ''}`
     const response = await axios.get(url, { headers: ApiClient.getAuthHeaders() })
     return response.data
   }
@@ -45,11 +45,38 @@ class ApiClient {
   }
 
   static async updateUserProfile(userData: any) {
-    const response = await axios.post(
+    const response = await axios.put(
       `${API_BASE_URL}/users/me`,
       userData,
       { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
     )
+    return response.data
+  }
+
+  static async updateUserLanguage(language: string) {
+    const response = await axios.put(
+      `${API_BASE_URL}/users/me/language`,
+      { preferred_language: language },
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    )
+    return response.data
+  }
+
+  static async updateUserLanguageAdmin(userId: string, language: string) {
+    const response = await axios.put(
+      `${API_BASE_URL}/admin/users/${userId}/language`,
+      { preferred_language: language },
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    )
+    return response.data
+  }
+
+  static async getSellerEarnings(sellerId?: string) {
+    const url = sellerId 
+      ? `${API_BASE_URL}/seller/earnings?seller_id=${sellerId}`
+      : `${API_BASE_URL}/seller/earnings`
+    
+    const response = await axios.get(url, { headers: ApiClient.getAuthHeaders() })
     return response.data
   }
 
@@ -111,6 +138,7 @@ class ApiClient {
     status_crm?: string;
     search?: string;
     assigned_to?: string;
+    next_follow_up_at_before?: string;
     page?: number;
     limit?: number;
   }) {
@@ -118,6 +146,7 @@ class ApiClient {
     if (params?.status_crm) queryParams.append('status_crm', params.status_crm);
     if (params?.search) queryParams.append('search', params.search);
     if (params?.assigned_to) queryParams.append('assigned_to', params.assigned_to);
+    if (params?.next_follow_up_at_before) queryParams.append('next_follow_up_at_before', params.next_follow_up_at_before);
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
 
@@ -395,6 +424,38 @@ class ApiClient {
     return response.data;
   }
 
+  static async deployTestWebsite(htmlContent: string, businessName?: string) {
+    const response = await axios.post(
+      `${API_BASE_URL}/website/deploy-test`,
+      {
+        html_content: htmlContent,
+        business_name: businessName || 'Test Preview'
+      },
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  static async getDeploymentStatus() {
+    const response = await axios.get(
+      `${API_BASE_URL}/website/deployment-status`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async screenshotTestWebsite(htmlContent: string, viewport: string = 'thumbnail') {
+    const response = await axios.post(
+      `${API_BASE_URL}/website/screenshot-test`,
+      {
+        html_content: htmlContent,
+        viewport
+      },
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
   // Website Generation endpointy
   static async generateWebsite(projectId: string, dryRun: boolean = false) {
     const response = await axios.post(
@@ -567,6 +628,22 @@ class ApiClient {
     return response.data;
   }
 
+  static async deleteVersion(versionId: string) {
+    const response = await axios.delete(
+      `${API_BASE_URL}/web-project/versions/${versionId}`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async deleteProject(projectId: string) {
+    const response = await axios.delete(
+      `${API_BASE_URL}/web-project/${projectId}`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
   // ============================================
   // Public Preview endpoints (no auth)
   // ============================================
@@ -643,6 +720,148 @@ class ApiClient {
       `${API_BASE_URL}/admin/feedback/${feedbackId}`,
       data,
       { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  // ============================================
+  // Invoice Management endpoints
+  // ============================================
+
+  static async getProjectInvoices(projectId: string) {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/projects/${projectId}/invoices`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async generateProjectInvoice(projectId: string, data: {
+    amount_without_vat: number;
+    payment_type?: 'setup' | 'monthly' | 'other';
+    description?: string;
+    vat_rate?: number;
+    due_days?: number;
+  }) {
+    const response = await axios.post(
+      `${API_BASE_URL}/crm/projects/${projectId}/generate-invoice`,
+      data,
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  static async updateInvoiceStatus(invoiceId: string, data: {
+    status: 'draft' | 'issued' | 'paid' | 'overdue' | 'cancelled';
+    paid_date?: string;
+  }) {
+    const response = await axios.put(
+      `${API_BASE_URL}/crm/invoices-issued/${invoiceId}/status`,
+      data,
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  static async getInvoiceDetail(invoiceId: string) {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/invoices-issued/${invoiceId}`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  // PDF Invoice Generation
+  static async generateInvoicePdf(invoiceId: string): Promise<{ pdf_url: string; storage_path: string }> {
+    const response = await axios.post(
+      `${API_BASE_URL}/crm/invoices-issued/${invoiceId}/generate-pdf`,
+      {},
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async downloadInvoicePdf(invoiceId: string): Promise<string> {
+    // Returns URL for redirect/download
+    return `${API_BASE_URL}/crm/invoices-issued/${invoiceId}/pdf`;
+  }
+
+  static async generateReceivedInvoicePdf(invoiceId: string): Promise<{ pdf_url: string; storage_path: string }> {
+    const response = await axios.post(
+      `${API_BASE_URL}/crm/invoices-received/${invoiceId}/generate-pdf`,
+      {},
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async downloadReceivedInvoicePdf(invoiceId: string): Promise<string> {
+    return `${API_BASE_URL}/crm/invoices-received/${invoiceId}/pdf`;
+  }
+
+  static async updateBusinessStatus(businessId: string, status: string) {
+    const response = await axios.put(
+      `${API_BASE_URL}/crm/businesses/${businessId}/status`,
+      { status },
+      {
+        headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' }
+      }
+    );
+    return response.data;
+  }
+
+  // ============================================
+  // Invoice Approval Workflow endpoints
+  // ============================================
+
+  static async getAdminInvoices(params?: {
+    status?: string;
+    seller_id?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const queryParams = new URLSearchParams();
+    if (params?.status) queryParams.append('status_filter', params.status);
+    if (params?.seller_id) queryParams.append('seller_id', params.seller_id);
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+    const url = `${API_BASE_URL}/crm/admin/invoices${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    const response = await axios.get(url, { headers: ApiClient.getAuthHeaders() });
+    return response.data;
+  }
+
+  static async submitInvoiceForApproval(invoiceId: string) {
+    const response = await axios.put(
+      `${API_BASE_URL}/crm/invoices-issued/${invoiceId}/submit-for-approval`,
+      {},
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async approveInvoice(invoiceId: string) {
+    const response = await axios.put(
+      `${API_BASE_URL}/crm/invoices-issued/${invoiceId}/approve`,
+      {},
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async rejectInvoice(invoiceId: string, reason: string) {
+    const response = await axios.put(
+      `${API_BASE_URL}/crm/invoices-issued/${invoiceId}/reject`,
+      { reason },
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  static async getSellerClaims() {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/seller/claims`,
+      { headers: ApiClient.getAuthHeaders() }
     );
     return response.data;
   }

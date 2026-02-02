@@ -1,581 +1,654 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '../../context/AuthContext'
+import { useEffect, useState } from 'react'
 import ApiClient from '../../lib/api'
+import { useAuth } from '../../context/AuthContext'
+import { useLanguage } from '../../context/LanguageContext'
+import { LanguageProvider } from '../../context/LanguageContext'
+import { useTranslations } from 'next-intl'
 
-type MovementType =
-  | 'commission'
-  | 'bonus'
-  | 'payout'
-  | 'adjustment'
-  | 'refund'
-  | 'chargeback'
-  | 'other'
-
-type MovementStatus = 'pending' | 'available' | 'paid' | 'canceled'
-
-interface SellerAccountMovement {
+interface LedgerEntry {
   id: string
-  created_at: string
-
-  type: MovementType
-  status: MovementStatus
-
+  entry_type: string
   amount: number
-  currency?: string // default CZK
-
   description?: string
-
-  business_id?: string | null
-  business_name?: string | null
-
-  invoice_id?: string | null
-  invoice_number?: string | null
-
-  // pokud umíte z backendu vracet:
-  balance_after?: number | null
+  created_at: string
+  related_business_id?: string
+  related_project_id?: string
+  business_name?: string
+  project_status?: string
 }
 
-interface SellerAccountLedgerResponse {
+interface AccountSummary {
+  total_earned: number
+  total_paid_out: number
   available_balance: number
-  pending_balance?: number
-  movements: SellerAccountMovement[]
+  pending_commissions: number
+  reserved_for_payout: number
 }
 
-export default function AccountMovementsPage() {
-  const { user, isLoading, isAuthenticated, logout } = useAuth()
-  const router = useRouter()
-
-  const [data, setData] = useState<SellerAccountLedgerResponse | null>(null)
-  const [error, setError] = useState('')
+function AccountContent() {
+  const { user } = useAuth()
+  const { language } = useLanguage()
+  const t = useTranslations('account')
+  
+  const [ledgerData, setLedgerData] = useState<LedgerEntry[]>([])
+  const [accountSummary, setAccountSummary] = useState<AccountSummary | null>(null)
   const [loading, setLoading] = useState(true)
-
+  const [error, setError] = useState('')
+  
   // Filtry
-  const [range, setRange] = useState<'30' | '90' | 'all'>('90')
-  const [type, setType] = useState<'all' | MovementType>('all')
-  const [status, setStatus] = useState<'all' | MovementStatus>('all')
+  const [dateRange, setDateRange] = useState('3months')
+  const [entryType, setEntryType] = useState('all')
+  const [entryStatus, setEntryStatus] = useState('all')
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) router.push('/')
-  }, [isLoading, isAuthenticated, router])
+    if (user) {
+      loadAccountData()
+    }
+  }, [user, dateRange, entryType, entryStatus])
 
-  useEffect(() => {
-    if (!isAuthenticated) return
-    setLoading(true)
-    setError('')
-
-    ApiClient.getSellerAccountLedger({ range, type, status })
-      .then(setData)
-      .catch((e: any) => {
-        setError(e?.response?.data?.detail || 'Nepodařilo se načíst pohyby na účtu.')
+  const loadAccountData = async () => {
+    try {
+      setLoading(true)
+      
+      // Načti ledger data
+      const ledgerResponse = await ApiClient.getSellerAccountLedger({
+        range: dateRange,
+        type: entryType,
+        status: entryStatus
       })
-      .finally(() => setLoading(false))
-  }, [isAuthenticated, range, type, status])
+      
+      setLedgerData(ledgerResponse.entries || [])
+      setAccountSummary(ledgerResponse.summary)
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Nepodařilo se načíst data účtu')
+    } finally {
+      setLoading(false)
+    }
+  }
 
-  const formatCurrency = (amount: number, currency = 'CZK') =>
-    new Intl.NumberFormat('cs-CZ', {
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat(language === 'en' ? 'en-US' : 'cs-CZ', {
       style: 'currency',
-      currency,
+      currency: 'CZK',
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(amount)
-
-  const formatDateTime = (iso: string) => {
-    const d = new Date(iso)
-    const dd = d.getDate()
-    const mm = d.getMonth() + 1
-    const yyyy = d.getFullYear()
-    const hh = String(d.getHours()).padStart(2, '0')
-    const mi = String(d.getMinutes()).padStart(2, '0')
-    return `${dd}.${mm}.${yyyy} ${hh}:${mi}`
   }
 
-  const typeLabel = (t: MovementType) => {
-    const map: Record<MovementType, string> = {
-      commission: 'Provize',
-      bonus: 'Bonus',
-      payout: 'Výplata',
-      adjustment: 'Úprava',
-      refund: 'Refund',
-      chargeback: 'Chargeback',
-      other: 'Ostatní',
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString(language === 'en' ? 'en-US' : 'cs-CZ')
+  }
+
+  const getEntryTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      commission_earned: t('commissionEarned'),
+      admin_adjustment: t('adminAdjustment'),
+      payout_reserved: t('payoutReserved'),
+      payout_paid: t('payoutPaid')
     }
-    return map[t] ?? t
+    return labels[type] || type
   }
 
-  const statusLabel = (s: MovementStatus) => {
-    const map: Record<MovementStatus, string> = {
-      pending: 'Čeká',
-      available: 'K vyplacení',
-      paid: 'Vyplaceno',
-      canceled: 'Stornováno',
+  const getEntryTypeClass = (type: string) => {
+    const classes: Record<string, string> = {
+      commission_earned: 'positive',
+      admin_adjustment: 'adjustment',
+      payout_reserved: 'reserved',
+      payout_paid: 'payout'
     }
-    return map[s] ?? s
+    return classes[type] || 'default'
   }
 
-  const filteredMovements = useMemo(() => data?.movements ?? [], [data])
+  const formatDescription = (entry: LedgerEntry) => {
+    if (entry.description) return entry.description
+    
+    // Automaticky generuj popis pro různé typy
+    switch (entry.entry_type) {
+      case 'commission_earned':
+        return entry.business_name 
+          ? (language === 'en' ? `Commission from ${entry.business_name}` : `Provize z ${entry.business_name}`)
+          : t('commissionEarned')
+      case 'payout_paid':
+        return t('payoutPaid')
+      case 'payout_reserved':
+        return t('reservedForPayout')
+      case 'admin_adjustment':
+        return t('adminAdjustment')
+      default:
+        return ''
+    }
+  }
 
-  const totals = useMemo(() => {
-    const m = filteredMovements
-    const credits = m.filter(x => x.amount > 0).reduce((sum, x) => sum + x.amount, 0)
-    const debits = m.filter(x => x.amount < 0).reduce((sum, x) => sum + x.amount, 0)
-    return { credits, debits }
-  }, [filteredMovements])
+  if (!user) {
+    return <div className="loading">Načítám...</div>
+  }
 
-  if (isLoading || !user) return <div className="loading">Načítám...</div>
+  if (loading && !accountSummary) {
+    return <div className="loading">{t('loading')}</div>
+  }
 
   return (
-    <div className="page">
-      <header className="header">
-        <div className="header-left" onClick={() => router.push('/dashboard')} role="button" tabIndex={0}>
-          <h1>Webomat</h1>
-          <span className="breadcrumb">/ Pohyby na účtu</span>
-        </div>
-
-        <div className="header-right">
-          <span className="user-info">
-            {user.name}{' '}
-            <span className="role-badge">{user.role === 'admin' ? 'Admin' : 'Obchodník'}</span>
+    <div className="account-page">
+      <div className="page-header">
+        <h1>{t('title')}</h1>
+        <div className="language-switcher-wrapper">
+          <div className="current-lang-flag">
+            {language === 'en' ? '🇬🇧' : '🇨🇿'}
+          </div>
+          <span className="current-lang-text">
+            {language === 'en' ? 'English' : 'Česky'}
           </span>
-          <button onClick={() => router.push('/help')} className="btn-icon" title="Nápověda">
-            ?
-          </button>
-          <button onClick={() => router.push('/dashboard/profile')} className="btn-icon" title="Můj profil">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-          </button>
-          <button onClick={logout} className="btn-logout">
-            Odhlásit
-          </button>
         </div>
-      </header>
+      </div>
 
-      <main className="main">
-        <div className="top">
-          <div className="cards">
-            <div className="stat-card primary">
-              <div className="stat-title">K vyplacení</div>
-              <div className="stat-value">
-                {formatCurrency(data?.available_balance ?? 0, 'CZK')}
-              </div>
-              <div className="stat-sub">Zůstatek dostupný pro výplatu</div>
-            </div>
+      {error && (
+        <div className="error-message">
+          {error}
+        </div>
+      )}
 
-            <div className="stat-card">
-              <div className="stat-title">Součet příjmů (filtr)</div>
-              <div className="stat-value">{formatCurrency(totals.credits, 'CZK')}</div>
-              <div className="stat-sub">Jen položky v tabulce</div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-title">Součet odpisů (filtr)</div>
-              <div className="stat-value">{formatCurrency(totals.debits, 'CZK')}</div>
-              <div className="stat-sub">Záporné položky v tabulce</div>
+      {/* Account Summary Cards */}
+      {accountSummary && (
+        <div className="summary-grid">
+          <div className="summary-card available">
+            <div className="card-icon">💰</div>
+            <div className="card-content">
+              <span className="card-value">{formatCurrency(accountSummary.available_balance)}</span>
+              <span className="card-label">{t('availableToPayout')}</span>
             </div>
           </div>
 
-          <div className="filters">
-            <div className="filter">
-              <label>Období</label>
-              <select value={range} onChange={(e) => setRange(e.target.value as any)}>
-                <option value="30">Posledních 30 dní</option>
-                <option value="90">Posledních 90 dní</option>
-                <option value="all">Vše</option>
-              </select>
+          <div className="summary-card earned">
+            <div className="card-icon">📈</div>
+            <div className="card-content">
+              <span className="card-value">{formatCurrency(accountSummary.total_earned)}</span>
+              <span className="card-label">{t('totalEarned')}</span>
             </div>
+          </div>
 
-            <div className="filter">
-              <label>Typ</label>
-              <select value={type} onChange={(e) => setType(e.target.value as any)}>
-                <option value="all">Vše</option>
-                <option value="commission">Provize</option>
-                <option value="bonus">Bonus</option>
-                <option value="payout">Výplata</option>
-                <option value="adjustment">Úprava</option>
-                <option value="refund">Refund</option>
-                <option value="chargeback">Chargeback</option>
-                <option value="other">Ostatní</option>
-              </select>
+          <div className="summary-card paid">
+            <div className="card-icon">✅</div>
+            <div className="card-content">
+              <span className="card-value">{formatCurrency(accountSummary.total_paid_out)}</span>
+              <span className="card-label">{t('alreadyPaidOut')}</span>
             </div>
+          </div>
 
-            <div className="filter">
-              <label>Stav</label>
-              <select value={status} onChange={(e) => setStatus(e.target.value as any)}>
-                <option value="all">Vše</option>
-                <option value="pending">Čeká</option>
-                <option value="available">K vyplacení</option>
-                <option value="paid">Vyplaceno</option>
-                <option value="canceled">Stornováno</option>
-              </select>
+          <div className="summary-card pending">
+            <div className="card-icon">⏳</div>
+            <div className="card-content">
+              <span className="card-value">{formatCurrency(accountSummary.pending_commissions)}</span>
+              <span className="card-label">{t('pendingCommissions')}</span>
             </div>
-
-            <button className="btn-back" onClick={() => router.push('/dashboard')}>
-              ← Zpět na dashboard
-            </button>
           </div>
         </div>
+      )}
 
-        {error && <div className="error">{error}</div>}
+      {/* Account Balance Breakdown */}
+      {accountSummary && (
+        <div className="balance-breakdown">
+          <h2>{t('balanceCalculation')}</h2>
+          <div className="breakdown-formula">
+            <div className="formula-row positive">
+              <span className="formula-label">{t('totalCommissionsEarned')}:</span>
+              <span className="formula-value">+{formatCurrency(accountSummary.total_earned)}</span>
+            </div>
+            
+            <div className="formula-row negative">
+              <span className="formula-label">{t('adminAdjustments')}:</span>
+              <span className="formula-value">
+                {formatCurrency(accountSummary.total_paid_out - accountSummary.total_earned + accountSummary.available_balance + accountSummary.pending_commissions)}
+              </span>
+            </div>
+            
+            <div className="formula-row negative">
+              <span className="formula-label">{t('paidOut')}:</span>
+              <span className="formula-value">-{formatCurrency(accountSummary.total_paid_out)}</span>
+            </div>
+            
+            <div className="divider"></div>
+            
+            <div className="formula-row result">
+              <span className="formula-label">{t('availableBalance')}:</span>
+              <span className="formula-value">{formatCurrency(accountSummary.available_balance)}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
-        <section className="table-card">
-          <div className="table-head">
-            <h2>Pohyby</h2>
-            <span className="count">
-              {loading ? 'Načítám…' : `${filteredMovements.length} položek`}
-            </span>
+      {/* Filters */}
+      <div className="filters-section">
+        <h3>{t('transactionHistory')}</h3>
+        <div className="filters">
+          <div className="filter-group">
+            <label>{t('timeRange')}:</label>
+            <select value={dateRange} onChange={(e) => setDateRange(e.target.value)}>
+              <option value="1month">{t('lastMonth')}</option>
+              <option value="3months">{t('last3Months')}</option>
+              <option value="6months">{t('last6Months')}</option>
+              <option value="1year">{t('lastYear')}</option>
+              <option value="all">{t('allTime')}</option>
+            </select>
           </div>
 
-          {loading ? (
-            <div className="loading-row">Načítám pohyby na účtu…</div>
-          ) : filteredMovements.length === 0 ? (
-            <div className="empty">
-              <p>Žádné pohyby pro zvolené filtry.</p>
-              <small>Zkus změnit období/typ/stav.</small>
-            </div>
-          ) : (
-            <div className="table">
-              <div className="row head">
-                <div>Datum</div>
-                <div>Typ</div>
-                <div>Klient</div>
-                <div>Doklad</div>
-                <div>Popis</div>
-                <div className="right">Částka</div>
-                <div>Stav</div>
-                <div className="right">Zůstatek</div>
-              </div>
+          <div className="filter-group">
+            <label>{t('type')}:</label>
+            <select value={entryType} onChange={(e) => setEntryType(e.target.value)}>
+              <option value="all">{t('allTypes')}</option>
+              <option value="commission_earned">{t('commissions')}</option>
+              <option value="admin_adjustment">{t('adjustments')}</option>
+              <option value="payout_reserved">{t('reservedForPayout')}</option>
+              <option value="payout_paid">{t('paidOutShort')}</option>
+            </select>
+          </div>
+        </div>
+      </div>
 
-              {filteredMovements.map((m) => (
-                <div
-                  key={m.id}
-                  className="row"
-                  onClick={() => m.business_id ? router.push(`/dashboard/crm/${m.business_id}`) : undefined}
-                  style={{ cursor: m.business_id ? 'pointer' : 'default' }}
-                  title={m.business_id ? 'Otevřít klienta v CRM' : ''}
-                >
-                  <div className="mono">{formatDateTime(m.created_at)}</div>
-                  <div>
-                    <span className={`badge type-${m.type}`}>{typeLabel(m.type)}</span>
-                  </div>
-                  <div className="truncate">{m.business_name || '—'}</div>
-                  <div className="mono">{m.invoice_number || '—'}</div>
-                  <div className="truncate">{m.description || '—'}</div>
-                  <div className={`right amount ${m.amount >= 0 ? 'pos' : 'neg'}`}>
-                    {formatCurrency(m.amount, m.currency || 'CZK')}
-                  </div>
-                  <div>
-                    <span className={`badge status-${m.status}`}>{statusLabel(m.status)}</span>
-                  </div>
-                  <div className="right mono">
-                    {m.balance_after != null ? formatCurrency(m.balance_after, m.currency || 'CZK') : '—'}
-                  </div>
+      {/* Ledger Entries Table */}
+      <div className="ledger-section">
+        {loading ? (
+          <div className="loading">{language === 'en' ? 'Loading...' : 'Načítám...'}</div>
+        ) : ledgerData.length === 0 ? (
+          <div className="empty-state">
+            <p>{t('noTransactionsFound')}</p>
+          </div>
+        ) : (
+          <div className="ledger-table">
+            <div className="table-header">
+              <div className="col-date">{t('date')}</div>
+              <div className="col-type">{t('type')}</div>
+              <div className="col-description">{t('description')}</div>
+              <div className="col-amount">{t('amount')}</div>
+            </div>
+            
+            {ledgerData.map((entry) => (
+              <div key={entry.id} className={`table-row ${getEntryTypeClass(entry.entry_type)}`}>
+                <div className="col-date">{formatDate(entry.created_at)}</div>
+                <div className="col-type">
+                  <span className="entry-type-badge">{getEntryTypeLabel(entry.entry_type)}</span>
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
-      </main>
+                <div className="col-description">{formatDescription(entry)}</div>
+                <div className={`col-amount ${entry.amount > 0 ? 'positive' : 'negative'}`}>
+                  {entry.amount > 0 ? '+' : ''}{formatCurrency(entry.amount)}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <style jsx>{`
-        .page {
-          min-height: 100vh;
-          background: #f8fafc;
-        }
-
-        .header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 16px 24px;
-          background: white;
-          border-bottom: 1px solid #e2e8f0;
-          position: sticky;
-          top: 0;
-          z-index: 100;
-        }
-
-        .header-left {
-          display: flex;
-          align-items: baseline;
-          gap: 10px;
-          cursor: pointer;
-        }
-
-        .header-left h1 {
-          font-size: 1.5rem;
-          font-weight: 700;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          margin: 0;
-        }
-
-        .breadcrumb {
-          color: #94a3b8;
-          font-size: 0.9rem;
-          font-weight: 500;
-        }
-
-        .header-right {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .user-info {
-          font-size: 0.9rem;
-          color: #64748b;
-        }
-
-        .role-badge {
-          background: #f1f5f9;
-          padding: 2px 8px;
-          border-radius: 12px;
-          font-size: 0.75rem;
-          margin-left: 4px;
-        }
-
-        .btn-icon {
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          border: 1px solid #e2e8f0;
-          background: white;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s;
-        }
-
-        .btn-icon:hover {
-          background: #f8fafc;
-          border-color: #cbd5e1;
-        }
-
-        .btn-logout {
-          padding: 8px 16px;
-          background: #fee2e2;
-          color: #dc2626;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 500;
-          transition: all 0.2s;
-        }
-
-        .btn-logout:hover {
-          background: #fecaca;
-        }
-
-        .main {
+        .account-page {
           max-width: 1200px;
           margin: 0 auto;
           padding: 24px;
         }
 
-        .top {
-          display: grid;
-          grid-template-columns: 1.5fr 1fr;
-          gap: 16px;
-          margin-bottom: 16px;
-          align-items: start;
+        .page-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 32px;
         }
 
-        .cards {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 12px;
+        .page-header h1 {
+          font-size: 2rem;
+          font-weight: 700;
+          color: #1e293b;
+          margin: 0;
         }
 
-        .stat-card {
+        .language-switcher-wrapper {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 16px;
           background: white;
           border: 1px solid #e2e8f0;
-          border-radius: 16px;
-          padding: 16px;
+          border-radius: 8px;
         }
 
-        .stat-card.primary {
+        .current-lang-flag {
+          font-size: 1.2rem;
+        }
+
+        .current-lang-text {
+          font-size: 0.9rem;
+          font-weight: 500;
+          color: #374151;
+        }
+
+        .loading {
+          text-align: center;
+          padding: 48px;
+          color: #64748b;
+          font-size: 1.1rem;
+        }
+
+        .error-message {
+          background: #fef2f2;
+          color: #dc2626;
+          padding: 16px;
+          border-radius: 8px;
+          margin-bottom: 24px;
+          border: 1px solid #fecaca;
+        }
+
+        /* Summary Grid */
+        .summary-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 20px;
+          margin-bottom: 32px;
+        }
+
+        .summary-card {
+          background: white;
+          border-radius: 16px;
+          padding: 24px;
+          border: 1px solid #e2e8f0;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+
+        .summary-card.available {
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           color: white;
           border: none;
         }
 
-        .stat-title {
-          font-size: 0.85rem;
+        .summary-card.earned {
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: white;
+          border: none;
+        }
+
+        .summary-card.paid {
+          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+          color: white;
+          border: none;
+        }
+
+        .summary-card.pending {
+          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+          color: white;
+          border: none;
+        }
+
+        .card-icon {
+          font-size: 2.5rem;
           opacity: 0.9;
-          font-weight: 600;
         }
 
-        .stat-value {
-          font-size: 1.8rem;
-          font-weight: 800;
-          margin-top: 6px;
+        .card-content {
+          flex: 1;
         }
 
-        .stat-sub {
-          margin-top: 6px;
-          font-size: 0.85rem;
-          opacity: 0.85;
+        .card-value {
+          display: block;
+          font-size: 1.75rem;
+          font-weight: 700;
+          line-height: 1.2;
         }
 
-        .filters {
+        .card-label {
+          display: block;
+          font-size: 0.9rem;
+          opacity: 0.9;
+          margin-top: 4px;
+        }
+
+        /* Balance Breakdown */
+        .balance-breakdown {
           background: white;
-          border: 1px solid #e2e8f0;
           border-radius: 16px;
-          padding: 16px;
+          padding: 24px;
+          margin-bottom: 32px;
+          border: 1px solid #e2e8f0;
+        }
+
+        .balance-breakdown h2 {
+          font-size: 1.5rem;
+          font-weight: 600;
+          color: #1e293b;
+          margin: 0 0 24px 0;
+        }
+
+        .breakdown-formula {
           display: flex;
           flex-direction: column;
           gap: 12px;
         }
 
-        .filter label {
-          display: block;
-          font-size: 0.8rem;
-          font-weight: 600;
-          color: #475569;
-          margin-bottom: 6px;
+        .formula-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 16px;
+          border-radius: 8px;
+          font-weight: 500;
         }
 
-        .filter select {
-          width: 100%;
-          padding: 10px 12px;
-          border: 1px solid #d1d5db;
-          border-radius: 10px;
-          background: white;
-          font-size: 0.95rem;
+        .formula-row.positive {
+          background: #dcfce7;
+          color: #166534;
         }
 
-        .btn-back {
-          padding: 10px 12px;
-          border-radius: 12px;
-          border: 1px solid #e2e8f0;
-          background: #f8fafc;
-          cursor: pointer;
-          font-weight: 600;
-        }
-
-        .btn-back:hover {
-          background: #f1f5f9;
-        }
-
-        .error {
+        .formula-row.negative {
           background: #fef2f2;
-          border: 1px solid #fecaca;
           color: #dc2626;
-          padding: 12px 14px;
-          border-radius: 12px;
-          margin-bottom: 16px;
         }
 
-        .table-card {
+        .formula-row.result {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          font-size: 1.1rem;
+          font-weight: 700;
+        }
+
+        .formula-label {
+          flex: 1;
+        }
+
+        .formula-value {
+          font-weight: 700;
+          font-family: 'Courier New', monospace;
+        }
+
+        .divider {
+          height: 1px;
+          background: #e5e7eb;
+          margin: 8px 0;
+        }
+
+        /* Filters */
+        .filters-section {
           background: white;
-          border: 1px solid #e2e8f0;
           border-radius: 16px;
+          padding: 24px;
+          margin-bottom: 24px;
+          border: 1px solid #e2e8f0;
+        }
+
+        .filters-section h3 {
+          font-size: 1.25rem;
+          font-weight: 600;
+          color: #1e293b;
+          margin: 0 0 20px 0;
+        }
+
+        .filters {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 16px;
+        }
+
+        .filter-group {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .filter-group label {
+          font-size: 0.9rem;
+          font-weight: 500;
+          color: #374151;
+        }
+
+        .filter-group select {
+          padding: 10px 14px;
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
+          font-size: 0.95rem;
+          background: white;
+          cursor: pointer;
+        }
+
+        .filter-group select:focus {
+          outline: none;
+          border-color: #667eea;
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        /* Ledger Table */
+        .ledger-section {
+          background: white;
+          border-radius: 16px;
+          border: 1px solid #e2e8f0;
           overflow: hidden;
         }
 
-        .table-head {
-          display: flex;
-          justify-content: space-between;
-          align-items: baseline;
-          padding: 16px 16px 10px 16px;
+        .ledger-table {
+          width: 100%;
+        }
+
+        .table-header {
+          display: grid;
+          grid-template-columns: 120px 180px 1fr 140px;
+          gap: 16px;
+          padding: 16px 24px;
+          background: #f8fafc;
           border-bottom: 1px solid #e2e8f0;
-        }
-
-        .table-head h2 {
-          margin: 0;
-          font-size: 1.1rem;
-          color: #0f172a;
-        }
-
-        .count {
-          color: #64748b;
+          font-weight: 600;
+          color: #374151;
           font-size: 0.9rem;
         }
 
-        .loading-row {
-          padding: 18px 16px;
-          color: #64748b;
-        }
-
-        .empty {
-          padding: 32px 16px;
-          text-align: center;
-          color: #64748b;
-        }
-
-        .table {
-          width: 100%;
-          overflow-x: auto;
-        }
-
-        .row {
+        .table-row {
           display: grid;
-          grid-template-columns: 140px 120px 180px 110px 1fr 130px 120px 140px;
-          gap: 12px;
-          padding: 12px 16px;
+          grid-template-columns: 120px 180px 1fr 140px;
+          gap: 16px;
+          padding: 16px 24px;
           border-bottom: 1px solid #f1f5f9;
-          align-items: center;
-          min-width: 1100px;
+          transition: background-color 0.2s;
         }
 
-        .row.head {
+        .table-row:hover {
           background: #f8fafc;
-          font-weight: 700;
-          color: #475569;
-          font-size: 0.85rem;
-          border-bottom: 1px solid #e2e8f0;
         }
 
-        .truncate {
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+        .table-row.positive {
+          border-left: 3px solid #10b981;
         }
 
-        .right {
-          text-align: right;
+        .table-row.negative {
+          border-left: 3px solid #dc2626;
         }
 
-        .mono {
-          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        .table-row.adjustment {
+          border-left: 3px solid #f59e0b;
         }
 
-        .amount.pos { color: #059669; font-weight: 700; }
-        .amount.neg { color: #dc2626; font-weight: 700; }
+        .table-row.reserved {
+          border-left: 3px solid #3b82f6;
+        }
 
-        .badge {
-          display: inline-flex;
-          align-items: center;
-          padding: 3px 10px;
-          border-radius: 999px;
+        .table-row.payout {
+          border-left: 3px solid #8b5cf6;
+        }
+
+        .col-date {
+          font-size: 0.9rem;
+          color: #64748b;
+        }
+
+        .entry-type-badge {
+          padding: 4px 8px;
+          border-radius: 4px;
           font-size: 0.75rem;
-          font-weight: 700;
-          border: 1px solid transparent;
+          font-weight: 500;
+          background: #f1f5f9;
+          color: #475569;
         }
 
-        .type-commission { background: #ecfeff; color: #155e75; border-color: #a5f3fc; }
-        .type-bonus { background: #eef2ff; color: #3730a3; border-color: #c7d2fe; }
-        .type-payout { background: #fff7ed; color: #9a3412; border-color: #fed7aa; }
-        .type-adjustment { background: #f1f5f9; color: #334155; border-color: #e2e8f0; }
-        .type-refund, .type-chargeback { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
-        .type-other { background: #f8fafc; color: #475569; border-color: #e2e8f0; }
+        .col-description {
+          color: #1e293b;
+          font-size: 0.95rem;
+        }
 
-        .status-pending { background: #fff7ed; color: #9a3412; border-color: #fed7aa; }
-        .status-available { background: #ecfeff; color: #155e75; border-color: #a5f3fc; }
-        .status-paid { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
-        .status-canceled { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+        .col-amount {
+          text-align: right;
+          font-weight: 600;
+          font-family: 'Courier New', monospace;
+        }
 
-        @media (max-width: 980px) {
-          .top { grid-template-columns: 1fr; }
-          .cards { grid-template-columns: 1fr; }
+        .col-amount.positive {
+          color: #10b981;
+        }
+
+        .col-amount.negative {
+          color: #dc2626;
+        }
+
+        .empty-state {
+          text-align: center;
+          padding: 48px;
+          color: #64748b;
+        }
+
+        @media (max-width: 768px) {
+          .account-page {
+            padding: 16px;
+          }
+
+          .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+          }
+
+          .summary-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .table-header,
+          .table-row {
+            grid-template-columns: 1fr;
+            gap: 8px;
+          }
+
+          .table-header > *:not(:first-child),
+          .table-row > *:not(:first-child) {
+            display: none;
+          }
+
+          .filters {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
     </div>
+  )
+}
+
+export default function AccountPage() {
+  return (
+    <LanguageProvider>
+      <AccountContent />
+    </LanguageProvider>
   )
 }
