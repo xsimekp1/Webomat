@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import ApiClient from '../../../lib/api'
-import { useAuth } from '../../../../context/AuthContext'
-import { useLanguage } from '../../../context/LanguageContext'
-import { LanguageProvider } from '../../../context/LanguageContext'
+import { useAuth } from '../../../context/AuthContext'
+import { useLanguage, LanguageProvider } from '../../../context/LanguageContext'
 import { useTranslations } from 'next-intl'
 
 interface LedgerEntry {
