@@ -7,14 +7,21 @@ from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from ..database import get_supabase
-from ..dependencies import require_admin, get_password_hash
-from ..schemas.auth import User, UserListItem, AdminPasswordReset, LanguageUpdate, SellerEarningsResponse
+from ..dependencies import require_admin, get_password_hash, get_current_active_user
+from ..schemas.auth import (
+    User,
+    UserListItem,
+    AdminPasswordReset,
+    LanguageUpdate,
+    SellerEarningsResponse,
+)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 class WeeklyInvoice(BaseModel):
     """Týdenní souhrn fakturace."""
+
     week_start: str  # ISO date
     week_end: str
     total_amount: float
@@ -23,6 +30,7 @@ class WeeklyInvoice(BaseModel):
 
 class AdminDashboardStats(BaseModel):
     """Statistiky pro admin dashboard."""
+
     projects_in_production: int
     projects_delivered: int
     projects_won: int
@@ -32,7 +40,7 @@ class AdminDashboardStats(BaseModel):
 
 @router.get("/dashboard/stats", response_model=AdminDashboardStats)
 async def get_admin_dashboard_stats(
-    current_user: Annotated[User, Depends(require_admin)]
+    current_user: Annotated[User, Depends(require_admin)],
 ):
     """
     Statistiky pro admin dashboard.
@@ -83,17 +91,18 @@ async def get_admin_dashboard_stats(
         )
 
         total_amount = sum(
-            inv.get("amount_total", 0) or 0
-            for inv in (invoices_result.data or [])
+            inv.get("amount_total", 0) or 0 for inv in (invoices_result.data or [])
         )
         invoice_count = len(invoices_result.data or [])
 
-        weekly_invoices.append(WeeklyInvoice(
-            week_start=week_start.isoformat(),
-            week_end=week_end.isoformat(),
-            total_amount=total_amount,
-            invoice_count=invoice_count,
-        ))
+        weekly_invoices.append(
+            WeeklyInvoice(
+                week_start=week_start.isoformat(),
+                week_end=week_end.isoformat(),
+                total_amount=total_amount,
+                invoice_count=invoice_count,
+            )
+        )
 
     # Obrátit pořadí - od nejstaršího po nejnovější
     weekly_invoices.reverse()
@@ -114,15 +123,16 @@ def generate_temp_password(length: int = 12) -> str:
 
 
 @router.get("/users", response_model=list[UserListItem])
-async def list_users(
-    current_user: Annotated[User, Depends(require_admin)]
-):
+async def list_users(current_user: Annotated[User, Depends(require_admin)]):
     """List all users (admin only)."""
     supabase = get_supabase()
 
-    result = supabase.table("sellers").select(
-        "id, first_name, last_name, email, role, is_active, created_at"
-    ).order("created_at", desc=True).execute()
+    result = (
+        supabase.table("sellers")
+        .select("id, first_name, last_name, email, role, is_active, created_at")
+        .order("created_at", desc=True)
+        .execute()
+    )
 
     return [
         UserListItem(
@@ -132,28 +142,28 @@ async def list_users(
             email=u["email"],
             role=u.get("role", "sales"),
             is_active=u.get("is_active", True),
-            created_at=u.get("created_at")
+            created_at=u.get("created_at"),
         )
         for u in result.data
     ]
 
 
 @router.get("/users/{user_id}", response_model=UserListItem)
-async def get_user(
-    user_id: str,
-    current_user: Annotated[User, Depends(require_admin)]
-):
+async def get_user(user_id: str, current_user: Annotated[User, Depends(require_admin)]):
     """Get a specific user (admin only)."""
     supabase = get_supabase()
 
-    result = supabase.table("sellers").select(
-        "id, first_name, last_name, email, role, is_active, created_at"
-    ).eq("id", user_id).limit(1).execute()
+    result = (
+        supabase.table("sellers")
+        .select("id, first_name, last_name, email, role, is_active, created_at")
+        .eq("id", user_id)
+        .limit(1)
+        .execute()
+    )
 
     if not result.data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Uživatel nenalezen"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Uživatel nenalezen"
         )
 
     u = result.data[0]
@@ -164,7 +174,7 @@ async def get_user(
         email=u["email"],
         role=u.get("role", "sales"),
         is_active=u.get("is_active", True),
-        created_at=u.get("created_at")
+        created_at=u.get("created_at"),
     )
 
 
@@ -172,7 +182,7 @@ async def get_user(
 async def reset_user_password(
     user_id: str,
     reset_data: AdminPasswordReset,
-    current_user: Annotated[User, Depends(require_admin)]
+    current_user: Annotated[User, Depends(require_admin)],
 ):
     """
     Reset a user's password (admin only).
@@ -183,14 +193,17 @@ async def reset_user_password(
     supabase = get_supabase()
 
     # Check if user exists
-    result = supabase.table("sellers").select("id, first_name, last_name").eq(
-        "id", user_id
-    ).limit(1).execute()
+    result = (
+        supabase.table("sellers")
+        .select("id, first_name, last_name")
+        .eq("id", user_id)
+        .limit(1)
+        .execute()
+    )
 
     if not result.data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Uživatel nenalezen"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Uživatel nenalezen"
         )
 
     user_info = result.data[0]
@@ -203,22 +216,20 @@ async def reset_user_password(
 
     # Hash and save
     password_hash = get_password_hash(new_password)
-    supabase.table("sellers").update({
-        "password_hash": password_hash,
-        "must_change_password": True
-    }).eq("id", user_id).execute()
+    supabase.table("sellers").update(
+        {"password_hash": password_hash, "must_change_password": True}
+    ).eq("id", user_id).execute()
 
     return {
         "message": f"Heslo pro uživatele {user_info['first_name']} {user_info['last_name']} bylo resetováno",
         "temporary_password": new_password,
-        "must_change_password": True
+        "must_change_password": True,
     }
 
 
 @router.post("/users/{user_id}/toggle-active")
 async def toggle_user_active(
-    user_id: str,
-    current_user: Annotated[User, Depends(require_admin)]
+    user_id: str, current_user: Annotated[User, Depends(require_admin)]
 ):
     """Toggle user's active status (admin only)."""
     supabase = get_supabase()
@@ -227,18 +238,21 @@ async def toggle_user_active(
     if user_id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Nemůžete deaktivovat svůj vlastní účet"
+            detail="Nemůžete deaktivovat svůj vlastní účet",
         )
 
     # Get current status
-    result = supabase.table("sellers").select(
-        "id, first_name, last_name, is_active"
-    ).eq("id", user_id).limit(1).execute()
+    result = (
+        supabase.table("sellers")
+        .select("id, first_name, last_name, is_active")
+        .eq("id", user_id)
+        .limit(1)
+        .execute()
+    )
 
     if not result.data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Uživatel nenalezen"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Uživatel nenalezen"
         )
 
     user_info = result.data[0]
@@ -254,7 +268,9 @@ async def toggle_user_active(
             .eq("entry_type", "commission_earned")
             .execute()
         )
-        total_earned = sum(r["amount"] for r in earned_result.data) if earned_result.data else 0
+        total_earned = (
+            sum(r["amount"] for r in earned_result.data) if earned_result.data else 0
+        )
 
         payout_result = (
             supabase.table("ledger_entries")
@@ -263,25 +279,27 @@ async def toggle_user_active(
             .in_("entry_type", ["payout_reserved", "payout_paid"])
             .execute()
         )
-        total_payouts = sum(r["amount"] for r in payout_result.data) if payout_result.data else 0
+        total_payouts = (
+            sum(r["amount"] for r in payout_result.data) if payout_result.data else 0
+        )
 
         balance = total_earned - total_payouts
 
         if balance > 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Nelze deaktivovat obchodníka s nevyplaceným zůstatkem {balance:.0f} Kč. Nejprve vyplaťte provize."
+                detail=f"Nelze deaktivovat obchodníka s nevyplaceným zůstatkem {balance:.0f} Kč. Nejprve vyplaťte provize.",
             )
 
     # Update
-    supabase.table("sellers").update({
-        "is_active": new_status
-    }).eq("id", user_id).execute()
+    supabase.table("sellers").update({"is_active": new_status}).eq(
+        "id", user_id
+    ).execute()
 
     status_text = "aktivován" if new_status else "deaktivován"
     return {
         "message": f"Uživatel {user_info['first_name']} {user_info['last_name']} byl {status_text}",
-        "is_active": new_status
+        "is_active": new_status,
     }
 
 
@@ -289,118 +307,139 @@ async def toggle_user_active(
 async def update_user_language_admin(
     user_id: str,
     language_data: LanguageUpdate,
-    current_admin: Annotated[User, Depends(require_admin)]
+    current_admin: Annotated[User, Depends(require_admin)],
 ):
     """Admin endpoint to update user's preferred language."""
     supabase = get_supabase()
-    
+
     # Check if user exists
-    user_result = supabase.table("sellers").select(
-        "first_name", "last_name", "preferred_language"
-    ).eq("id", user_id).limit(1).execute()
-    
+    user_result = (
+        supabase.table("sellers")
+        .select("first_name", "last_name", "preferred_language")
+        .eq("id", user_id)
+        .limit(1)
+        .execute()
+    )
+
     if not user_result.data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
-    
+
     # Update language
-    result = supabase.table("sellers").update({
-        "preferred_language": language_data.preferred_language
-    }).eq("id", user_id).execute()
-    
+    result = (
+        supabase.table("sellers")
+        .update({"preferred_language": language_data.preferred_language})
+        .eq("id", user_id)
+        .execute()
+    )
+
     if not result.data:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update user language"
+            detail="Failed to update user language",
         )
-    
+
     from ..audit import log_entity_change
-    log_entity_change("user_language", user_id, current_admin.id, {
-        "preferred_language": language_data.preferred_language
-    })
-    
+
+    log_entity_change(
+        "user_language",
+        user_id,
+        current_admin.id,
+        {"preferred_language": language_data.preferred_language},
+    )
+
     user_info = user_result.data[0]
-    language_text = "čeština" if language_data.preferred_language == "cs" else "angličtina"
-    
+    language_text = (
+        "čeština" if language_data.preferred_language == "cs" else "angličtina"
+    )
+
     return {
         "message": f"Jazyk uživatele {user_info['first_name']} {user_info['last_name']} byl změněn na {language_text}",
-        "preferred_language": language_data.preferred_language
+        "preferred_language": language_data.preferred_language,
     }
 
 
 @router.get("/seller/earnings", response_model=SellerEarningsResponse)
 async def get_seller_earnings(
     current_user: Annotated[User, Depends(get_current_active_user)],
-    seller_id: str | None = None
+    seller_id: str | None = None,
 ):
     """Get earnings data for a seller (for 3-month graph)."""
     supabase = get_supabase()
-    
+
     # If admin asks for specific seller, use that ID, otherwise use current user
     target_seller_id = seller_id if current_user.role == "admin" else current_user.id
-    
+
     # Get seller info first
-    seller_result = supabase.table("sellers").select(
-        "first_name", "last_name"
-    ).eq("id", target_seller_id).limit(1).execute()
-    
+    seller_result = (
+        supabase.table("sellers")
+        .select("first_name", "last_name")
+        .eq("id", target_seller_id)
+        .limit(1)
+        .execute()
+    )
+
     if not seller_result.data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Seller not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Seller not found"
         )
-    
-    seller_name = f"{seller_result.data[0]['first_name']} {seller_result.data[0]['last_name']}"
-    
+
+    seller_name = (
+        f"{seller_result.data[0]['first_name']} {seller_result.data[0]['last_name']}"
+    )
+
     # Get commission earnings for last 3 months
     three_months_ago = datetime.utcnow() - timedelta(days=90)
-    
-    earnings_result = supabase.table("ledger_entries").select(
-        "amount", "created_at"
-    ).eq("seller_id", target_seller_id).eq("entry_type", "commission_earned") \
-        .gte("created_at", three_months_ago.isoformat()) \
-        .order("created_at", desc=True).execute()
-    
+
+    earnings_result = (
+        supabase.table("ledger_entries")
+        .select("amount", "created_at")
+        .eq("seller_id", target_seller_id)
+        .eq("entry_type", "commission_earned")
+        .gte("created_at", three_months_ago.isoformat())
+        .order("created_at", desc=True)
+        .execute()
+    )
+
     if not earnings_result.data:
         return {
             "seller_name": seller_name,
             "period_months": 3,
             "monthly_data": [],
-            "total_earnings": 0.0
+            "total_earnings": 0.0,
         }
-    
+
     # Group by month and sum amounts
     monthly_data = []
     current_month_data = {"month": "", "earnings": 0.0, "commission_count": 0}
-    
+
     for entry in earnings_result.data:
         entry_date = datetime.fromisoformat(entry["created_at"].replace("Z", "+00:00"))
         month_name = entry_date.strftime("%B %Y")  # e.g., "Leden 2025"
         amount = float(entry["amount"])
-        
+
         if current_month_data["month"] != month_name:
             if current_month_data["month"]:  # Save previous month
                 monthly_data.append(current_month_data.copy())
             current_month_data = {
                 "month": month_name,
                 "earnings": amount,
-                "commission_count": 1
+                "commission_count": 1,
             }
         else:
             current_month_data["earnings"] += amount
             current_month_data["commission_count"] += 1
-    
+
     # Add last month
     if current_month_data["month"]:
         monthly_data.append(current_month_data)
-    
+
     total_earnings = sum(month["earnings"] for month in monthly_data)
-    
+
     return {
         "seller_name": seller_name,
         "period_months": 3,
         "monthly_data": monthly_data,
-        "total_earnings": total_earnings
+        "total_earnings": total_earnings,
     }
