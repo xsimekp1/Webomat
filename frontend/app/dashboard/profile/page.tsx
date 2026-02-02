@@ -660,7 +660,7 @@ const loadProfile = async (userId: string) => {
           }
         }
       `}</style>
-    </div>
+    </>
   )
 }
 
