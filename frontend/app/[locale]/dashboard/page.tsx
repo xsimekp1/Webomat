@@ -158,6 +158,10 @@ export default function DashboardPage() {
     }
   }
 
+  const handleToastTest = () => {
+    showToast('TEST', 'success')
+  }
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('cs-CZ', {
       style: 'currency',
@@ -243,6 +247,26 @@ const getStatusColor = (status: string) => {
             </div>
             <div className="quick-card-action">Jít do CRM →</div>
           </div>
+        </div>
+
+        {/* Toast Test Button */}
+        <div className="dashboard-section">
+          <button 
+            onClick={handleToastTest}
+            style={{
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              marginBottom: '16px'
+            }}
+          >
+            Toast Test
+          </button>
         </div>
 
         {/* Pending Projects */}
