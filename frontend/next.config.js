@@ -1,6 +1,6 @@
 const createNextIntlPlugin = require('next-intl/plugin');
 
-const withNextIntl = createNextIntlPlugin('./i18n.ts');
+const withNextIntl = createNextIntlPlugin('./app/[locale]/i18n.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -19,13 +19,7 @@ const nextConfig = {
       },
     ]
   },
-  webpack: (config) => {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@': './app',
-    };
-    return config;
-  },
+
 }
 
 module.exports = withNextIntl(nextConfig);
