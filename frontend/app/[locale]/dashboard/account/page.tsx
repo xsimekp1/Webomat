@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import ApiClient from './../lib/api'
+import ApiClient from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { useLanguage } from '../../../context/LanguageContext'
 import { LanguageProvider } from '../../../context/LanguageContext'
