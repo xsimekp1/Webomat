@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import ApiClient from '../../../../lib/api'
-import { useToast } from '../../../context/ToastContext'
+import ApiClient from '../../lib/api'
+import { useToast } from '../../context/ToastContext'
 
 type TabKey = 'brief' | 'structure' | 'brand' | 'constraints' | 'preview'
 
@@ -888,7 +888,7 @@ export default function GenerateWebsitePage() {
 
                       <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
                         <button
-                          onClick={() => downloadHtml(result.html_content!, `website-${(businessName || 'business').replace(/\s+/g, '-').toLowerCase()}`)}
+                          onClick={() => downloadHtml(result.html_content!, `website-${(businessName || 'business').replace(//s+/g, '-').toLowerCase()}`)}
                           style={{ padding: '10px 14px', borderRadius: 10, border: 'none', background: '#10b981', color: 'white', fontWeight: 900, cursor: 'pointer' }}
                         >
                           📥 Stáhnout HTML

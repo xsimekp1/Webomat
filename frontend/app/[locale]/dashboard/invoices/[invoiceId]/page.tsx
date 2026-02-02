@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import ApiClient from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { useToast } from '../../../context/ToastContext'
-import { formatCurrency, formatDate } from '../../../../lib/utils'
+import { formatCurrency, formatDate } from '../../../lib/utils'
 
 export default function InvoiceDetailPage() {
   const router = useRouter()
