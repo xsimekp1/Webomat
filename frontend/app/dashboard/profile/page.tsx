@@ -20,7 +20,7 @@ interface ProfileData {
 
 function ProfileContent() {
   const t = useTranslations('profile')
-  const { t: ct } = useTranslations('common')
+  const ct = useTranslations('common')
   const { user, isLoading: authLoading, isAuthenticated, refreshUser } = useAuth()
   const [profile, setProfile] = useState<ProfileData>({
     first_name: '',
