@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../context/AuthContext'
-import ApiClient from '../../../lib/api'
+import ApiClient from '../../../../lib/api'
 
 interface UserListItem {
   id: string
