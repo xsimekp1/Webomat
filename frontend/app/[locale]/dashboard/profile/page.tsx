@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/context/AuthContext'
-import { LanguageProvider } from '@/context/LanguageContext'
-import { supabase } from '@/utils/supabase'
-import ApiClient from '@/lib/api'
+import { useAuth } from '../../../context/AuthContext'
+import { LanguageProvider } from '../../../context/LanguageContext'
+import { supabase } from '../../../utils/supabase'
+import ApiClient from '../../../lib/api'
 import LanguageSwitcher from '../../../../components/LanguageSwitcher'
 import { useTranslations } from 'next-intl'
 
