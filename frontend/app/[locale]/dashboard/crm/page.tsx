@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import ApiClient from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { useToast } from '../../../context/ToastContext'
-import ApiClient from '../../lib/api'
+import { useLanguage } from '../../../context/LanguageContext'
 
 
 interface Business {
