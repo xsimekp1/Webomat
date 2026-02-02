@@ -110,3 +110,18 @@ class UserListItem(BaseModel):
     is_active: bool
     created_at: datetime | None = None
     preferred_language: str = "cs"
+
+
+class MonthlyEarnings(BaseModel):
+    """Monthly earnings data for seller."""
+    month: str
+    earnings: float
+    commission_count: int
+
+
+class SellerEarningsResponse(BaseModel):
+    """Seller earnings response for graph."""
+    seller_name: str
+    period_months: int
+    monthly_data: list[MonthlyEarnings]
+    total_earnings: float

@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from ..database import get_supabase
 from ..dependencies import require_admin, get_password_hash
-from ..schemas.auth import User, UserListItem, AdminPasswordReset, LanguageUpdate
+from ..schemas.auth import User, UserListItem, AdminPasswordReset, LanguageUpdate, SellerEarningsResponse
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -327,4 +327,80 @@ async def update_user_language_admin(
     return {
         "message": f"Jazyk uživatele {user_info['first_name']} {user_info['last_name']} byl změněn na {language_text}",
         "preferred_language": language_data.preferred_language
+    }
+
+
+@router.get("/seller/earnings", response_model=SellerEarningsResponse)
+async def get_seller_earnings(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    seller_id: str | None = None
+):
+    """Get earnings data for a seller (for 3-month graph)."""
+    supabase = get_supabase()
+    
+    # If admin asks for specific seller, use that ID, otherwise use current user
+    target_seller_id = seller_id if current_user.role == "admin" else current_user.id
+    
+    # Get seller info first
+    seller_result = supabase.table("sellers").select(
+        "first_name", "last_name"
+    ).eq("id", target_seller_id).limit(1).execute()
+    
+    if not seller_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Seller not found"
+        )
+    
+    seller_name = f"{seller_result.data[0]['first_name']} {seller_result.data[0]['last_name']}"
+    
+    # Get commission earnings for last 3 months
+    three_months_ago = datetime.utcnow() - timedelta(days=90)
+    
+    earnings_result = supabase.table("ledger_entries").select(
+        "amount", "created_at"
+    ).eq("seller_id", target_seller_id).eq("entry_type", "commission_earned") \
+        .gte("created_at", three_months_ago.isoformat()) \
+        .order("created_at", desc=True).execute()
+    
+    if not earnings_result.data:
+        return {
+            "seller_name": seller_name,
+            "period_months": 3,
+            "monthly_data": [],
+            "total_earnings": 0.0
+        }
+    
+    # Group by month and sum amounts
+    monthly_data = []
+    current_month_data = {"month": "", "earnings": 0.0, "commission_count": 0}
+    
+    for entry in earnings_result.data:
+        entry_date = datetime.fromisoformat(entry["created_at"].replace("Z", "+00:00"))
+        month_name = entry_date.strftime("%B %Y")  # e.g., "Leden 2025"
+        amount = float(entry["amount"])
+        
+        if current_month_data["month"] != month_name:
+            if current_month_data["month"]:  # Save previous month
+                monthly_data.append(current_month_data.copy())
+            current_month_data = {
+                "month": month_name,
+                "earnings": amount,
+                "commission_count": 1
+            }
+        else:
+            current_month_data["earnings"] += amount
+            current_month_data["commission_count"] += 1
+    
+    # Add last month
+    if current_month_data["month"]:
+        monthly_data.append(current_month_data)
+    
+    total_earnings = sum(month["earnings"] for month in monthly_data)
+    
+    return {
+        "seller_name": seller_name,
+        "period_months": 3,
+        "monthly_data": monthly_data,
+        "total_earnings": total_earnings
     }

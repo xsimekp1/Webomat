@@ -71,6 +71,15 @@ class ApiClient {
     return response.data
   }
 
+  static async getSellerEarnings(sellerId?: string) {
+    const url = sellerId 
+      ? `${API_BASE_URL}/seller/earnings?seller_id=${sellerId}`
+      : `${API_BASE_URL}/seller/earnings`
+    
+    const response = await axios.get(url, { headers: ApiClient.getAuthHeaders() })
+    return response.data
+  }
+
   static async uploadAvatar(file: File) {
     const formData = new FormData();
     formData.append('file', file);

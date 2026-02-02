@@ -54,28 +54,17 @@ function ProfileContent() {
 
 const loadProfile = async (userId: string) => {
     try {
-      if (!supabase) {
-        throw new Error('Supabase client not available')
-      }
-
-      const { data, error } = await supabase
-        .from('sellers')
-        .select('first_name, last_name, email, phone, bank_account, avatar_url')
-        .eq('id', userId)
-        .single()
-
-      if (error) throw error
-
-      if (data) {
-        setProfile({
-          first_name: data.first_name || '',
-          last_name: data.last_name || '',
-          email: data.email || '',
-          phone: data.phone || '',
-          bank_account: data.bank_account || '',
-          avatar_url: data.avatar_url || null
-        })
-      }
+      // Load profile through backend API (includes language preference)
+      const userProfile = await ApiClient.getUserProfile()
+      
+      setProfile({
+        first_name: userProfile.first_name || '',
+        last_name: userProfile.last_name || '',
+        email: userProfile.email || '',
+        phone: userProfile.phone || '',
+        bank_account: userProfile.bank_account || '',
+        avatar_url: userProfile.avatar_url || null
+      })
     } catch (err) {
       console.error('Error loading profile:', err)
     } finally {
@@ -204,10 +193,10 @@ const loadProfile = async (userId: string) => {
   }
 
   return (
-    <div className="dashboard">
+    <>
       <header className="dashboard-header">
         <div className="header-left">
-          <h1>Webomat CRM</h1>
+          <h1>{t('navigation.dashboard')}</h1>
         </div>
         <div className="header-right">
           <span className="user-info">
@@ -219,6 +208,8 @@ const loadProfile = async (userId: string) => {
           </button>
         </div>
       </header>
+
+      <main className="dashboard-main">
 
       <main className="dashboard-main">
         <div className="profile-container">
