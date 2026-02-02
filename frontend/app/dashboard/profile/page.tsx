@@ -210,8 +210,6 @@ const loadProfile = async (userId: string) => {
       </header>
 
       <main className="dashboard-main">
-
-      <main className="dashboard-main">
         <div className="profile-container">
           <h2>{t('title')}</h2>
           <p className="profile-subtitle">{t('subtitle')}</p>
