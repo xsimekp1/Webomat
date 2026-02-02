@@ -888,7 +888,10 @@ export default function GenerateWebsitePage() {
 
                       <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
                         <button
-                          onClick={() => downloadHtml(result.html_content!, `website-${(businessName || 'business').replace(//s+/g, '-').toLowerCase()}`)}
+                          onClick={() => {
+  const slug = (businessName || 'business').trim().replace(/\s+/g, '-').toLowerCase()
+  downloadHtml(result.html_content!, `website-${slug}`)
+}}
                           style={{ padding: '10px 14px', borderRadius: 10, border: 'none', background: '#10b981', color: 'white', fontWeight: 900, cursor: 'pointer' }}
                         >
                           📥 Stáhnout HTML
