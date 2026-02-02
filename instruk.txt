@@ -1,52 +1,52 @@
-22:30:15.858 Running build in Washington, D.C., USA (East) – iad1
-22:30:15.859 Build machine configuration: 2 cores, 8 GB
-22:30:16.058 Cloning github.com/xsimekp1/Webomat (Branch: master, Commit: d5b93a6)
-22:30:16.573 Cloning completed: 515.000ms
-22:30:17.308 Restored build cache from previous deployment (2F5Ygvh4dRf5UVxWetMp5gdcqLcH)
-22:30:17.601 Running "vercel build"
-22:30:18.640 Vercel CLI 50.9.6
-22:30:18.935 Installing dependencies...
-22:30:26.733 
-22:30:26.733 up to date in 8s
-22:30:26.734 
-22:30:26.734 157 packages are looking for funding
-22:30:26.734   run `npm fund` for details
-22:30:26.765 Detected Next.js version: 14.2.21
-22:30:26.772 Running "npm run build"
-22:30:26.877 
-22:30:26.877 > webomat-frontend@0.1.0 build
-22:30:26.878 > next build
-22:30:26.878 
-22:30:27.603   ▲ Next.js 14.2.21
-22:30:27.604 
-22:30:27.730    Creating an optimized production build ...
-22:30:37.600 Failed to compile.
-22:30:37.600 
-22:30:37.600 ./app/[locale]/dashboard/account/page.tsx
-22:30:37.601 Module not found: Can't resolve '@/lib/api'
-22:30:37.601 
-22:30:37.601 https://nextjs.org/docs/messages/module-not-found
-22:30:37.601 
-22:30:37.601 ./app/[locale]/dashboard/account/page.tsx
-22:30:37.601 Module not found: Can't resolve '@/context/AuthContext'
-22:30:37.602 
-22:30:37.602 https://nextjs.org/docs/messages/module-not-found
-22:30:37.602 
-22:30:37.602 ./app/[locale]/dashboard/account/page.tsx
-22:30:37.602 Module not found: Can't resolve '@/context/LanguageContext'
-22:30:37.602 
-22:30:37.602 https://nextjs.org/docs/messages/module-not-found
-22:30:37.602 
-22:30:37.605 ./app/[locale]/dashboard/admin/feedback/page.tsx
-22:30:37.605 Module not found: Can't resolve '@/context/AuthContext'
-22:30:37.605 
-22:30:37.606 https://nextjs.org/docs/messages/module-not-found
-22:30:37.606 
-22:30:37.606 ./app/[locale]/dashboard/admin/feedback/page.tsx
-22:30:37.606 Module not found: Can't resolve '@/context/ToastContext'
-22:30:37.606 
-22:30:37.606 https://nextjs.org/docs/messages/module-not-found
-22:30:37.606 
-22:30:37.607 
-22:30:37.607 > Build failed because of webpack errors
-22:30:37.650 Error: Command "npm run build" exited with 1
+22:38:42.451 Running build in Washington, D.C., USA (East) – iad1
+22:38:42.452 Build machine configuration: 2 cores, 8 GB
+22:38:42.743 Cloning github.com/xsimekp1/Webomat (Branch: master, Commit: 047f2b6)
+22:38:43.896 Cloning completed: 1.148s
+22:38:44.233 Restored build cache from previous deployment (2F5Ygvh4dRf5UVxWetMp5gdcqLcH)
+22:38:45.631 Running "vercel build"
+22:38:46.588 Vercel CLI 50.9.6
+22:38:46.862 Installing dependencies...
+22:38:53.093 
+22:38:53.095 up to date in 6s
+22:38:53.095 
+22:38:53.095 157 packages are looking for funding
+22:38:53.095   run `npm fund` for details
+22:38:53.128 Detected Next.js version: 14.2.21
+22:38:53.133 Running "npm run build"
+22:38:53.229 
+22:38:53.229 > webomat-frontend@0.1.0 build
+22:38:53.230 > next build
+22:38:53.230 
+22:38:53.892   ▲ Next.js 14.2.21
+22:38:53.893 
+22:38:53.997    Creating an optimized production build ...
+22:39:02.447 Failed to compile.
+22:39:02.447 
+22:39:02.447 ./app/[locale]/dashboard/account/page.tsx
+22:39:02.447 Module not found: Can't resolve '@/lib/api'
+22:39:02.447 
+22:39:02.447 https://nextjs.org/docs/messages/module-not-found
+22:39:02.447 
+22:39:02.447 ./app/[locale]/dashboard/account/page.tsx
+22:39:02.448 Module not found: Can't resolve '@/context/AuthContext'
+22:39:02.448 
+22:39:02.448 https://nextjs.org/docs/messages/module-not-found
+22:39:02.448 
+22:39:02.448 ./app/[locale]/dashboard/account/page.tsx
+22:39:02.448 Module not found: Can't resolve '@/context/LanguageContext'
+22:39:02.448 
+22:39:02.448 https://nextjs.org/docs/messages/module-not-found
+22:39:02.448 
+22:39:02.448 ./app/[locale]/dashboard/admin/feedback/page.tsx
+22:39:02.448 Module not found: Can't resolve '@/context/AuthContext'
+22:39:02.448 
+22:39:02.449 https://nextjs.org/docs/messages/module-not-found
+22:39:02.449 
+22:39:02.449 ./app/[locale]/dashboard/admin/feedback/page.tsx
+22:39:02.449 Module not found: Can't resolve '@/context/ToastContext'
+22:39:02.449 
+22:39:02.449 https://nextjs.org/docs/messages/module-not-found
+22:39:02.449 
+22:39:02.455 
+22:39:02.461 > Build failed because of webpack errors
+22:39:02.527 Error: Command "npm run build" exited with 1
