@@ -58,8 +58,35 @@ function AccountContent() {
         status: entryStatus
       })
       
-      setLedgerData(ledgerResponse.entries || [])
-      setAccountSummary(ledgerResponse.summary)
+      setLedgerData(ledgerResponse.ledger_entries || [])
+      
+      // Calculate summary from ledger entries
+      const entries = ledgerResponse.ledger_entries || []
+      const total_earned = entries
+        .filter(e => e.entry_type === 'commission_earned')
+        .reduce((sum, e) => sum + e.amount, 0)
+      
+      const total_paid_out = entries
+        .filter(e => e.entry_type === 'payout_paid')
+        .reduce((sum, e) => sum + Math.abs(e.amount), 0)
+      
+      const pending_commissions = entries
+        .filter(e => e.entry_type === 'commission_earned' && !e.related_invoice_id)
+        .reduce((sum, e) => sum + e.amount, 0)
+      
+      const reserved_for_payout = entries
+        .filter(e => e.entry_type === 'payout_reserved')
+        .reduce((sum, e) => sum + Math.abs(e.amount), 0)
+      
+      const available_balance = ledgerResponse.available_balance || (total_earned - total_paid_out - reserved_for_payout)
+      
+      setAccountSummary({
+        total_earned,
+        total_paid_out,
+        available_balance,
+        pending_commissions,
+        reserved_for_payout
+      })
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Nepodařilo se načíst data účtu')
     } finally {

@@ -196,13 +196,9 @@ const loadProfile = async (userId: string) => {
     <>
       <header className="dashboard-header">
         <div className="header-left">
-          <h1>{t('navigation.dashboard')}</h1>
+          <h1>{t('title')}</h1>
         </div>
         <div className="header-right">
-          <span className="user-info">
-            {user.name} ({user.role === 'admin' ? t('auth.admin') : t('auth.sales')})
-          </span>
-          <LanguageSwitcher />
           <button onClick={() => router.push('/dashboard')} className="btn-back">
             {ct('back')}
           </button>
@@ -244,6 +240,14 @@ const loadProfile = async (userId: string) => {
                   onChange={handleChange}
                   placeholder={t('lastName')}
                 />
+              </div>
+            </div>
+
+            <div className="form-row">
+
+
+              <div className="form-group language-field">
+                <LanguageSwitcher />
               </div>
             </div>
 
@@ -647,6 +651,12 @@ const loadProfile = async (userId: string) => {
 
         .btn-cancel:hover {
           background: #e0e0e0;
+        }
+
+        .language-field {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
         }
 
         @media (max-width: 600px) {
