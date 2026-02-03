@@ -282,45 +282,7 @@ input:focus {
   background: #f5f7fa;
 }
 
-.dashboard-header {
-  background: white;
-  padding: 16px 32px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-}
 
-.header-left h1 {
-  font-size: 24px;
-  color: #667eea;
-  margin: 0;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.user-info {
-  color: #666;
-  font-size: 14px;
-}
-
-.btn-logout {
-  background: #e53e3e;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.btn-logout:hover {
-  background: #c53030;
-}
 
 .dashboard-main {
   padding: 32px;
@@ -1079,31 +1041,9 @@ input:focus {
   animation: fade-in-down 400ms ease-out 0ms forwards;
 }
 
-.welcome-section > p {
-  opacity: 0;
-  animation: fade-in-up 400ms ease-out 100ms forwards;
-}
 
-.dashboard-header {
-  opacity: 0;
-  animation: fade-in-down 300ms ease-out 0ms forwards;
-}
 
-.header-left {
-  opacity: 0;
-  animation: slide-in-left 400ms ease-out 200ms forwards;
-}
 
-.header-right {
-  opacity: 0;
-  animation: slide-in-right 400ms ease-out 250ms forwards;
-}
-
-/* Enhanced Login Form Progressive */
-.login-container {
-  opacity: 0;
-  animation: fade-in-scale 400ms ease-out forwards;
-}
 
 .login-title {
   opacity: 0;
