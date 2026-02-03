@@ -1020,56 +1020,37 @@ input:focus {
 .delay-300 { animation-delay: 300ms; }
 .delay-500 { animation-delay: 500ms; }
 
-/* Progressive Disclosure by Hierarchy */
-.progressive-primary {
-  opacity: 0;
-  animation: fade-in-down 400ms ease-out 0ms forwards;
+/* Simple, Safe Progressive Animations */
+@keyframes subtle-fade-in {
+  from { opacity: 0.6; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.progressive-primary.no-animation {
-  opacity: 1;
-  animation: none;
+/* Apply to common dashboard elements */
+.stat-card {
+  animation: subtle-fade-in 500ms ease-out;
 }
 
-.progressive-secondary {
-  opacity: 0;
-  animation: fade-in-up 400ms ease-out 75ms forwards;
+.stat-card:nth-child(1) { animation-delay: 0ms; }
+.stat-card:nth-child(2) { animation-delay: 50ms; }
+.stat-card:nth-child(3) { animation-delay: 100ms; }
+.stat-card:nth-child(4) { animation-delay: 150ms; }
+
+.section-card {
+  animation: subtle-fade-in 600ms ease-out;
 }
 
-.progressive-secondary.no-animation {
-  opacity: 1;
-  animation: none;
+.section-card:nth-child(1) { animation-delay: 0ms; }
+.section-card:nth-child(2) { animation-delay: 100ms; }
+.section-card:nth-child(3) { animation-delay: 200ms; }
+
+.quick-card {
+  animation: subtle-fade-in 400ms ease-out;
 }
 
-.progressive-content {
-  opacity: 0;
-  animation: fade-in-scale 300ms ease-out 150ms forwards;
-}
-
-.progressive-content.no-animation {
-  opacity: 1;
-  animation: none;
-}
-
-.progressive-supporting {
-  opacity: 0;
-  animation: fade-in 300ms ease-out 200ms forwards;
-}
-
-.progressive-supporting.no-animation {
-  opacity: 1;
-  animation: none;
-}
-
-.progressive-details {
-  opacity: 0;
-  animation: slide-in-right 400ms ease-out 300ms forwards;
-}
-
-.progressive-details.no-animation {
-  opacity: 1;
-  animation: none;
-}
+.quick-card:nth-child(1) { animation-delay: 0ms; }
+.quick-card:nth-child(2) { animation-delay: 100ms; }
+.quick-card:nth-child(3) { animation-delay: 200ms; }
 
 /* Form Field Progressive Disclosure */
 .form-progressive-1 {
