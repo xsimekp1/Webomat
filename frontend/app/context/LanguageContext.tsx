@@ -34,6 +34,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       
       // Navigate to new locale
       let newPath = pathname;
+      console.log('LanguageContext: Current pathname:', pathname);
       
       // Handle locale prefix
       if (pathname.startsWith('/en/')) {
@@ -48,6 +49,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         newPath = pathname.replace('/en/', '/');
       }
       
+      console.log('LanguageContext: New path for', newLang, ':', newPath);
       router.push(newPath);
       router.refresh();
     } catch (error) {
