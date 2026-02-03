@@ -63,23 +63,50 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const loadLanguage = async () => {
       try {
-        console.log('LanguageContext: Loading language from API...');
-        // Try to get from API first
-        const userProfile = await ApiClient.getUserProfile();
-        console.log('LanguageContext: User profile from API:', userProfile);
-        const apiLanguage = userProfile.preferred_language;
-        console.log('LanguageContext: API language:', apiLanguage);
+        console.log('LanguageContext: Loading language...');
         
-        if (apiLanguage && (apiLanguage === 'cs' || apiLanguage === 'en')) {
-          console.log('LanguageContext: Setting language from API:', apiLanguage);
-          setLanguageState(apiLanguage);
-          localStorage.setItem('preferred_language', apiLanguage);
+        // First, check if URL has locale and use it as priority
+        let urlLocale: 'cs' | 'en' | null = null;
+        if (pathname.startsWith('/en/')) {
+          urlLocale = 'en';
+        } else if (pathname.startsWith('/cs/')) {
+          urlLocale = 'cs';
+        }
+        
+        console.log('LanguageContext: URL locale:', urlLocale);
+        
+        if (urlLocale) {
+          // URL has priority - use it and update backend
+          console.log('LanguageContext: Using URL locale:', urlLocale);
+          setLanguageState(urlLocale);
+          localStorage.setItem('preferred_language', urlLocale);
+          
+          // Update backend preference to match URL
+          try {
+            await ApiClient.updateUserLanguage(urlLocale);
+            console.log('LanguageContext: Updated backend to match URL:', urlLocale);
+          } catch (updateError) {
+            console.warn('LanguageContext: Failed to update backend:', updateError);
+          }
         } else {
-          // Fallback to localStorage
-          const storedLanguage = localStorage.getItem('preferred_language');
-          console.log('LanguageContext: Using localStorage language:', storedLanguage);
-          if (storedLanguage && (storedLanguage === 'cs' || storedLanguage === 'en')) {
-            setLanguageState(storedLanguage as 'cs' | 'en');
+          // No URL locale, load from API/profile
+          console.log('LanguageContext: No URL locale, loading from API...');
+          const userProfile = await ApiClient.getUserProfile();
+          console.log('LanguageContext: User profile from API:', userProfile);
+          const apiLanguage = userProfile.preferred_language;
+          console.log('LanguageContext: API language:', apiLanguage);
+          
+          if (apiLanguage && (apiLanguage === 'cs' || apiLanguage === 'en')) {
+            console.log('LanguageContext: Setting language from API:', apiLanguage);
+            setLanguageState(apiLanguage);
+            localStorage.setItem('preferred_language', apiLanguage);
+          } else {
+            // Fallback to localStorage
+            const storedLanguage = localStorage.getItem('preferred_language');
+            console.log('LanguageContext: Using localStorage language:', storedLanguage);
+            if (storedLanguage && (storedLanguage === 'cs' || storedLanguage === 'en')) {
+              setLanguageState(storedLanguage as 'cs' | 'en');
+            }
           }
         }
       } catch (error) {
