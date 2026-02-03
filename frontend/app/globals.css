@@ -1023,7 +1023,12 @@ input:focus {
 /* Progressive Disclosure by Hierarchy */
 .progressive-primary {
   opacity: 0;
-  animation: fade-in-down 400ms ease-out forwards;
+  animation: fade-in-down 400ms ease-out 0ms forwards;
+}
+
+.progressive-primary.no-animation {
+  opacity: 1;
+  animation: none;
 }
 
 .progressive-secondary {
@@ -1031,9 +1036,19 @@ input:focus {
   animation: fade-in-up 400ms ease-out 75ms forwards;
 }
 
+.progressive-secondary.no-animation {
+  opacity: 1;
+  animation: none;
+}
+
 .progressive-content {
   opacity: 0;
   animation: fade-in-scale 300ms ease-out 150ms forwards;
+}
+
+.progressive-content.no-animation {
+  opacity: 1;
+  animation: none;
 }
 
 .progressive-supporting {
@@ -1041,15 +1056,25 @@ input:focus {
   animation: fade-in 300ms ease-out 200ms forwards;
 }
 
+.progressive-supporting.no-animation {
+  opacity: 1;
+  animation: none;
+}
+
 .progressive-details {
   opacity: 0;
   animation: slide-in-right 400ms ease-out 300ms forwards;
 }
 
+.progressive-details.no-animation {
+  opacity: 1;
+  animation: none;
+}
+
 /* Form Field Progressive Disclosure */
 .form-progressive-1 {
   opacity: 0;
-  animation: fade-in-up 300ms ease-out forwards;
+  animation: fade-in-up 300ms ease-out 0ms forwards;
 }
 
 .form-progressive-2 {
@@ -1070,7 +1095,7 @@ input:focus {
 /* Dashboard Progressive Enhancements */
 .welcome-section > h2 {
   opacity: 0;
-  animation: fade-in-down 400ms ease-out forwards;
+  animation: fade-in-down 400ms ease-out 0ms forwards;
 }
 
 .welcome-section > p {
@@ -1080,7 +1105,7 @@ input:focus {
 
 .dashboard-header {
   opacity: 0;
-  animation: fade-in-down 300ms ease-out forwards;
+  animation: fade-in-down 300ms ease-out 0ms forwards;
 }
 
 .header-left {

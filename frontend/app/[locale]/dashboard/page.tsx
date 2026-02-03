@@ -167,6 +167,18 @@ function DashboardPage() {
     showToast('TEST', 'success')
   }
 
+  // Disable animations if page was loaded with reduced motion or JS errors
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (prefersReduced) {
+        document.querySelectorAll('.progressive-primary, .progressive-secondary, .progressive-content, .progressive-supporting, .progressive-details').forEach(el => {
+          el.classList.add('no-animation');
+        });
+      }
+    }
+  }, []);
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('cs-CZ', {
       style: 'currency',
