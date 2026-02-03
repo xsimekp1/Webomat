@@ -95,12 +95,6 @@
     "admin": "Administrace",
     "logout": "Odhlásit se"
   },
-  "navigation": {
-    "dashboard": "Dashboard",
-    "profile": "Profil",
-    "admin": "Administrace",
-    "logout": "Odhlásit se"
-  },
   "account": {
     "title": "Můj účet",
     "availableToPayout": "K vyplacení",
