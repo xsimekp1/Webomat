@@ -40,11 +40,11 @@ export default function LoginPage() {
 
   return (
     <div className="container">
-      <div className="card">
-        <h1>Webomat CRM</h1>
-        <p className="subtitle">{t('subtitle')}</p>
+      <div className="card login-container">
+        <h1 className="login-title">Webomat CRM</h1>
+        <p className="subtitle login-subtitle">{t('subtitle')}</p>
         <form onSubmit={handleLogin}>
-          <div className="field">
+          <div className="field login-form-field form-progressive-1">
             <label htmlFor="username">{t('username')}</label>
             <input
               id="username"
@@ -55,7 +55,7 @@ export default function LoginPage() {
               required
             />
           </div>
-          <div className="field">
+          <div className="field login-form-field form-progressive-2">
             <label htmlFor="password">{t('password')}</label>
             <input
               id="password"
@@ -66,8 +66,8 @@ export default function LoginPage() {
               required
             />
           </div>
-          {error && <p className="error">{error}</p>}
-          <button type="submit" className="btn" disabled={loading}>
+          {error && <p className="error login-form-field form-progressive-3">{error}</p>}
+          <button type="submit" className="btn login-submit-btn" disabled={loading}>
             {loading ? t('signingIn') : t('signIn')}
           </button>
         </form>

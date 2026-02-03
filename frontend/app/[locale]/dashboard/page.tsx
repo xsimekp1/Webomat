@@ -221,7 +221,7 @@ const getStatusColor = (status: string) => {
     <div className="dashboard-page">
         {/* Welcome + Quick Stats */}
         <div className="welcome-row">
-          <h2>
+          <h2 className="progressive-primary">
             Ahoj, {user.name?.split(' ')[0] || 'uživateli'}! 
             <span style={{ marginLeft: '8px' }}>
               {language === 'cs' ? '🇨🇿' : '🇬🇧'}
@@ -231,7 +231,7 @@ const getStatusColor = (status: string) => {
 
         {/* Quick Action Cards */}
         <div className="quick-stats-grid">
-          <div className="quick-card balance-card" onClick={() => router.push('/dashboard/account')}>
+          <div className="quick-card balance-card progressive-secondary" onClick={() => router.push('/dashboard/account')}>
             <div className="quick-card-icon">💰</div>
             <div className="quick-card-content">
               <span className="quick-card-value">{formatCurrency(sellerData?.available_balance || 0)}</span>
@@ -240,7 +240,7 @@ const getStatusColor = (status: string) => {
             <div className="quick-card-action">Detail účtu →</div>
           </div>
 
-          <div className="quick-card calls-card" onClick={() => router.push('/dashboard/crm?filter=followup')}>
+          <div className="quick-card calls-card progressive-secondary delay-75" onClick={() => router.push('/dashboard/crm?filter=followup')}>
             <div className="quick-card-icon">📞</div>
             <div className="quick-card-content">
               <span className="quick-card-value">{sellerData?.follow_ups_today ?? '--'}</span>
@@ -249,7 +249,7 @@ const getStatusColor = (status: string) => {
             <div className="quick-card-action">Otevřít seznam →</div>
           </div>
 
-          <div className="quick-card leads-card" onClick={() => router.push('/dashboard/crm')}>
+          <div className="quick-card leads-card progressive-secondary delay-150" onClick={() => router.push('/dashboard/crm')}>
             <div className="quick-card-icon">📊</div>
             <div className="quick-card-content">
               <span className="quick-card-value">{sellerData?.total_leads ?? '--'}</span>
@@ -263,6 +263,7 @@ const getStatusColor = (status: string) => {
         <div className="dashboard-section">
           <button 
             onClick={handleToastTest}
+            className="progressive-content delay-75"
             style={{
               backgroundColor: '#3b82f6',
               color: 'white',
@@ -281,10 +282,10 @@ const getStatusColor = (status: string) => {
 
         {/* Pending Projects */}
         {sellerData?.pending_projects && sellerData.pending_projects.length > 0 && (
-          <section className="dashboard-section">
+          <section className="dashboard-section progressive-content delay-150">
             <div className="section-header">
               <h3>🔧 Rozpracované projekty ({sellerData.pending_projects.length})</h3>
-              <button className="btn-link" onClick={() => router.push('/dashboard/crm?filter=projects')}>
+              <button className="btn-link progressive-supporting delay-300" onClick={() => router.push('/dashboard/crm?filter=projects')}>
                 Zobrazit vše
               </button>
             </div>
