@@ -1,52 +1,10 @@
-23:06:48.208 Running build in Washington, D.C., USA (East) – iad1
-23:06:48.209 Build machine configuration: 2 cores, 8 GB
-23:06:48.349 Cloning github.com/xsimekp1/Webomat (Branch: master, Commit: 417f7d5)
-23:06:48.629 Cloning completed: 280.000ms
-23:06:49.430 Restored build cache from previous deployment (2F5Ygvh4dRf5UVxWetMp5gdcqLcH)
-23:06:49.704 Running "vercel build"
-23:06:51.515 Vercel CLI 50.9.6
-23:06:52.793 Installing dependencies...
-23:06:59.153 
-23:06:59.154 up to date in 6s
-23:06:59.154 
-23:06:59.154 157 packages are looking for funding
-23:06:59.155   run `npm fund` for details
-23:06:59.185 Detected Next.js version: 14.2.21
-23:06:59.191 Running "npm run build"
-23:06:59.290 
-23:06:59.290 > webomat-frontend@0.1.0 build
-23:06:59.291 > next build
-23:06:59.291 
-23:07:00.022   ▲ Next.js 14.2.21
-23:07:00.023 
-23:07:00.138    Creating an optimized production build ...
-23:07:08.833 Failed to compile.
-23:07:08.834 
-23:07:08.834 ./app/[locale]/dashboard/account/page.tsx
-23:07:08.834 Module not found: Can't resolve './../lib/api'
-23:07:08.835 
-23:07:08.835 https://nextjs.org/docs/messages/module-not-found
-23:07:08.835 
-23:07:08.835 ./app/[locale]/dashboard/account/page.tsx
-23:07:08.835 Module not found: Can't resolve '@/context/AuthContext'
-23:07:08.835 
-23:07:08.835 https://nextjs.org/docs/messages/module-not-found
-23:07:08.835 
-23:07:08.835 ./app/[locale]/dashboard/account/page.tsx
-23:07:08.835 Module not found: Can't resolve '@/context/LanguageContext'
-23:07:08.835 
-23:07:08.835 https://nextjs.org/docs/messages/module-not-found
-23:07:08.835 
-23:07:08.835 ./app/[locale]/dashboard/admin/feedback/page.tsx
-23:07:08.835 Module not found: Can't resolve '@/context/AuthContext'
-23:07:08.835 
-23:07:08.836 https://nextjs.org/docs/messages/module-not-found
-23:07:08.836 
-23:07:08.836 ./app/[locale]/dashboard/admin/feedback/page.tsx
-23:07:08.836 Module not found: Can't resolve '@/context/ToastContext'
-23:07:08.836 
-23:07:08.836 https://nextjs.org/docs/messages/module-not-found
-23:07:08.836 
-23:07:08.836 
-23:07:08.836 > Build failed because of webpack errors
-23:07:08.878 Error: Command "npm run build" exited with 1
+./app/[locale]/preview/[token]/page.tsx:5:25
+Type error: Cannot find module '../../../../../context/AuthContext' or its corresponding type declarations.
+  3 | import { useState, useEffect, useRef } from 'react'
+  4 | import { useParams } from 'next/navigation'
+> 5 | import { useAuth } from '../../../../../context/AuthContext'
+    |                         ^
+  6 |
+  7 | import { useToast } from '../../../context/ToastContext'
+  8 | import ApiClient from '../../../lib/api'
+Error: Command "npm run build" exited with 1
