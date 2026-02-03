@@ -38,6 +38,12 @@
   "profile": {
     "title": "My Profile",
     "subtitle": "Here you can edit your personal information",
+    "navigation": {
+      "dashboard": "Dashboard"
+    },
+    "auth": {
+      "sales": "Sales"
+    },
     "firstName": "First Name",
     "lastName": "Last Name",
     "email": "Email",

@@ -38,6 +38,12 @@
   "profile": {
     "title": "Můj profil",
     "subtitle": "Zde můžete upravit své osobní údaje",
+    "navigation": {
+      "dashboard": "Dashboard"
+    },
+    "auth": {
+      "sales": "Obchodník"
+    },
     "firstName": "Jméno",
     "lastName": "Příjmení",
     "email": "Email",
