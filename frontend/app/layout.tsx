@@ -1,10 +1,22 @@
-import { redirect } from 'next/navigation'
+import type { Metadata } from 'next'
+import './globals.css'
+import { Providers } from './providers'
+
+export const metadata: Metadata = {
+  title: 'Webomat CRM',
+  description: 'CRM + Business Discovery System',
+}
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  // Redirect to default locale
-  redirect('/cs')
+  return (
+    <html>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
+    </html>
+  )
 }
