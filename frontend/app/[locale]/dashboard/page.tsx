@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
+import { useLanguage } from '../../context/LanguageContext'
 import ApiClient from '../../lib/api'
 
 
@@ -58,6 +59,8 @@ export default function DashboardPage() {
   const { user } = useAuth()
   const router = useRouter()
   const { showToast } = useToast()
+  const { language } = useLanguage()
+  console.log('Dashboard: Current language from LanguageContext:', language)
 
   // Seller dashboard data
   const [sellerData, setSellerData] = useState<SellerDashboard | null>(null)
@@ -1418,3 +1421,13 @@ const getStatusColor = (status: string) => {
     </div>
   )
 }
+
+function DashboardPageWithLanguage() {
+  return (
+    <LanguageProvider>
+      <DashboardPage />
+    </LanguageProvider>
+  )
+}
+
+export default DashboardPageWithLanguage
