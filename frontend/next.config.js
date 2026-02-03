@@ -5,6 +5,7 @@ const withNextIntl = createNextIntlPlugin('./app/[locale]/i18n.ts');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  // Force rebuild for Vercel
   images: {
     domains: ['cmtvixayfbqhdlftsgqg.supabase.co'],
   },
