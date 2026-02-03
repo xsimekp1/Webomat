@@ -21,10 +21,13 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   const setLanguage = async (newLang: 'cs' | 'en') => {
     setIsLoading(true);
+    console.log('LanguageContext: setLanguage called with:', newLang);
     
     try {
       // Update backend
+      console.log('LanguageContext: Updating backend...');
       await ApiClient.updateUserLanguage(newLang);
+      console.log('LanguageContext: Backend updated successfully');
       
       // Update local state
       setLanguageState(newLang);
