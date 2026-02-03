@@ -312,8 +312,21 @@ async def update_user_language(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     """Update user's preferred language."""
-    # TODO: Add preferred_language column to sellers table
-    # For now just return success to avoid frontend errors
+    supabase = get_supabase()
+
+    # Update preferred_language in sellers table
+    result = (
+        supabase.table("sellers")
+        .update({"preferred_language": language_data.preferred_language})
+        .eq("id", current_user.id)
+        .execute()
+    )
+
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update language",
+        )
 
     return {"message": "Language updated successfully"}
 
