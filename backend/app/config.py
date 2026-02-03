@@ -13,9 +13,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60
 
     # CORS
-    cors_origins: str = "http://localhost:3000"
-
-
+    cors_origins: str = "http://localhost:3000,https://webomat.vercel.app,https://webomat-jlnse3a7h-pavels-projects-8a0f92e7.vercel.app"
 
     @property
     def cors_origins_list(self) -> list[str]:
