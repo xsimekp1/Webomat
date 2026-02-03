@@ -95,12 +95,6 @@
     "admin": "Administration",
     "logout": "Logout"
   },
-  "navigation": {
-    "dashboard": "Dashboard",
-    "profile": "Profile",
-    "admin": "Administration",
-    "logout": "Logout"
-  },
   "account": {
     "title": "My Account",
     "availableToPayout": "Available to payout",
