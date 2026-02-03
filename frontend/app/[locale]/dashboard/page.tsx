@@ -221,7 +221,12 @@ const getStatusColor = (status: string) => {
     <div className="dashboard-page">
         {/* Welcome + Quick Stats */}
         <div className="welcome-row">
-          <h2>Ahoj, {user.name?.split(' ')[0] || 'uživateli'}!</h2>
+          <h2>
+            Ahoj, {user.name?.split(' ')[0] || 'uživateli'}! 
+            <span style={{ marginLeft: '8px' }}>
+              {language === 'cs' ? '🇨🇿' : '🇬🇧'}
+            </span>
+          </h2>
         </div>
 
         {/* Quick Action Cards */}
