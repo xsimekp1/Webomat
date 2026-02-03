@@ -140,5 +140,8 @@
     "passwordChangeFailed": "Nepodařilo se změnit heslo",
     "avatarUploadFailed": "Nepodařilo se nahrát avatar",
     "avatarDeleteFailed": "Nepodařilo se smazat avatar"
+  },
+  "navigation": {
+    "dashboard": "Dashboard"
   }
 }
