@@ -9,4 +9,4 @@ export default getRequestConfig(async ({locale}) => {
   return {
     messages: (await import(`../messages/${locale}.json`)).default
   };
-}) satisfies import('next-intl/server').GetRequestConfig;
+});
