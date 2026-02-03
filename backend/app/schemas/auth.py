@@ -51,8 +51,11 @@ class UserInDB(User):
 
 class UserResponse(BaseModel):
     """User response for API endpoints."""
+
     id: str
     name: str
+    first_name: str | None = None
+    last_name: str | None = None
     email: str
     role: Literal["admin", "sales"]
     is_active: bool
@@ -87,6 +90,7 @@ class UserUpdate(BaseModel):
 
 class OnboardingComplete(BaseModel):
     """Data required to complete onboarding."""
+
     first_name: str
     last_name: str
     email: str
@@ -97,11 +101,13 @@ class OnboardingComplete(BaseModel):
 
 class LanguageUpdate(BaseModel):
     """Language update model."""
+
     preferred_language: Literal["cs", "en"]
 
 
 class UserListItem(BaseModel):
     """User item for admin listing."""
+
     id: str
     first_name: str
     last_name: str
@@ -114,6 +120,7 @@ class UserListItem(BaseModel):
 
 class MonthlyEarnings(BaseModel):
     """Monthly earnings data for seller."""
+
     month: str
     earnings: float
     commission_count: int
@@ -121,6 +128,7 @@ class MonthlyEarnings(BaseModel):
 
 class SellerEarningsResponse(BaseModel):
     """Seller earnings response for graph."""
+
     seller_name: str
     period_months: int
     monthly_data: list[MonthlyEarnings]
