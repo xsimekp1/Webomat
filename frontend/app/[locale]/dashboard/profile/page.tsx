@@ -213,20 +213,14 @@ const loadProfile = async (userId: string) => {
 
   return (
     <>
-      <header className="dashboard-header">
-        <div className="header-left">
-          <h1>{t('title')}</h1>
-        </div>
-        <div className="header-right">
-          <button onClick={() => router.push('/dashboard')} className="btn-back">
-            {ct('back')}
-          </button>
-        </div>
-      </header>
-
       <main className="dashboard-main">
         <div className="profile-container">
-          <h2>{t('title')}</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h1 style={{ margin: 0 }}>{t('title')}</h1>
+            <button onClick={() => router.push('/dashboard')} className="btn-back">
+              {ct('back')}
+            </button>
+          </div>
           <p className="profile-subtitle">{t('subtitle')}</p>
 
           {message && (
@@ -422,8 +416,8 @@ const loadProfile = async (userId: string) => {
           box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
-        .profile-container h2 {
-          margin: 0 0 0.5rem 0;
+        .profile-container h1 {
+          margin: 0;
           color: #1a1a2e;
         }
 
@@ -679,6 +673,15 @@ const loadProfile = async (userId: string) => {
         }
 
         @media (max-width: 600px) {
+          .profile-container > div:first-child {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+          }
+
+          .btn-back {
+            width: 100%;
+          }
           .form-row {
             grid-template-columns: 1fr;
           }
