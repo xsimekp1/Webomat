@@ -79,17 +79,24 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         console.log('LanguageContext: URL locale:', urlLocale);
         
         if (urlLocale) {
-          // URL has priority - use it and update backend
-          console.log('LanguageContext: Using URL locale:', urlLocale);
+          // URL has priority - use it locally, but DON'T update backend
+          // This prevents race conditions when user manually changes language
+          console.log('LanguageContext: Using URL locale locally:', urlLocale);
           setLanguageState(urlLocale);
           localStorage.setItem('preferred_language', urlLocale);
           
-          // Update backend preference to match URL
-          try {
-            await ApiClient.updateUserLanguage(urlLocale);
-            console.log('LanguageContext: Updated backend to match URL:', urlLocale);
-          } catch (updateError) {
-            console.warn('LanguageContext: Failed to update backend:', updateError);
+          // Only update backend if it's different from stored preference
+          const storedLanguage = localStorage.getItem('preferred_language');
+          if (storedLanguage !== urlLocale) {
+            console.log('LanguageContext: Backend preference differs, updating...');
+            try {
+              await ApiClient.updateUserLanguage(urlLocale);
+              console.log('LanguageContext: Updated backend to match URL:', urlLocale);
+            } catch (updateError) {
+              console.warn('LanguageContext: Failed to update backend:', updateError);
+            }
+          } else {
+            console.log('LanguageContext: Backend already matches URL, skipping update');
           }
         } else {
           // No URL locale, load from API/profile
