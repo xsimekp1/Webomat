@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../context/AuthContext'
-import { LanguageProvider } from '../../../context/LanguageContext'
+import { LanguageProvider, useLanguage } from '../../../context/LanguageContext'
 import { supabase } from '../../../utils/supabase'
 import ApiClient from '../../../lib/api'
 import LanguageSwitcher from '../../../../components/LanguageSwitcher'
@@ -22,6 +22,7 @@ interface ProfileData {
 function ProfileContent() {
   const t = useTranslations('profile')
   const ct = useTranslations('common')
+  const { language, setLanguage } = useLanguage()
   const { user, isLoading: authLoading, isAuthenticated, refreshUser } = useAuth()
   const [profile, setProfile] = useState<ProfileData>({
     first_name: '',
@@ -53,6 +54,13 @@ function ProfileContent() {
       loadProfile(user.id)
     }
   }, [user])
+
+  // Update profile when language changes in LanguageContext
+  useEffect(() => {
+    if (profile.preferred_language !== language) {
+      setProfile(prev => ({ ...prev, preferred_language: language }))
+    }
+  }, [language, profile.preferred_language])
 
 const loadProfile = async (userId: string) => {
     try {
