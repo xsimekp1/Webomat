@@ -16,6 +16,7 @@ interface ProfileData {
   phone: string
   bank_account: string
   avatar_url: string | null
+  preferred_language: string
 }
 
 function ProfileContent() {
@@ -28,7 +29,8 @@ function ProfileContent() {
     email: '',
     phone: '',
     bank_account: '',
-    avatar_url: null
+    avatar_url: null,
+    preferred_language: 'cs'
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -55,16 +57,21 @@ function ProfileContent() {
 const loadProfile = async (userId: string) => {
     try {
       // Load profile through backend API (includes language preference)
+      console.log('Profile: Loading profile for user:', userId);
       const userProfile = await ApiClient.getUserProfile()
+      console.log('Profile: User profile loaded:', userProfile);
       
-      setProfile({
+      const profileData = {
         first_name: userProfile.first_name || '',
         last_name: userProfile.last_name || '',
         email: userProfile.email || '',
         phone: userProfile.phone || '',
         bank_account: userProfile.bank_account || '',
-        avatar_url: userProfile.avatar_url || null
-      })
+        avatar_url: userProfile.avatar_url || null,
+        preferred_language: userProfile.preferred_language || 'cs'
+      };
+      console.log('Profile: Setting profile data:', profileData);
+      setProfile(profileData)
     } catch (err) {
       console.error('Error loading profile:', err)
     } finally {
@@ -85,13 +92,17 @@ const loadProfile = async (userId: string) => {
     setMessage(null)
 
     try {
-      await ApiClient.updateUserProfile({
+      const updateData = {
         first_name: profile.first_name,
         last_name: profile.last_name,
         email: profile.email,
         phone: profile.phone,
-        bank_account: profile.bank_account
-      })
+        bank_account: profile.bank_account,
+        preferred_language: profile.preferred_language
+      };
+      console.log('Profile: Submitting update:', updateData);
+      await ApiClient.updateUserProfile(updateData)
+      console.log('Profile: Update successful');
 
       await refreshUser()
 

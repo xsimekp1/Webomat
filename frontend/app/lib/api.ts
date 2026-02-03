@@ -37,10 +37,12 @@ class ApiClient {
   }
 
   static async getUserProfile() {
+    console.log('API: Getting user profile...');
     const response = await axios.get(
       `${API_BASE_URL}/users/me`,
       { headers: ApiClient.getAuthHeaders() }
     )
+    console.log('API: User profile response:', response.data);
     return response.data
   }
 

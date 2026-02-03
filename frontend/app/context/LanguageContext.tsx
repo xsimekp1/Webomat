@@ -61,24 +61,30 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const loadLanguage = async () => {
       try {
+        console.log('LanguageContext: Loading language from API...');
         // Try to get from API first
         const userProfile = await ApiClient.getUserProfile();
+        console.log('LanguageContext: User profile from API:', userProfile);
         const apiLanguage = userProfile.preferred_language;
+        console.log('LanguageContext: API language:', apiLanguage);
         
         if (apiLanguage && (apiLanguage === 'cs' || apiLanguage === 'en')) {
+          console.log('LanguageContext: Setting language from API:', apiLanguage);
           setLanguageState(apiLanguage);
           localStorage.setItem('preferred_language', apiLanguage);
         } else {
           // Fallback to localStorage
           const storedLanguage = localStorage.getItem('preferred_language');
+          console.log('LanguageContext: Using localStorage language:', storedLanguage);
           if (storedLanguage && (storedLanguage === 'cs' || storedLanguage === 'en')) {
             setLanguageState(storedLanguage as 'cs' | 'en');
           }
         }
       } catch (error) {
-        console.error('Failed to load language preference:', error);
+        console.error('LanguageContext: Failed to load language preference:', error);
         // Fallback to localStorage
         const storedLanguage = localStorage.getItem('preferred_language');
+        console.log('LanguageContext: Using localStorage language due to error:', storedLanguage);
         if (storedLanguage && (storedLanguage === 'cs' || storedLanguage === 'en')) {
           setLanguageState(storedLanguage as 'cs' | 'en');
         }
