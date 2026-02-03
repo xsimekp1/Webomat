@@ -12,10 +12,7 @@ from .schemas.auth import TokenData, User, UserInDB
 
 # Password hashing context
 pwd_context = CryptContext(
-    schemes=["bcrypt"], 
-    deprecated="auto",
-    bcrypt__rounds=12,
-    bcrypt__ident="2b"
+    schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=12, bcrypt__ident="2b"
 )
 
 # OAuth2 scheme
@@ -30,6 +27,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         print(f"Error verifying password: {e}")
         # Fallback for SHA-256 hashes
         import hashlib
+
         return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
 
 
@@ -41,13 +39,12 @@ def get_password_hash(password: str) -> str:
         print(f"Error hashing password: {e}")
         # Fallback to simple hash for testing
         import hashlib
+
         return hashlib.sha256(password.encode()).hexdigest()
 
 
 def create_access_token(
-    data: dict,
-    settings: Settings | None = None,
-    expires_delta: timedelta | None = None
+    data: dict, settings: Settings | None = None, expires_delta: timedelta | None = None
 ) -> str:
     """Create a JWT access token."""
     if settings is None:
@@ -64,9 +61,7 @@ def create_access_token(
 
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(
-        to_encode,
-        settings.jwt_secret_key,
-        algorithm=settings.jwt_algorithm
+        to_encode, settings.jwt_secret_key, algorithm=settings.jwt_algorithm
     )
     return encoded_jwt
 
@@ -76,9 +71,13 @@ async def get_user_by_username(username: str) -> UserInDB | None:
     supabase = get_supabase()
 
     try:
-        result = supabase.table("sellers").select("*").or_(
-            f"first_name.ilike.{username},email.ilike.{username}"
-        ).limit(1).execute()
+        result = (
+            supabase.table("sellers")
+            .select("*")
+            .or_(f"first_name.ilike.{username},email.ilike.{username}")
+            .limit(1)
+            .execute()
+        )
     except Exception as e:
         print(f"Error fetching user by username: {e}")
         return None
@@ -99,7 +98,7 @@ async def get_user_by_username(username: str) -> UserInDB | None:
         notes=seller.get("notes"),
         avatar_url=seller.get("avatar_url"),
         must_change_password=seller.get("must_change_password", False),
-        created_at=seller.get("created_at")
+        created_at=seller.get("created_at"),
     )
 
 
@@ -108,9 +107,9 @@ async def get_user_by_id(user_id: str) -> User | None:
     supabase = get_supabase()
 
     try:
-        result = supabase.table("sellers").select("*").eq(
-            "id", user_id
-        ).limit(1).execute()
+        result = (
+            supabase.table("sellers").select("*").eq("id", user_id).limit(1).execute()
+        )
     except Exception as e:
         print(f"Error fetching user by ID: {e}")
         return None
@@ -133,7 +132,8 @@ async def get_user_by_id(user_id: str) -> User | None:
         onboarded_at=seller.get("onboarded_at"),
         bank_account=seller.get("bank_account"),
         bank_account_iban=seller.get("bank_account_iban"),
-        created_at=seller.get("created_at")
+        preferred_language=seller.get("preferred_language", "cs"),
+        created_at=seller.get("created_at"),
     )
 
 
@@ -161,7 +161,7 @@ async def authenticate_user(username: str, password: str) -> UserInDB | None:
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
-    settings: Annotated[Settings, Depends(get_settings)]
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> User:
     """Get current user from JWT token."""
     credentials_exception = HTTPException(
@@ -172,9 +172,7 @@ async def get_current_user(
 
     try:
         payload = jwt.decode(
-            token,
-            settings.jwt_secret_key,
-            algorithms=[settings.jwt_algorithm]
+            token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]
         )
         user_id: str = payload.get("sub")
         if user_id is None:
@@ -189,36 +187,35 @@ async def get_current_user(
 
     if not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is deactivated"
+            status_code=status.HTTP_403_FORBIDDEN, detail="User account is deactivated"
         )
 
     return user
 
 
 async def get_current_active_user(
-    current_user: Annotated[User, Depends(get_current_user)]
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> User:
     """Verify the current user is active."""
     if not current_user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Inactive user"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user"
         )
     return current_user
 
 
 def require_role(allowed_roles: list[str]):
     """Dependency factory for role-based access control."""
+
     async def role_checker(
-        current_user: Annotated[User, Depends(get_current_active_user)]
+        current_user: Annotated[User, Depends(get_current_active_user)],
     ) -> User:
         if current_user.role not in allowed_roles:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Insufficient permissions"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions"
             )
         return current_user
+
     return role_checker
 
 
