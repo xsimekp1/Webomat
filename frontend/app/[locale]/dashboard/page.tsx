@@ -55,7 +55,7 @@ interface AdminStats {
   weekly_invoices: WeeklyInvoice[]
 }
 
-export default function DashboardPage() {
+function DashboardPage() {
   const { user } = useAuth()
   const router = useRouter()
   const { showToast } = useToast()
