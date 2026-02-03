@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useParams } from 'next/navigation'
-const { formatCurrency, formatDate } = await import('../../../../lib/utils')
+import { formatCurrency, formatDate } from '../../../../lib/utils'
 
 import { useEffect, useState } from 'react'
 import ApiClient from '../../../../lib/api'
