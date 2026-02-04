@@ -18,7 +18,6 @@ class ActivityType(str, Enum):
     email = "email"
     meeting = "meeting"
     note = "note"
-    message = "message"
 
 
 # Business schemas

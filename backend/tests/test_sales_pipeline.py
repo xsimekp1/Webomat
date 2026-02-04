@@ -8,6 +8,7 @@ Testuje hlavní flow obchodníka:
 4. Dry run generování webu
 5. CRM status transitions
 """
+
 import pytest
 import logging
 from unittest.mock import patch, MagicMock
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 # TESTY PRO BUSINESS (KLIENT)
 # =============================================================================
+
 
 class TestCreateBusiness:
     """Testy pro POST /crm/businesses - vytvoření nového klienta."""
@@ -207,6 +209,7 @@ class TestWebsiteNormalization:
 # TESTY PRO PROJEKTY
 # =============================================================================
 
+
 class TestCreateProject:
     """Testy pro POST /crm/businesses/{id}/projects - vytvoření projektu."""
 
@@ -234,7 +237,9 @@ class TestCreateProject:
         assert data["package"] == "profi"
         assert data["status"] == "offer"
 
-    def test_create_project_all_packages(self, app_client, mock_supabase, sample_business):
+    def test_create_project_all_packages(
+        self, app_client, mock_supabase, sample_business
+    ):
         """Vytvoření projektu s různými balíčky."""
         mock_supabase.data_store["businesses"] = [sample_business]
 
@@ -252,7 +257,9 @@ class TestCreateProject:
             assert response.status_code == 201, f"Failed for package: {package}"
             assert response.json()["package"] == package
 
-    def test_create_project_all_statuses(self, app_client, mock_supabase, sample_business):
+    def test_create_project_all_statuses(
+        self, app_client, mock_supabase, sample_business
+    ):
         """Vytvoření projektu s různými statusy."""
         mock_supabase.data_store["businesses"] = [sample_business]
 
@@ -281,7 +288,9 @@ class TestCreateProject:
 
         assert response.status_code == 404
 
-    def test_create_project_with_prices(self, app_client, mock_supabase, sample_business):
+    def test_create_project_with_prices(
+        self, app_client, mock_supabase, sample_business
+    ):
         """Vytvoření projektu s cenami."""
         mock_supabase.data_store["businesses"] = [sample_business]
         mock_supabase.data_store["website_projects"] = []
@@ -307,10 +316,13 @@ class TestCreateProject:
 # TESTY PRO WEBSITE VERZE
 # =============================================================================
 
+
 class TestCreateWebsiteVersion:
     """Testy pro POST /crm/projects/{id}/versions - vytvoření verze."""
 
-    def test_create_version_success(self, app_client, mock_supabase, sample_business, sample_project):
+    def test_create_version_success(
+        self, app_client, mock_supabase, sample_business, sample_project
+    ):
         """Úspěšné vytvoření verze vrací 201."""
         logger.info("Testing create version success")
         mock_supabase.data_store["businesses"] = [sample_business]
@@ -401,6 +413,7 @@ class TestCreateWebsiteVersion:
 # =============================================================================
 # TESTY PRO DRY RUN GENEROVÁNÍ WEBU
 # =============================================================================
+
 
 class TestDryRunWebsiteGeneration:
     """Testy pro POST /website/generate s dry_run=True."""
@@ -524,6 +537,7 @@ class TestDryRunTestEndpoint:
 # POMOCNÉ TESTY
 # =============================================================================
 
+
 class TestHelperFunctions:
     """Testy pro pomocné funkce v CRM routeru."""
 
@@ -551,9 +565,50 @@ class TestHelperFunctions:
         assert result == "restaurant"
 
 
+class TestActivityTypes:
+    """Testy pro typy aktivit v CRM."""
+
+    def test_all_valid_activity_types(self):
+        """Všechny platné typy aktivit jsou přijaty."""
+        from app.schemas.crm import ActivityType
+
+        valid_types = ["call", "email", "meeting", "note"]
+
+        for type_value in valid_types:
+            assert hasattr(ActivityType, type_value), f"Missing type: {type_value}"
+            assert ActivityType(type_value) == type_value, (
+                f"Failed for type: {type_value}"
+            )
+
+    def test_activity_type_enum_values(self):
+        """Test enum hodnot oproti databázové kontrole."""
+        from app.schemas.crm import ActivityType
+
+        # Očekávané hodnoty podle databázové kontroly
+        expected_values = ["call", "email", "meeting", "note"]
+
+        actual_values = [item.value for item in ActivityType]
+
+        assert actual_values == expected_values, (
+            f"Activity types mismatch: {actual_values}"
+        )
+
+    def test_activity_type_serialization(self):
+        """Test serializace typů aktivit."""
+        from app.schemas.crm import ActivityType
+
+        # Test, že typy fungují při serializaci/deserializaci
+        for type_name in ["call", "email", "meeting", "note"]:
+            enum_value = ActivityType(type_name)
+            assert str(enum_value) == type_name
+            assert enum_value.value == type_name
+            assert enum_value.name == type_name
+
+
 # =============================================================================
 # TESTY PRO CRM STATUS TRANSITIONS
 # =============================================================================
+
 
 class TestCRMStatusTransitions:
     """Testy pro přechody mezi CRM statusy.
@@ -562,7 +617,9 @@ class TestCRMStatusTransitions:
     vstupů a HTTP response kódy.
     """
 
-    def test_status_update_calling_accepted(self, app_client, mock_supabase, sample_business):
+    def test_status_update_calling_accepted(
+        self, app_client, mock_supabase, sample_business
+    ):
         """Status 'calling' je validní a endpoint vrací 200."""
         logger.info("Testing status value: calling")
         mock_supabase.data_store["businesses"] = [sample_business]
@@ -575,7 +632,9 @@ class TestCRMStatusTransitions:
 
         assert response.status_code == 200
 
-    def test_status_update_interested_accepted(self, app_client, mock_supabase, sample_business):
+    def test_status_update_interested_accepted(
+        self, app_client, mock_supabase, sample_business
+    ):
         """Status 'interested' je validní a endpoint vrací 200."""
         logger.info("Testing status value: interested")
         mock_supabase.data_store["businesses"] = [sample_business]
@@ -588,7 +647,9 @@ class TestCRMStatusTransitions:
 
         assert response.status_code == 200
 
-    def test_status_update_offer_sent_accepted(self, app_client, mock_supabase, sample_business):
+    def test_status_update_offer_sent_accepted(
+        self, app_client, mock_supabase, sample_business
+    ):
         """Status 'offer_sent' je validní a endpoint vrací 200."""
         logger.info("Testing status value: offer_sent")
         mock_supabase.data_store["businesses"] = [sample_business]
@@ -601,7 +662,9 @@ class TestCRMStatusTransitions:
 
         assert response.status_code == 200
 
-    def test_status_update_won_accepted(self, app_client, mock_supabase, sample_business):
+    def test_status_update_won_accepted(
+        self, app_client, mock_supabase, sample_business
+    ):
         """Status 'won' je validní a endpoint vrací 200."""
         logger.info("Testing status value: won")
         mock_supabase.data_store["businesses"] = [sample_business]
@@ -614,7 +677,9 @@ class TestCRMStatusTransitions:
 
         assert response.status_code == 200
 
-    def test_status_update_lost_accepted(self, app_client, mock_supabase, sample_business):
+    def test_status_update_lost_accepted(
+        self, app_client, mock_supabase, sample_business
+    ):
         """Status 'lost' je validní a endpoint vrací 200."""
         logger.info("Testing status value: lost")
         mock_supabase.data_store["businesses"] = [sample_business]
@@ -627,7 +692,9 @@ class TestCRMStatusTransitions:
 
         assert response.status_code == 200
 
-    def test_status_update_dnc_accepted(self, app_client, mock_supabase, sample_business):
+    def test_status_update_dnc_accepted(
+        self, app_client, mock_supabase, sample_business
+    ):
         """Status 'dnc' je validní a endpoint vrací 200."""
         logger.info("Testing status value: dnc")
         mock_supabase.data_store["businesses"] = [sample_business]
@@ -657,7 +724,15 @@ class TestCRMStatusTransitions:
         logger.info("Testing all valid CRM statuses")
         mock_supabase.data_store["businesses"] = [sample_business]
 
-        valid_statuses = ["new", "calling", "interested", "offer_sent", "won", "lost", "dnc"]
+        valid_statuses = [
+            "new",
+            "calling",
+            "interested",
+            "offer_sent",
+            "won",
+            "lost",
+            "dnc",
+        ]
 
         with patch("app.routers.crm.get_supabase", return_value=mock_supabase):
             for status_value in valid_statuses:

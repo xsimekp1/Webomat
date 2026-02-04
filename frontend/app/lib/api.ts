@@ -385,6 +385,15 @@ class ApiClient {
     return response.data;
   }
 
+  static async toggleUserActive(userId: string) {
+    const response = await axios.put(
+      `${API_BASE_URL}/admin/users/${userId}/toggle-active`,
+      {},
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
   // ============================================
   // Seller Account Ledger endpoint
   // ============================================
