@@ -27,6 +27,10 @@ interface Business {
   billing_address: string | null
   bank_account: string | null
   contact_person: string | null
+  // Kontaktní osoba (jedno pole)
+  contact_name: string | null
+  // Logo firmy
+  logo_url: string | null
 }
 
 interface Activity {
@@ -247,7 +251,28 @@ setActivityForm({
     }
   }
 
-  const openProjectModal = (projectToEdit?: Project) => {
+  const handleDeleteBusiness = async () => {
+    setDeleting(true)
+    setError('')
+
+    try {
+      await ApiClient.deleteBusiness(businessId)
+      router.push('/dashboard/crm')
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Chyba při mazání')
+      setDeleting(false)
+    }
+  }
+
+  const canCreateProject = (): boolean => {
+    if (!user || !business) return false
+    
+    // Admin může vytvářet projekty pro jakoukoli firmu
+    if (user.role === 'admin') return true
+    
+    // Sales může vytvářet jen pro vlastní firmy
+    return business.owner_seller_id === user.id
+  }
     if (projectToEdit) {
       setEditingProject(projectToEdit)
       setProjectForm({
@@ -486,6 +511,14 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
             <span>{business.owner_seller_name || 'Nepřiřazeno'}</span>
           </div>
 
+          {/* Kontaktní osoba */}
+          {(business.contact_person || business.contact_name) && (
+            <div className="info-row">
+              <span className="label">Kontaktní osoba:</span>
+              <span>{business.contact_name || business.contact_person || '-'}</span>
+            </div>
+          )}
+
           {/* Fakturační údaje */}
           {(business.ico || business.dic || business.billing_address || business.bank_account || business.contact_person) && (
             <div className="billing-section">
@@ -579,9 +612,11 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
         <div className="card projects-card">
           <div className="card-header-row">
             <h3>Projekty ({projects.length})</h3>
-            {/* <button className="btn-edit-small" onClick={() => openProjectModal()}>
-              + Nový
-            </button> */}
+            {canCreateProject() && (
+              <button className="btn-edit-small" onClick={() => openProjectModal()}>
+                + Nový
+              </button>
+            )}
           </div>
           {projects.length > 0 ? (
             <div className="projects-list-mini">

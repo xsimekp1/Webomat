@@ -35,6 +35,8 @@ class BusinessBase(BaseModel):
     billing_address: str | None = None
     bank_account: str | None = None
     contact_person: str | None = None
+    # Kontaktní osoba (jedno pole místo jméno + příjmení)
+    contact_name: str | None = None
     # Logo firmy
     logo_url: str | None = None
 
@@ -62,6 +64,8 @@ class BusinessUpdate(BaseModel):
     billing_address: str | None = None
     bank_account: str | None = None
     contact_person: str | None = None
+    # Kontaktní osoba
+    contact_name: str | None = None
     # Logo firmy
     logo_url: str | None = None
 
@@ -87,6 +91,8 @@ class BusinessResponse(BaseModel):
     billing_address: str | None = None
     bank_account: str | None = None
     contact_person: str | None = None
+    # Kontaktní osoba
+    contact_name: str | None = None
     # Logo firmy
     logo_url: str | None = None
 

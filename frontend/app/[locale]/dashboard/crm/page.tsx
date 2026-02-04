@@ -93,6 +93,8 @@ function CRMPageContent() {
     notes: '',
     status_crm: 'new',
     next_follow_up_at: '',
+    contact_person: '', // Zpětná kompatibilita
+    contact_name: '', // Nové pole
   })
   const [saving, setSaving] = useState(false)
 
@@ -257,13 +259,9 @@ function CRMPageContent() {
     <div className="crm-page">
       <header className="crm-header">
         <div className="header-left">
-          <button className="btn-back" onClick={() => router.push('/dashboard')}>
-            ← Zpět
-          </button>
           <h1>{followUpFilter ? 'Follow-upy k vyřízení' : 'CRM Pipeline'}</h1>
         </div>
         <div className="header-right">
-          <span className="user-info">{user.name} ({user.role})</span>
           <button className="btn-new" onClick={openNewModal}>+ Nový lead</button>
         </div>
       </header>
@@ -479,24 +477,33 @@ function CRMPageContent() {
              </div>
 
             <div className="form-row">
-              <div className="form-group">
-                <label>Telefon</label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="+420 777 123 456"
-                />
-              </div>
-              <div className="form-group">
-                <label>Email</label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="info@firma.cz"
-                />
-              </div>
+               <div className="form-group">
+                 <label>Telefon</label>
+                 <input
+                   type="tel"
+                   value={formData.phone}
+                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                   placeholder="+420 777 123 456"
+                 />
+               </div>
+               <div className="form-group">
+                 <label>Email</label>
+                 <input
+                   type="email"
+                   value={formData.email}
+                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                   placeholder="info@firma.cz"
+                 />
+               </div>
+               <div className="form-group">
+                 <label>Kontaktní osoba</label>
+                 <input
+                   type="text"
+                   value={formData.contact_name}
+                   onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
+                   placeholder="Jméno a příjmení (jedno pole)"
+                 />
+               </div>
             </div>
 
             <div className="form-group">
