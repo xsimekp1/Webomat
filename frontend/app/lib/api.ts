@@ -27,6 +27,303 @@ class ApiClient {
 
 
   // ============================================
+  // CRM Business Management endpoints
+  // ============================================
+
+  static async getBusinesses(params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    owner_seller_id?: string;
+  }) {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.owner_seller_id) queryParams.append('owner_seller_id', params.owner_seller_id);
+
+    const url = `${API_BASE_URL}/crm/businesses${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    const response = await axios.get(url, { headers: ApiClient.getAuthHeaders() });
+    return response.data;
+  }
+
+  static async getBusiness(businessId: string) {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/businesses/${businessId}`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async createBusiness(data: {
+    name: string;
+    phone?: string;
+    email?: string;
+    address?: string;
+    website?: string;
+    category?: string;
+    notes?: string;
+    ico?: string;
+    dic?: string;
+    billing_address?: string;
+    bank_account?: string;
+    contact_person?: string;
+    status_crm?: string;
+    owner_seller_id?: string;
+    next_follow_up_at?: string;
+  }) {
+    const response = await axios.post(
+      `${API_BASE_URL}/crm/businesses`,
+      data,
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  static async updateBusiness(businessId: string, data: any) {
+    const response = await axios.put(
+      `${API_BASE_URL}/crm/businesses/${businessId}`,
+      data,
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  static async deleteBusiness(businessId: string) {
+    const response = await axios.delete(
+      `${API_BASE_URL}/crm/businesses/${businessId}`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async getBusinessActivities(businessId: string) {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/businesses/${businessId}/activities`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async createActivity(businessId: string, data: {
+    activity_type: string;
+    description: string;
+    outcome?: string;
+    new_status?: string;
+    next_follow_up_at?: string;
+  }) {
+    const response = await axios.post(
+      `${API_BASE_URL}/crm/businesses/${businessId}/activities`,
+      data,
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  static async getBusinessProjects(businessId: string) {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/businesses/${businessId}/projects`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async createProject(businessId: string, data: {
+    package?: string;
+    status?: string;
+    price_setup?: number;
+    price_monthly?: number;
+    domain?: string;
+    notes?: string;
+  }) {
+    const response = await axios.post(
+      `${API_BASE_URL}/crm/businesses/${businessId}/projects`,
+      data,
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  static async getCRMStats() {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/dashboard/stats`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async getCompanyFromARES(ico: string) {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/ares/${ico}`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  // ============================================
+  // User Profile endpoints
+  // ============================================
+
+  static async getUserProfile() {
+    const response = await axios.get(
+      `${API_BASE_URL}/users/me`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async updateUserProfile(data: {
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+    address?: string;
+    bank_account_iban?: string;
+    bank_account?: string;
+  }) {
+    const response = await axios.put(
+      `${API_BASE_URL}/users/me`,
+      data,
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  static async updateUserLanguage(language: string) {
+    const response = await axios.put(
+      `${API_BASE_URL}/users/me/language`,
+      { preferred_language: language },
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  static async changePassword(currentPassword: string, newPassword: string) {
+    const response = await axios.post(
+      `${API_BASE_URL}/users/me/password`,
+      { current_password: currentPassword, new_password: newPassword },
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  static async uploadAvatar(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await axios.post(
+      `${API_BASE_URL}/users/me/avatar`,
+      formData,
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'multipart/form-data' } }
+    );
+    return response.data;
+  }
+
+  static async deleteAvatar() {
+    const response = await axios.delete(
+      `${API_BASE_URL}/users/me/avatar`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  // ============================================
+  // Admin Dashboard endpoints
+  // ============================================
+
+  static async getAdminDashboardStats() {
+    const response = await axios.get(
+      `${API_BASE_URL}/admin/dashboard/stats`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async getSellerDashboard() {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/dashboard`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async getSellersList() {
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/sellers`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  // ============================================
+  // Website Generation endpoints
+  // ============================================
+
+  static async generateWebsite(projectId: string, dryRun: boolean = false) {
+    const response = await axios.post(
+      `${API_BASE_URL}/website/generate`,
+      { project_id: projectId, dry_run: dryRun },
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  static async generateTestWebsite(params: {
+    business_name: string;
+    business_type: string;
+    dry_run?: boolean;
+    include_english?: string;
+  }) {
+    const response = await axios.post(
+      `${API_BASE_URL}/website/generate-test`,
+      params,
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  static async deployTestWebsite(htmlContent: string, businessName: string) {
+    const response = await axios.post(
+      `${API_BASE_URL}/website/deploy-test`,
+      { html_content: htmlContent, business_name: businessName },
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  static async screenshotTestWebsite(htmlContent: string, type: 'thumbnail' | 'screenshot') {
+    const response = await axios.post(
+      `${API_BASE_URL}/website/screenshot-test`,
+      { html_content: htmlContent, type: type },
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
+  // ============================================
+  // Invoice Management endpoints
+  // ============================================
+
+  static async generatePaymentReminder(invoiceId: string) {
+    const response = await axios.post(
+      `${API_BASE_URL}/crm/invoices-issued/${invoiceId}/generate-reminder`,
+      {},
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  static async sendPaymentReminder(invoiceId: string) {
+    const response = await axios.post(
+      `${API_BASE_URL}/crm/invoices-issued/${invoiceId}/send-reminder`,
+      {},
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  // ============================================
   // Web Project Management endpoints
   // ============================================
 
