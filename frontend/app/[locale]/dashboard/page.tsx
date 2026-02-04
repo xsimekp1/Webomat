@@ -109,12 +109,12 @@ function DashboardPage() {
     setDeployedUrl(null)
 
     try {
-      const result = await ApiClient.generateTestWebsite(
-        generatorMode === 'dry_run',
-        testBusinessName,
-        testBusinessType,
-        includeEnglish
-      )
+      const result = await ApiClient.generateTestWebsite({
+        dry_run: generatorMode === 'dry_run',
+        business_name: testBusinessName,
+        business_type: testBusinessType,
+        include_english: includeEnglish
+      })
       setGeneratedHtml(result.html_content)
     } catch (err: any) {
       setGeneratorError(err.response?.data?.detail || 'Chyba při generování')
