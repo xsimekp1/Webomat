@@ -251,6 +251,16 @@ setActivityForm({
     }
   }
 
+  const canCreateProject = (): boolean => {
+    if (!user || !business) return false
+    
+    // Admin může vytvářet projekty pro jakoukoli firmu
+    if (user.role === 'admin') return true
+    
+    // Sales může vytvářet jen pro vlastní firmy
+    return business.owner_seller_id === user.id
+  }
+
   const handleDeleteBusiness = async () => {
     setDeleting(true)
     setError('')
@@ -264,15 +274,7 @@ setActivityForm({
     }
   }
 
-  const canCreateProject = (): boolean => {
-    if (!user || !business) return false
-    
-    // Admin může vytvářet projekty pro jakoukoli firmu
-    if (user.role === 'admin') return true
-    
-    // Sales může vytvářet jen pro vlastní firmy
-    return business.owner_seller_id === user.id
-  }
+  const openProjectModal = (projectToEdit?: Project) => {
     if (projectToEdit) {
       setEditingProject(projectToEdit)
       setProjectForm({
