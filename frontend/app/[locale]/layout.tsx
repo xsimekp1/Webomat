@@ -14,11 +14,11 @@ export default async function LocaleLayout({
   // Ensure that the incoming `locale` is valid
   if (!locales.includes(locale as any)) notFound()
 
-  // Providing all messages to the client side
+  // Providing locale-specific messages to the client side
   const messages = await getMessages()
 
   return (
-    <NextIntlClientProvider messages={messages}>
+    <NextIntlClientProvider messages={messages} locale={locale}>
       {children}
     </NextIntlClientProvider>
   )
