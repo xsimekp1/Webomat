@@ -56,13 +56,12 @@ const getBackUrl = (businessId: string): string => {
     if (lastCrmPage && lastCrmPage.includes(`/crm/${businessId}`)) {
       return lastCrmPage
     }
-  }
+}
   return '/dashboard'
 }
-  expires_at: string | null
-  view_count: number
-  is_active: boolean
-}
+
+interface Invoice {
+  id: string
 
 interface Invoice {
   id: string
