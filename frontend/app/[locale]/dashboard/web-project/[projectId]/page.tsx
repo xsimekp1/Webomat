@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '../../../../context/AuthContext'
 import { useToast } from '../../../../context/ToastContext'
 import ApiClient from '../../../../lib/api'
+import { getBackUrl } from '../../../../lib/navigation'
 
 import './styles.css'
 
@@ -48,16 +49,6 @@ interface ShareLink {
   id: string
   token: string
   preview_url: string
-}
-
-const getBackUrl = (businessId: string): string => {
-  if (typeof window !== 'undefined') {
-    const lastCrmPage = localStorage.getItem('lastCrmPage')
-    if (lastCrmPage && lastCrmPage.includes(`/crm/${businessId}`)) {
-      return lastCrmPage
-    }
-}
-  return '/dashboard'
 }
 
 interface Invoice {

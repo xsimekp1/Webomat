@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import ApiClient from '../../../../lib/api'
 import { useAuth } from '../../../../context/AuthContext'
+import { storeCrmPage } from '../../../../lib/navigation'
 
 interface Business {
   id: string
@@ -174,9 +175,7 @@ const [activityForm, setActivityForm] = useState({
     if (isAuthenticated && businessId) {
       fetchData()
       // Store current CRM page for navigation back from project detail
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('lastCrmPage', `/crm/${businessId}`)
-      }
+      storeCrmPage(businessId)
     }
   }, [isAuthenticated, businessId])
 
