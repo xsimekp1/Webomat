@@ -1677,9 +1677,20 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
         </style>
       </div>
     )
+    }
+  } else {
+      setEditingProject(null)
+      setProjectForm({
+        package: 'start',
+        status: 'offer',
+        price_setup: '',
+        price_monthly: '',
+        domain: '',
+        notes: '',
+      })
+    }
+    setShowProjectModal(true)
   }
-          }
-        }
       </style>
     </div>
   )
