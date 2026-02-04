@@ -1672,6 +1672,11 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
               opacity: 1;
             }
           }
+        </style>
+      </div>
+    )
+  }
+          }
         }
       `}</style>
     </div>
