@@ -91,11 +91,6 @@ class ApiClient {
     return response.data;
   }
 
-  // Alias for CRM status updates
-  static async updateBusinessStatus(businessId: string, data: any) {
-    return ApiClient.updateBusiness(businessId, data);
-  }
-
   static async deleteBusiness(businessId: string) {
     const response = await axios.delete(
       `${API_BASE_URL}/crm/businesses/${businessId}`,
