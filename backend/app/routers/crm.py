@@ -4,7 +4,16 @@ from typing import Annotated, Optional
 from urllib.request import urlopen
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status, File, UploadFile, Body
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    status,
+    File,
+    UploadFile,
+    Body,
+)
 from fastapi.responses import Response
 
 from ..database import get_supabase
@@ -794,18 +803,22 @@ async def create_activity(
     business_update_data = {}
     if data.new_status:
         business_update_data["status_crm"] = data.new_status.value
-    
+
     if data.next_follow_up_at:
         # Handle both string and datetime inputs
         if isinstance(data.next_follow_up_at, str):
             # Convert string from datetime-local input to proper datetime format
             business_update_data["next_follow_up_at"] = data.next_follow_up_at
         else:
-            business_update_data["next_follow_up_at"] = data.next_follow_up_at.isoformat()
-    
+            business_update_data["next_follow_up_at"] = (
+                data.next_follow_up_at.isoformat()
+            )
+
     if business_update_data:
         business_update_data["updated_at"] = datetime.utcnow().isoformat()
-        supabase.table("businesses").update(business_update_data).eq("id", business_id).execute()
+        supabase.table("businesses").update(business_update_data).eq(
+            "id", business_id
+        ).execute()
 
     row = result.data[0]
     return ActivityResponse(
@@ -996,8 +1009,12 @@ async def create_project(
     insert_data = {
         "seller_id": current_user.id,
         "business_id": business_id,
-        "package": str(data.package.value) if hasattr(data.package, "value") else str(data.package),
-        "status": str(data.status.value) if hasattr(data.status, "value") else str(data.status),
+        "package": str(data.package.value)
+        if hasattr(data.package, "value")
+        else str(data.package),
+        "status": str(data.status.value)
+        if hasattr(data.status, "value")
+        else str(data.status),
         "price_setup": data.price_setup,
         "price_monthly": data.price_monthly,
         "domain": data.domain,
@@ -1034,7 +1051,7 @@ async def create_project(
         print(f"Project creation error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Chyba při vytváření projektu: {str(e)}"
+            detail=f"Chyba při vytváření projektu: {str(e)}",
         )
 
 
@@ -1116,9 +1133,11 @@ async def get_seller_dashboard(
     total_leads = len(businesses_data)
     today_str = today.isoformat()
     follow_ups_today = sum(
-        1 for b in businesses_data
+        1
+        for b in businesses_data
         if b.get("next_follow_up_at")
-        and b["next_follow_up_at"][:10] <= today_str  # Compare only date part (YYYY-MM-DD)
+        and b["next_follow_up_at"][:10]
+        <= today_str  # Compare only date part (YYYY-MM-DD)
         and b.get("status_crm") not in ["won", "lost", "dnc"]
     )
 
@@ -1130,7 +1149,9 @@ async def get_seller_dashboard(
     if business_ids:
         projects_result = (
             supabase.table("website_projects")
-            .select("id, business_id, seller_id, status, package, price_setup, created_at")
+            .select(
+                "id, business_id, seller_id, status, package, price_setup, created_at"
+            )
             .in_("business_id", business_ids)
             .in_("status", ["offer", "won", "in_production"])
             .order("created_at", desc=True)
@@ -1138,7 +1159,7 @@ async def get_seller_dashboard(
             .execute()
         )
     else:
-        projects_result = type('obj', (object,), {'data': []})()
+        projects_result = type("obj", (object,), {"data": []})()
 
     # Also get projects where seller_id matches (even if business not owned by this seller)
     seller_projects_result = (
@@ -1158,11 +1179,14 @@ async def get_seller_dashboard(
             all_projects[p["id"]] = p
 
     # Sort by created_at desc and limit
-    projects_data = sorted(all_projects.values(), key=lambda x: x.get("created_at", ""), reverse=True)[:10]
+    projects_data = sorted(
+        all_projects.values(), key=lambda x: x.get("created_at", ""), reverse=True
+    )[:10]
 
     # Get business names for projects found via seller_id (might not be in business_names yet)
     missing_business_ids = [
-        p["business_id"] for p in projects_data
+        p["business_id"]
+        for p in projects_data
         if p["business_id"] not in business_names
     ]
     if missing_business_ids:
@@ -1172,7 +1196,7 @@ async def get_seller_dashboard(
             .in_("id", missing_business_ids)
             .execute()
         )
-        for b in (extra_businesses.data or []):
+        for b in extra_businesses.data or []:
             business_names[b["id"]] = b["name"]
 
     # Process projects
@@ -1200,7 +1224,9 @@ async def get_seller_dashboard(
             PendingProjectInfo(
                 id=project["id"],
                 business_id=project["business_id"],
-                business_name=business_names.get(project["business_id"], "Neznámá firma"),
+                business_name=business_names.get(
+                    project["business_id"], "Neznámá firma"
+                ),
                 status=project["status"],
                 package=project.get("package", "start"),
                 latest_version_number=latest_version,
@@ -1224,14 +1250,20 @@ async def get_seller_dashboard(
 
         if invoices_issued_result.data:
             for inv in invoices_issued_result.data:
-                due_date = datetime.fromisoformat(inv["due_date"]) if inv.get("due_date") else datetime.now()
+                due_date = (
+                    datetime.fromisoformat(inv["due_date"])
+                    if inv.get("due_date")
+                    else datetime.now()
+                )
                 days_overdue = (today - due_date.date()).days
 
                 unpaid_client_invoices.append(
                     UnpaidClientInvoice(
                         id=inv["id"],
                         business_id=inv["business_id"],
-                        business_name=business_names.get(inv["business_id"], "Neznámá firma"),
+                        business_name=business_names.get(
+                            inv["business_id"], "Neznámá firma"
+                        ),
                         invoice_number=inv["invoice_number"],
                         amount_total=inv["amount_total"],
                         due_date=due_date,
@@ -1580,7 +1612,7 @@ async def generate_payment_reminder(
 ):
     """Generate payment reminder text for an unpaid invoice."""
     supabase = get_supabase()
-    
+
     # Get invoice details
     invoice_result = (
         supabase.table("invoices_issued")
@@ -1589,15 +1621,14 @@ async def generate_payment_reminder(
         .single()
         .execute()
     )
-    
+
     if not invoice_result.data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Faktura nebyla nalezena"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Faktura nebyla nalezena"
         )
-    
+
     invoice = invoice_result.data
-    
+
     # Get business details
     business_result = (
         supabase.table("businesses")
@@ -1606,15 +1637,14 @@ async def generate_payment_reminder(
         .single()
         .execute()
     )
-    
+
     if not business_result.data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Klient nebyl nalezen"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Klient nebyl nalezen"
         )
-    
+
     business = business_result.data
-    
+
     # Get project details if available
     project = None
     if invoice.get("project_id"):
@@ -1627,7 +1657,7 @@ async def generate_payment_reminder(
         )
         if project_result.data:
             project = project_result.data
-    
+
     # Generate reminder text
     business_name = business.get("name", "")
     domain = project.get("domain", "") if project else ""
@@ -1635,7 +1665,7 @@ async def generate_payment_reminder(
     due_date = invoice.get("due_date", "")
     invoice_number = invoice.get("invoice_number", "")
     amount_total = invoice.get("amount_total", 0)
-    
+
     reminder_text = f"""
 Dobrý den,
 
@@ -1657,7 +1687,7 @@ V případě dotazů nás kontaktujte na email nebo telefon.
 S pozdravem,
 Webomat team
     """.strip()
-    
+
     return {
         "invoice_id": invoice_id,
         "reminder_text": reminder_text,
@@ -1665,7 +1695,7 @@ Webomat team
         "domain": domain,
         "due_date": due_date,
         "amount_total": amount_total,
-        "invoice_number": invoice_number
+        "invoice_number": invoice_number,
     }
 
 
@@ -1676,10 +1706,10 @@ async def send_payment_reminder(
 ):
     """Send payment reminder and create follow-up activity."""
     supabase = get_supabase()
-    
+
     # Generate reminder
     reminder_data = await generate_payment_reminder(invoice_id, current_user)
-    
+
     # Get follow-up settings (default 3 days)
     settings_result = (
         supabase.table("platform_settings")
@@ -1688,35 +1718,35 @@ async def send_payment_reminder(
         .single()
         .execute()
     )
-    
+
     follow_up_days = 3  # Default
     if settings_result.data and settings_result.data.get("value"):
         follow_up_days = settings_result.data["value"]
-    
+
     # Create follow-up activity
     from datetime import datetime, timedelta
+
     follow_up_date = (datetime.now() + timedelta(days=follow_up_days)).isoformat()
-    
+
     activity_data = {
         "business_id": reminder_data["business_id"],
         "type": "email",
         "content": f"Odeslána upomínka na fakturu {reminder_data['invoice_number']}",
         "outcome": f"Follow-up za {follow_up_days} dní",
-        "occurred_at": datetime.now().isoformat()
+        "occurred_at": datetime.now().isoformat(),
     }
-    
+
     supabase.table("crm_activities").insert(activity_data).execute()
-    
+
     # Update business follow-up
-    supabase.table("businesses").update({
-        "next_follow_up_at": follow_up_date,
-        "updated_at": datetime.now().isoformat()
-    }).eq("id", reminder_data["business_id"]).execute()
-    
+    supabase.table("businesses").update(
+        {"next_follow_up_at": follow_up_date, "updated_at": datetime.now().isoformat()}
+    ).eq("id", reminder_data["business_id"]).execute()
+
     return {
         "message": "Upomínka byla úspěšně odeslána",
         "follow_up_date": follow_up_date,
-        "reminder_text": reminder_data["reminder_text"]
+        "reminder_text": reminder_data["reminder_text"],
     }
 
 
@@ -1788,7 +1818,7 @@ async def get_seller_account_ledger(
     current_user: Annotated[User, Depends(require_sales_or_admin)],
     range: str = Query("all", description="Časový rozsah: all/month/quarter/year"),
     type: str = Query("all", description="Typ: all/earned/payout/adjustment"),
-    status: str = Query("all", description="Status: all/pending/approved/paid")
+    status: str = Query("all", description="Status: all/pending/approved/paid"),
 ):
     """Get seller account ledger with detailed entries and balance calculation."""
     supabase = get_supabase()
@@ -1803,14 +1833,17 @@ async def get_seller_account_ledger(
         entry_type_filter = ["admin_adjustment"]
 
     # Get ledger entries with filters
-    query = supabase.table("ledger_entries").select("*").eq("seller_id", current_user.id)
-    
+    query = (
+        supabase.table("ledger_entries").select("*").eq("seller_id", current_user.id)
+    )
+
     if entry_type_filter:
         query = query.in_("entry_type", entry_type_filter)
-    
+
     # Apply date range filter
     if range != "all":
         from datetime import datetime, timedelta
+
         now = datetime.utcnow()
         if range == "month":
             start_date = (now - timedelta(days=30)).isoformat()
@@ -1820,7 +1853,7 @@ async def get_seller_account_ledger(
             start_date = (now - timedelta(days=365)).isoformat()
         else:
             start_date = None
-        
+
         if start_date:
             query = query.gte("created_at", start_date)
 
@@ -1840,7 +1873,9 @@ async def get_seller_account_ledger(
         .execute()
     )
 
-    available_balance = sum(entry.get("amount", 0) for entry in (all_ledger_result.data or []))
+    available_balance = sum(
+        entry.get("amount", 0) for entry in (all_ledger_result.data or [])
+    )
 
     # Convert to response format
     ledger_entries = []
@@ -1858,7 +1893,7 @@ async def get_seller_account_ledger(
                 notes=entry.get("notes"),
                 is_test=entry.get("is_test", False),
                 created_at=entry.get("created_at"),
-                created_by=entry.get("created_by")
+                created_by=entry.get("created_by"),
             )
         )
 
@@ -1868,9 +1903,11 @@ async def get_seller_account_ledger(
         # Get last 12 weeks of data
         for i in range(12):
             week_date = datetime.utcnow() - timedelta(weeks=i)
-            week_start = week_date.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=week_date.weekday())
+            week_start = week_date.replace(
+                hour=0, minute=0, second=0, microsecond=0
+            ) - timedelta(days=week_date.weekday())
             week_end = week_start + timedelta(days=6)
-            
+
             week_result = (
                 supabase.table("ledger_entries")
                 .select("amount")
@@ -1880,21 +1917,21 @@ async def get_seller_account_ledger(
                 .lte("created_at", week_end.isoformat())
                 .execute()
             )
-            
-            week_total = sum(entry.get("amount", 0) for entry in (week_result.data or []))
+
+            week_total = sum(
+                entry.get("amount", 0) for entry in (week_result.data or [])
+            )
             if week_total > 0:
                 weekly_rewards.append(
                     WeeklyRewardSummary(
-                        week_start=week_start,
-                        week_end=week_end,
-                        amount=week_total
+                        week_start=week_start, week_end=week_end, amount=week_total
                     )
                 )
 
     return BalancePageResponse(
         available_balance=available_balance,
         ledger_entries=ledger_entries,
-        weekly_rewards=weekly_rewards
+        weekly_rewards=weekly_rewards,
     )
 
 
@@ -1903,7 +1940,9 @@ async def get_seller_account_ledger(
 # ============================================
 
 
-@router.get("/projects/{project_id}/invoices", response_model=list[InvoiceIssuedResponse])
+@router.get(
+    "/projects/{project_id}/invoices", response_model=list[InvoiceIssuedResponse]
+)
 async def list_project_invoices(
     project_id: str,
     current_user: Annotated[User, Depends(require_sales_or_admin)],
@@ -1985,7 +2024,7 @@ async def update_business_status(
 ):
     """Update business CRM status."""
     supabase = get_supabase()
-    
+
     # Get current business
     result = (
         supabase.table("businesses")
@@ -1994,39 +2033,36 @@ async def update_business_status(
         .single()
         .execute()
     )
-    
+
     if not result.data:
         raise HTTPException(status_code=404, detail="Business not found")
-    
+
     business = result.data
     current_status = business["status_crm"]
-    
+
     # Check access to business
     await get_business(business_id, current_user)
-    
+
     new_status = status_data.get("status", "")
-    
+
     # Validate status change - only allow to change to "designed" from specific statuses
     allowed_from_statuses = ["new", "calling", "interested"]
     if new_status == "designed" and current_status not in allowed_from_statuses:
         raise HTTPException(
-            status_code=400, 
-            detail=f"Cannot change status from '{current_status}' to 'designed'"
+            status_code=400,
+            detail=f"Cannot change status from '{current_status}' to 'designed'",
         )
-    
+
     # Update business status
     update_data = {
         "status_crm": new_status,
-        "updated_at": datetime.utcnow().isoformat()
+        "updated_at": datetime.utcnow().isoformat(),
     }
-    
+
     result = (
-        supabase.table("businesses")
-        .update(update_data)
-        .eq("id", business_id)
-        .execute()
+        supabase.table("businesses").update(update_data).eq("id", business_id).execute()
     )
-    
+
     return {"message": f"Status updated to '{new_status}'"}
 
 
@@ -2037,7 +2073,7 @@ async def get_invoice_detail(
 ):
     """Get invoice detail by ID."""
     supabase = get_supabase()
-    
+
     result = (
         supabase.table("invoices_issued")
         .select("*, businesses!inner(name)")
@@ -2045,18 +2081,29 @@ async def get_invoice_detail(
         .single()
         .execute()
     )
-    
+
     if not result.data:
         raise HTTPException(status_code=404, detail="Invoice not found")
-    
+
     invoice = result.data
     business_name = invoice.get("businesses", {}).get("name", "Unknown Business")
-    
-    # RBAC Check - user must have access to this business
+
+    # RBAC Check - use business-centric access control like other CRM functions
     if current_user.role == "sales":
-        if invoice["seller_id"] != current_user.id:
-            raise HTTPException(status_code=403, detail="Access denied")
-    
+        # Get the business for this invoice
+        business_result = (
+            supabase.table("businesses")
+            .select("owner_seller_id")
+            .eq("id", invoice["business_id"])
+            .single()
+            .execute()
+        )
+
+        if business_result.data:
+            owner = business_result.data.get("owner_seller_id")
+            if owner and owner != current_user.id:
+                raise HTTPException(status_code=403, detail="Access denied")
+
     return InvoiceIssuedResponse(
         id=invoice["id"],
         business_id=invoice["business_id"],
@@ -2187,10 +2234,12 @@ async def generate_project_invoice(
     supabase.table("crm_activities").insert(activity_data).execute()
 
     # Update business follow-up date to invoice due date
-    supabase.table("businesses").update({
-        "next_follow_up_at": due_date.isoformat(),
-        "updated_at": datetime.utcnow().isoformat(),
-    }).eq("id", business_id).execute()
+    supabase.table("businesses").update(
+        {
+            "next_follow_up_at": due_date.isoformat(),
+            "updated_at": datetime.utcnow().isoformat(),
+        }
+    ).eq("id", business_id).execute()
 
     row = result.data[0]
     return InvoiceIssuedResponse(
@@ -2218,7 +2267,9 @@ async def generate_project_invoice(
     )
 
 
-@router.put("/invoices-issued/{invoice_id}/status", response_model=InvoiceIssuedResponse)
+@router.put(
+    "/invoices-issued/{invoice_id}/status", response_model=InvoiceIssuedResponse
+)
 async def update_invoice_status(
     invoice_id: str,
     data: InvoiceStatusUpdate,
@@ -2251,8 +2302,8 @@ async def update_invoice_status(
     # Only admin can mark invoice as paid
     if new_status == "paid" and current_user.role != "admin":
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
-            detail="Pouze administrátor může označit fakturu jako zaplacenou"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Pouze administrátor může označit fakturu jako zaplacenou",
         )
 
     # Check access to business
@@ -2357,7 +2408,10 @@ async def update_invoice_status(
 # ============== Invoice Approval Workflow ==============
 
 
-@router.put("/invoices-issued/{invoice_id}/submit-for-approval", response_model=InvoiceIssuedResponse)
+@router.put(
+    "/invoices-issued/{invoice_id}/submit-for-approval",
+    response_model=InvoiceIssuedResponse,
+)
 async def submit_invoice_for_approval(
     invoice_id: str,
     current_user: Annotated[User, Depends(require_sales_or_admin)],
@@ -2388,14 +2442,15 @@ async def submit_invoice_for_approval(
     # RBAC check - sales can only submit their own invoices
     if current_user.role == "sales" and invoice.get("seller_id") != current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Nemáte oprávnění k této faktuře"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Nemáte oprávnění k této faktuře",
         )
 
     # Only draft invoices can be submitted
     if invoice["status"] != "draft":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Nelze odeslat fakturu ve stavu '{invoice['status']}'. Pouze faktury ve stavu 'draft' mohou být odeslány ke schválení."
+            detail=f"Nelze odeslat fakturu ve stavu '{invoice['status']}'. Pouze faktury ve stavu 'draft' mohou být odeslány ke schválení.",
         )
 
     # Update status
@@ -2445,7 +2500,9 @@ async def submit_invoice_for_approval(
 @router.get("/admin/invoices", response_model=AdminInvoiceListResponse)
 async def get_admin_invoices(
     current_user: Annotated[User, Depends(require_admin)],
-    status_filter: str | None = Query(None, description="Filter by status (comma-separated)"),
+    status_filter: str | None = Query(
+        None, description="Filter by status (comma-separated)"
+    ),
     seller_id: str | None = Query(None, description="Filter by seller"),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
@@ -2457,7 +2514,9 @@ async def get_admin_invoices(
     supabase = get_supabase()
 
     # Base query
-    query = supabase.table("invoices_issued").select("*, businesses(name)", count="exact")
+    query = supabase.table("invoices_issued").select(
+        "*, businesses(name)", count="exact"
+    )
 
     # Status filter
     if status_filter:
@@ -2478,7 +2537,9 @@ async def get_admin_invoices(
     result = query.execute()
 
     # Get all seller IDs from results to fetch names
-    seller_ids = list(set(row.get("seller_id") for row in result.data if row.get("seller_id")))
+    seller_ids = list(
+        set(row.get("seller_id") for row in result.data if row.get("seller_id"))
+    )
     seller_names = {}
     if seller_ids:
         sellers_result = (
@@ -2487,8 +2548,10 @@ async def get_admin_invoices(
             .in_("id", seller_ids)
             .execute()
         )
-        for s in (sellers_result.data or []):
-            seller_names[s["id"]] = f"{s.get('first_name', '')} {s.get('last_name', '')}".strip()
+        for s in sellers_result.data or []:
+            seller_names[s["id"]] = (
+                f"{s.get('first_name', '')} {s.get('last_name', '')}".strip()
+            )
 
     # Transform response
     items = []
@@ -2517,7 +2580,9 @@ async def get_admin_invoices(
     )
 
 
-@router.put("/invoices-issued/{invoice_id}/approve", response_model=InvoiceIssuedResponse)
+@router.put(
+    "/invoices-issued/{invoice_id}/approve", response_model=InvoiceIssuedResponse
+)
 async def approve_invoice(
     invoice_id: str,
     current_user: Annotated[User, Depends(require_admin)],
@@ -2549,7 +2614,7 @@ async def approve_invoice(
     if invoice["status"] != "pending_approval":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Nelze schválit fakturu ve stavu '{invoice['status']}'. Pouze faktury čekající na schválení mohou být schváleny."
+            detail=f"Nelze schválit fakturu ve stavu '{invoice['status']}'. Pouze faktury čekající na schválení mohou být schváleny.",
         )
 
     # Update status
@@ -2597,7 +2662,9 @@ async def approve_invoice(
     )
 
 
-@router.put("/invoices-issued/{invoice_id}/reject", response_model=InvoiceIssuedResponse)
+@router.put(
+    "/invoices-issued/{invoice_id}/reject", response_model=InvoiceIssuedResponse
+)
 async def reject_invoice(
     invoice_id: str,
     data: InvoiceRejectRequest,
@@ -2630,7 +2697,7 @@ async def reject_invoice(
     if invoice["status"] != "pending_approval":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Nelze zamítnout fakturu ve stavu '{invoice['status']}'. Pouze faktury čekající na schválení mohou být zamítnuty."
+            detail=f"Nelze zamítnout fakturu ve stavu '{invoice['status']}'. Pouze faktury čekající na schválení mohou být zamítnuty.",
         )
 
     # Update status back to draft with rejection reason
@@ -2824,7 +2891,11 @@ async def generate_invoice_issued_pdf_endpoint(
         )
 
     # Upload to storage
-    year = invoice["invoice_number"].split("-")[0] if "-" in invoice["invoice_number"] else str(date.today().year)
+    year = (
+        invoice["invoice_number"].split("-")[0]
+        if "-" in invoice["invoice_number"]
+        else str(date.today().year)
+    )
     storage_path = f"invoices/issued/{year}/{invoice['invoice_number']}.pdf"
 
     pdf_url = await upload_pdf_to_storage(
@@ -2840,10 +2911,12 @@ async def generate_invoice_issued_pdf_endpoint(
         )
 
     # Update invoice with pdf_path
-    supabase.table("invoices_issued").update({
-        "pdf_path": pdf_url,
-        "updated_at": datetime.utcnow().isoformat(),
-    }).eq("id", invoice_id).execute()
+    supabase.table("invoices_issued").update(
+        {
+            "pdf_path": pdf_url,
+            "updated_at": datetime.utcnow().isoformat(),
+        }
+    ).eq("id", invoice_id).execute()
 
     return {"pdf_url": pdf_url, "storage_path": storage_path}
 
@@ -2883,6 +2956,7 @@ async def download_invoice_issued_pdf(
     # If PDF already exists, redirect to it
     if invoice.get("pdf_path"):
         from fastapi.responses import RedirectResponse
+
         return RedirectResponse(url=invoice["pdf_path"])
 
     # Generate PDF on-the-fly
@@ -3045,10 +3119,12 @@ async def generate_invoice_received_pdf_endpoint(
         )
 
     # Update invoice with pdf_path
-    supabase.table("invoices_received").update({
-        "pdf_path": pdf_url,
-        "updated_at": datetime.utcnow().isoformat(),
-    }).eq("id", invoice_id).execute()
+    supabase.table("invoices_received").update(
+        {
+            "pdf_path": pdf_url,
+            "updated_at": datetime.utcnow().isoformat(),
+        }
+    ).eq("id", invoice_id).execute()
 
     return {"pdf_url": pdf_url, "storage_path": storage_path}
 
@@ -3092,6 +3168,7 @@ async def download_invoice_received_pdf(
     # If PDF already exists, redirect to it
     if invoice.get("pdf_path"):
         from fastapi.responses import RedirectResponse
+
         return RedirectResponse(url=invoice["pdf_path"])
 
     # Get seller data

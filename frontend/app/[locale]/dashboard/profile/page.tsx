@@ -402,6 +402,25 @@ const loadProfile = async (userId: string) => {
                 </div>
               </form>
             )}
+
+            {/* Help Section */}
+            <div className="help-section">
+              <h3>❓ Nápověda</h3>
+              <div className="help-links">
+                <a href="/help" target="_blank" className="help-link">
+                  📖 Jak používat Webomat
+                </a>
+                <a href="/help#crm" target="_blank" className="help-link">
+                  🤝 CRM a obchodní procesy
+                </a>
+                <a href="/help#generating" target="_blank" className="help-link">
+                  🎨 Tvorba webů
+                </a>
+                <a href="/help#billing" target="_blank" className="help-link">
+                  💰 Fakturace a platby
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </main>
@@ -672,6 +691,43 @@ const loadProfile = async (userId: string) => {
           justify-content: flex-end;
         }
 
+        .help-section {
+          margin-top: 2rem;
+          padding-top: 2rem;
+          border-top: 1px solid #e0e0e0;
+        }
+
+        .help-section h3 {
+          margin: 0 0 1rem 0;
+          color: #1a1a2e;
+        }
+
+        .help-links {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.75rem;
+        }
+
+        .help-link {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.75rem 1rem;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          text-decoration: none;
+          color: #374151;
+          font-size: 0.9rem;
+          transition: all 0.2s;
+        }
+
+        .help-link:hover {
+          background: #e2e8f0;
+          border-color: #cbd5e1;
+          transform: translateY(-1px);
+        }
+
         @media (max-width: 600px) {
           .profile-container > div:first-child {
             flex-direction: column;
@@ -686,9 +742,13 @@ const loadProfile = async (userId: string) => {
             grid-template-columns: 1fr;
           }
 
+          .help-links {
+            grid-template-columns: 1fr;
+          }
+
           .profile-container {
-            margin: 1rem;
-            padding: 1.5rem;
+            margin: 0.5rem;
+            padding: 1rem;
           }
         }
       `}</style>

@@ -283,13 +283,14 @@ export default function GenerateWebsitePage() {
       setResult(resp || { message: 'Hotovo.' })
       setTab('preview')
 
-      // Automatická změna statusu na "designováno" při úspěšném generování
-      if (resp && businessId) {
+      // Automatická změna stavu projektu při úspěšném generování
+      if (resp && projectId) {
         try {
-          await ApiClient.updateBusinessStatus(businessId, 'designed')
-          showToast('Status změněn na "Designováno"', 'success')
+          const newStatus = dryRun ? 'sent_for_review' : 'in_progress'
+          await ApiClient.updateProject(projectId, { status: newStatus })
+          showToast(`Stav projektu změněn na "${dryRun ? 'Náhled k recenzi' : 'Ve výrobě'}"`, 'success')
         } catch (statusError: any) {
-          console.error('Failed to update business status:', statusError)
+          console.error('Failed to update project status:', statusError)
           // Nezobrazovat chybu uživateli, hlavní funkce (generování) proběhla úspěšně
         }
       }

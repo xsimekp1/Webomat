@@ -77,10 +77,14 @@ const ACTIVITY_ICONS: Record<string, string> = {
 
 const PROJECT_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   offer: { label: 'Nabídka', color: '#8b5cf6', bg: '#ede9fe' },
-  won: { label: 'Vyhráno', color: '#22c55e', bg: '#dcfce7' },
-  in_production: { label: 'Ve výrobě', color: '#f97316', bg: '#ffedd5' },
-  delivered: { label: 'Dodáno', color: '#3b82f6', bg: '#dbeafe' },
-  live: { label: 'Live', color: '#10b981', bg: '#d1fae5' },
+  interested: { label: 'Zájem', color: '#06b6d4', bg: '#ecfeff' },
+  in_progress: { label: 'V práci', color: '#f97316', bg: '#ffedd5' },
+  sent_for_review: { label: 'K odeslání', color: '#3b82f6', bg: '#dbeafe' },
+  revisions: { label: 'Připomínky', color: '#a855f7', bg: '#f3e8ff' },
+  invoiced: { label: 'Fakturováno', color: '#22c55e', bg: '#dcfce7' },
+  closed: { label: 'Uzavřeno', color: '#6b7280', bg: '#f3f4f6' },
+  rejected: { label: 'Zamítnuto', color: '#dc2626', bg: '#fef2f2' },
+  unpaid: { label: 'Nezaplaceno', color: '#dc2626', bg: '#fef2f2' },
   cancelled: { label: 'Zrušeno', color: '#6b7280', bg: '#f3f4f6' },
 }
 
@@ -169,6 +173,10 @@ const [activityForm, setActivityForm] = useState({
   useEffect(() => {
     if (isAuthenticated && businessId) {
       fetchData()
+      // Store current CRM page for navigation back from project detail
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('lastCrmPage', `/crm/${businessId}`)
+      }
     }
   }, [isAuthenticated, businessId])
 

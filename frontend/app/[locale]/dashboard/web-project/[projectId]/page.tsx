@@ -48,6 +48,17 @@ interface ShareLink {
   id: string
   token: string
   preview_url: string
+}
+
+const getBackUrl = (businessId: string): string => {
+  if (typeof window !== 'undefined') {
+    const lastCrmPage = localStorage.getItem('lastCrmPage')
+    if (lastCrmPage && lastCrmPage.includes(`/crm/${businessId}`)) {
+      return lastCrmPage
+    }
+  }
+  return '/dashboard'
+}
   expires_at: string | null
   view_count: number
   is_active: boolean
@@ -76,12 +87,16 @@ interface Invoice {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  offer: 'Nabidka',
-  won: 'Vyhrano',
-  in_production: 'Ve vyrobe',
-  delivered: 'Dodano',
-  live: 'Online',
-  cancelled: 'Zruseno',
+  offer: 'Nabídka',
+  interested: 'Zájem',
+  in_progress: 'V práci',
+  sent_for_review: 'K odeslání',
+  revisions: 'Připomínky',
+  invoiced: 'Fakturováno',
+  closed: 'Uzavřeno',
+  rejected: 'Zamítnuto',
+  unpaid: 'Nezaplaceno',
+  cancelled: 'Zrušeno',
 }
 
 const DOMAIN_STATUS_LABELS: Record<string, string> = {
@@ -310,7 +325,7 @@ export default function WebProjectPage() {
     return (
       <div className="web-project-page">
         <div className="error-message">{error || 'Projekt nenalezen'}</div>
-        <button onClick={() => router.back()}>Zpet</button>
+        <button onClick={() => router.push(getBackUrl(project?.business_id || ''))}>Zpet</button>
       </div>
     )
   }
@@ -320,7 +335,7 @@ export default function WebProjectPage() {
       {/* Header */}
       <div className="page-header">
         <div className="header-left">
-          <button className="btn-back" onClick={() => router.back()}>
+          <button className="btn-back" onClick={() => router.push(getBackUrl(project.business_id))}>
             ← Zpet
           </button>
           <div className="header-info">

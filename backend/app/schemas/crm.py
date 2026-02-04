@@ -150,6 +150,7 @@ class CRMStats(BaseModel):
 
 class PendingProjectInfo(BaseModel):
     """Rozpracovaný projekt pro dashboard."""
+
     id: str
     business_id: str
     business_name: str
@@ -161,6 +162,7 @@ class PendingProjectInfo(BaseModel):
 
 class UnpaidClientInvoice(BaseModel):
     """Nezaplacená faktura od klienta."""
+
     id: str
     business_id: str
     business_name: str
@@ -185,10 +187,14 @@ class SellerDashboard(BaseModel):
 # Project schemas
 class ProjectStatus(str, Enum):
     offer = "offer"
-    won = "won"
-    in_production = "in_production"
-    delivered = "delivered"
-    live = "live"
+    interested = "interested"
+    in_progress = "in_progress"
+    sent_for_review = "sent_for_review"
+    revisions = "revisions"
+    invoiced = "invoiced"
+    closed = "closed"
+    rejected = "rejected"
+    unpaid = "unpaid"
     cancelled = "cancelled"
 
 
@@ -576,6 +582,7 @@ class InvoiceIssuedStatus(str, Enum):
 
 class InvoiceIssuedCreate(BaseModel):
     """Schema for creating a new invoice for a client."""
+
     amount_without_vat: float
     payment_type: InvoicePaymentType = InvoicePaymentType.setup
     description: str | None = None
@@ -585,6 +592,7 @@ class InvoiceIssuedCreate(BaseModel):
 
 class InvoiceIssuedResponse(BaseModel):
     """Full invoice response."""
+
     id: str
     business_id: str
     project_id: str | None = None
@@ -611,17 +619,20 @@ class InvoiceIssuedResponse(BaseModel):
 
 class InvoiceStatusUpdate(BaseModel):
     """Schema for updating invoice status."""
+
     status: InvoiceIssuedStatus
     paid_date: str | None = None  # Required when status is 'paid'
 
 
 class InvoiceRejectRequest(BaseModel):
     """Schema for rejecting an invoice."""
+
     reason: str
 
 
 class AdminInvoiceListItem(BaseModel):
     """Invoice item for admin list view."""
+
     id: str
     invoice_number: str
     business_id: str
@@ -640,6 +651,7 @@ class AdminInvoiceListItem(BaseModel):
 
 class AdminInvoiceListResponse(BaseModel):
     """Paginated list of invoices for admin view."""
+
     items: list[AdminInvoiceListItem]
     total: int
     page: int
@@ -648,6 +660,7 @@ class AdminInvoiceListResponse(BaseModel):
 
 class SellerClaimsResponse(BaseModel):
     """Seller's commission claims summary."""
+
     total_earned: float
     already_invoiced: float
     available_to_claim: float
