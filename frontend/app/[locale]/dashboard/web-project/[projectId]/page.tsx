@@ -62,9 +62,6 @@ const getBackUrl = (businessId: string): string => {
 
 interface Invoice {
   id: string
-
-interface Invoice {
-  id: string
   business_id: string
   project_id: string | null
   seller_id: string | null
