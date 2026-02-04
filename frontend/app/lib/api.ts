@@ -368,6 +368,27 @@ class ApiClient {
   static async getSellerClaims() {
     const response = await axios.get(
       `${API_BASE_URL}/crm/seller/claims`,
+    { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  // ============================================
+  // Seller Account Ledger endpoint
+  // ============================================
+
+  static async getSellerAccountLedger(params?: {
+    range?: string;
+    type?: string;
+    status?: string;
+  }) {
+    const queryParams = new URLSearchParams();
+    if (params?.range) queryParams.append('range', params.range);
+    if (params?.type) queryParams.append('type', params.type);
+    if (params?.status) queryParams.append('status', params.status);
+
+    const response = await axios.get(
+      `${API_BASE_URL}/crm/seller/account/ledger?${queryParams}`,
       { headers: ApiClient.getAuthHeaders() }
     );
     return response.data;
