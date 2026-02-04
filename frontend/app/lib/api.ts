@@ -374,6 +374,18 @@ class ApiClient {
   }
 
   // ============================================
+  // Admin endpoints
+  // ============================================
+
+  static async getUsers() {
+    const response = await axios.get(
+      `${API_BASE_URL}/admin/users`,
+      { headers: ApiClient.getAuthHeaders() }
+    );
+    return response.data;
+  }
+
+  // ============================================
   // Seller Account Ledger endpoint
   // ============================================
 
