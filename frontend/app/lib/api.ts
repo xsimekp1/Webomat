@@ -394,6 +394,15 @@ class ApiClient {
     return response.data;
   }
 
+  static async resetUserPassword(userId: string, newPassword?: string) {
+    const response = await axios.post(
+      `${API_BASE_URL}/admin/users/${userId}/reset-password`,
+      { new_password: newPassword },
+      { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  }
+
   // ============================================
   // Seller Account Ledger endpoint
   // ============================================
