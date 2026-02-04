@@ -1028,10 +1028,7 @@ export default function GenerateWebsitePage() {
         </div>
       </div>
 
-      <div style={{ marginTop: 14, fontSize: 12, color: '#9ca3af' }}>
-        MVP: UI sbírá strukturovaný brief; aktuálně volá existující endpoint <code>/website/generate</code> přes <code>ApiClient.generateWebsite(projectId, dryRun)</code>.
-        Další krok: vytvořit “request/run/version” endpointy a posílat payload snapshot do backendu.
-      </div>
+
     </div>
   )
 }

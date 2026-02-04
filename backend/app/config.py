@@ -17,6 +17,12 @@ class Settings(BaseSettings):
         "http://localhost:3000,https://webomat.vercel.app,https://*.vercel.app"
     )
 
+    # Azure OpenAI (optional)
+    azure_openai_api_version: str | None = None
+
+    # Screenshot API (optional)
+    screenshot_api_url: str | None = None
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",")]
@@ -24,6 +30,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        extra = "ignore"  # Allow extra fields in env file
 
 
 @lru_cache()
