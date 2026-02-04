@@ -17,9 +17,24 @@ from fastapi import (
 from fastapi.responses import Response
 
 from ..database import get_supabase
-from ..dependencies import require_sales_or_admin, require_admin
-from ..schemas.auth import User
+from ..dependencies import (
+    require_admin,
+    get_password_hash,
+    get_current_active_user,
+    require_sales_or_admin,
+)
+from ..schemas.auth import (
+    User,
+    UserListItem,
+    AdminPasswordReset,
+    LanguageUpdate,
+    SellerWarnings,
+    SellerEarningsResponse,
+)
 from ..schemas.crm import (
+    CRMStatus,
+    ActivityType,
+    BusinessBase,
     BusinessCreate,
     BusinessUpdate,
     BusinessResponse,
@@ -29,29 +44,83 @@ from ..schemas.crm import (
     TodayTask,
     TodayTasksResponse,
     CRMStats,
+    ProjectStatus,
+    PackageType,
     ProjectCreate,
     ProjectUpdate,
     ProjectResponse,
-    SellerDashboard,
-    PendingProjectInfo,
-    UnpaidClientInvoice,
-    ARESCompany,
     WebsiteVersionCreate,
+    WebsiteVersionUpdate,
     WebsiteVersionResponse,
     WebsiteVersionListResponse,
+    CommentAuthorType,
+    CommentStatus,
+    CommentAnchorType,
+    VersionCommentCreate,
+    VersionCommentUpdate,
+    VersionCommentResponse,
+    ShareLinkCreate,
+    ShareLinkResponse,
+    FeedbackCategory,
+    FeedbackPriority,
+    FeedbackStatus,
+    PlatformFeedbackCreate,
+    PlatformFeedbackUpdate,
+    PlatformFeedbackResponse,
+    BackgroundJobResponse,
     ProjectAssetCreate,
     ProjectAssetResponse,
-    BalancePageResponse,
-    LedgerEntryResponse,
-    WeeklyRewardSummary,
-    InvoiceIssuedCreate,
-    InvoiceIssuedResponse,
-    InvoiceStatusUpdate,
-    InvoiceRejectRequest,
-    AdminInvoiceListItem,
-    AdminInvoiceListResponse,
-    SellerClaimsResponse,
+    WeeklyInvoice,
+    AdminDashboardStats,
+    SellerDashboard,
+    WeeklyInvoice,
+    WeeklyInvoice,
 )
+from ..schemas.crm import (
+    CRMStatus,
+    ActivityType,
+    BusinessBase,
+    BusinessCreate,
+    BusinessUpdate,
+    BusinessResponse,
+    BusinessListResponse,
+    ActivityCreate,
+    ActivityResponse,
+    TodayTasksResponse,
+    CRMStats,
+    ProjectStatus,
+    PackageType,
+    ProjectCreate,
+    ProjectUpdate,
+    ProjectResponse,
+    WebsiteVersionCreate,
+    WebsiteVersionUpdate,
+    WebsiteVersionResponse,
+    WebsiteVersionListResponse,
+    CommentAuthorType,
+    CommentStatus,
+    CommentAnchorType,
+    VersionCommentCreate,
+    VersionCommentUpdate,
+    VersionCommentResponse,
+    ShareLinkCreate,
+    ShareLinkResponse,
+    FeedbackCategory,
+    FeedbackPriority,
+    FeedbackStatus,
+    PlatformFeedbackCreate,
+    PlatformFeedbackUpdate,
+    PlatformFeedbackResponse,
+    BackgroundJobResponse,
+    ProjectAssetCreate,
+    ProjectAssetResponse,
+    WeeklyInvoice,
+    AdminDashboardStats,
+    WeeklyInvoice,
+    AdminDashboardStats,
+    WeeklyInvoice,
+)
+from ..utils.balance_calculator import calculate_seller_balance
 
 router = APIRouter(prefix="/crm", tags=["CRM"])
 
@@ -1102,7 +1171,7 @@ async def get_seller_dashboard(
     supabase = get_supabase()
     today = date.today()
 
-    # Calculate available balance: sum of all ledger entries
+    # Calculate available balance using proper logic
     # Positive entries: commission_earned, admin_adjustment
     # Negative entries: payout_reserved, payout_paid (stored as negative amounts)
     ledger_result = (
@@ -1114,9 +1183,8 @@ async def get_seller_dashboard(
 
     available_balance = 0
     if ledger_result.data:
-        for entry in ledger_result.data:
-            # All amounts are already signed (positive for earned, negative for payouts)
-            available_balance += entry.get("amount", 0)
+        balance_calc = calculate_seller_balance(ledger_result.data)
+        available_balance = balance_calc["available_balance"]
 
     # Get businesses owned by this seller OR without owner (accessible to all)
     businesses_result = (
@@ -1864,18 +1932,18 @@ async def get_seller_account_ledger(
     # Execute query
     result = query.order("created_at", desc=True).execute()
 
-    # Calculate available balance: sum of all ledger entries
-    # All amounts are signed (positive for earned/adjustment, negative for payouts)
+    # Calculate available balance using proper logic
     all_ledger_result = (
         supabase.table("ledger_entries")
-        .select("amount")
+        .select("amount, entry_type")
         .eq("seller_id", current_user.id)
         .execute()
     )
 
-    available_balance = sum(
-        entry.get("amount", 0) for entry in (all_ledger_result.data or [])
-    )
+    available_balance = 0
+    if all_ledger_result.data:
+        balance_calc = calculate_seller_balance(all_ledger_result.data)
+        available_balance = balance_calc["available_balance"]
 
     # Convert to response format
     ledger_entries = []

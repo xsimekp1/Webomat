@@ -593,6 +593,8 @@ class InvoiceIssuedCreate(BaseModel):
     description: str | None = None
     vat_rate: float = 21.0
     due_days: int = 14
+    # Nové: možnost specifikovat vlastní číslo faktury při vytváření
+    custom_invoice_number: str | None = None
 
 
 class InvoiceIssuedResponse(BaseModel):
