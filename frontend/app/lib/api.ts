@@ -91,6 +91,11 @@ class ApiClient {
     return response.data;
   }
 
+  // Alias for CRM status updates
+  static async updateBusinessStatus(businessId: string, data: any) {
+    return ApiClient.updateBusiness(businessId, data);
+  }
+
   static async deleteBusiness(businessId: string) {
     const response = await axios.delete(
       `${API_BASE_URL}/crm/businesses/${businessId}`,
@@ -335,13 +340,18 @@ class ApiClient {
     return response.data;
   }
 
-  static async updateWebProject(projectId: string, data: any) {
+static async updateWebProject(projectId: string, data: any) {
     const response = await axios.put(
       `${API_BASE_URL}/web-project/${projectId}`,
       data,
       { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
     );
     return response.data;
+  }
+
+  // Alias for consistency with CRM naming
+  static async updateProject(projectId: string, data: any) {
+    return ApiClient.updateWebProject(projectId, data);
   }
 
   static async getWebProjectVersions(projectId: string) {
