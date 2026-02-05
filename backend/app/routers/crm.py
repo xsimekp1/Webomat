@@ -28,8 +28,6 @@ from ..schemas.auth import (
     UserListItem,
     AdminPasswordReset,
     LanguageUpdate,
-    SellerWarnings,
-    SellerEarningsResponse,
 )
 from ..schemas.crm import (
     CRMStatus,
@@ -72,9 +70,8 @@ from ..schemas.crm import (
     ProjectAssetResponse,
     WeeklyInvoice,
     AdminDashboardStats,
-    SellerDashboard,
-    WeeklyInvoice,
-    WeeklyInvoice,
+    PendingProjectInfo,
+    UnpaidClientInvoice,
 )
 from ..schemas.crm import (
     CRMStatus,
