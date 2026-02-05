@@ -414,7 +414,7 @@ const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false)
         <h2>Lead nenalezen</h2>
         <button onClick={() => router.push('/dashboard/crm')}>Zpět na seznam</button>
       </div>
-    )
+    );
   }
 
   return (
