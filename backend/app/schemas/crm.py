@@ -686,6 +686,14 @@ class WeeklyInvoice(BaseModel):
     created_at: datetime | None = None
 
 
+class WeeklyInvoiceAdmin(BaseModel):
+    """Týdenní faktura pro admin dashboard."""
+
+    week: str
+    count: int
+    amount: float
+
+
 class AdminDashboardStats(BaseModel):
     """Admin dashboard statistics."""
     
@@ -734,3 +742,23 @@ class BalancePageResponse(BaseModel):
     last_payout_date: datetime | None = None
     ledger_entries: list[dict]
     summary: dict
+
+
+class LedgerEntryResponse(BaseModel):
+    """Odpověď pro položku účetního deníku."""
+    
+    id: str
+    entry_type: str
+    amount: float
+    description: str | None = None
+    created_at: datetime | None = None
+
+
+class WeeklyRewardSummary(BaseModel):
+    """Týdenní shrnutí odměn pro seller."""
+    
+    week_start: str
+    week_end: str
+    total_rewards: float
+    project_count: int
+    average_reward: float

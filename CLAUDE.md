@@ -17,7 +17,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Railway Backend Redeploy:**
 ```bash
-powershell -ExecutionPolicy Bypass -Command "Invoke-RestMethod -Uri 'https://backboard.railway.app/graphql/v2' -Method Post -Headers @{'Content-Type'='application/json'; 'Authorization'='Bearer 66977604-f06c-4e9c-afd2-0440b57f6150'} -Body '{\"query\": \"mutation { serviceInstanceRedeploy(environmentId: \\\"9afdeb2c-17e7-44d5-bfe9-1258121a59aa\\\", serviceId: \\\"54b194dd-644f-4c26-a806-faabaaeacc7b\\\") }\"}'"
+# Použij Railway token z env proměnné RAILWAY_TOKEN
+# Tokeny a API klíče najdeš v lokálních .env souborech - NEJSOU uloženy v tomto repository
+powershell -ExecutionPolicy Bypass -Command "Invoke-RestMethod -Uri 'https://backboard.railway.app/graphql/v2' -Method Post -Headers @{'Content-Type'='application/json'; 'Authorization'='Bearer $env:RAILWAY_TOKEN'} -Body '{\"query\": \"mutation { serviceInstanceRedeploy(environmentId: \\\"$env:RAILWAY_ENVIRONMENT_ID\\\", serviceId: \\\"$env:RAILWAY_SERVICE_ID\\\") }\"}'"
 ```
 
 **Vercel Frontend Redeploy:**
@@ -102,7 +104,8 @@ Po pushnutí změn na GitHub je potřeba ručně spustit redeploy (auto-deploy n
 
 **1. Railway Backend:**
 ```powershell
-powershell -ExecutionPolicy Bypass -Command "Invoke-RestMethod -Uri 'https://backboard.railway.app/graphql/v2' -Method Post -Headers @{'Content-Type'='application/json'; 'Authorization'='Bearer 66977604-f06c-4e9c-afd2-0440b57f6150'} -Body '{\"query\": \"mutation { serviceInstanceRedeploy(environmentId: \\\"9afdeb2c-17e7-44d5-bfe9-1258121a59aa\\\", serviceId: \\\"54b194dd-644f-4c26-a806-faabaaeacc7b\\\") }\"}'"
+# Použij Railway token z lokálního .env souboru
+powershell -ExecutionPolicy Bypass -Command "Invoke-RestMethod -Uri 'https://backboard.railway.app/graphql/v2' -Method Post -Headers @{'Content-Type'='application/json'; 'Authorization'='Bearer $env:RAILWAY_TOKEN'} -Body '{\"query\": \"mutation { serviceInstanceRedeploy(environmentId: \\\"$env:RAILWAY_ENVIRONMENT_ID\\\", serviceId: \\\"$env:RAILWAY_SERVICE_ID\\\") }\"}'"
 ```
 
 **2. Vercel Frontend:**
@@ -117,13 +120,6 @@ Invoke-RestMethod -Uri 'https://webomat-backend-production.up.railway.app/health
 
 # Frontend check
 (Invoke-WebRequest -Uri 'https://webomat.vercel.app' -Method Head).StatusCode
-```
-
-**Alternativně pomocí skriptu** (pokud máš povolenou ExecutionPolicy):
-```powershell
-$env:RAILWAY_TOKEN = "66977604-f06c-4e9c-afd2-0440b57f6150"
-$env:VERCEL_TOKEN = "uanxoOOLz8mCzrjFupSNoznD"
-.\scripts\redeploy.ps1
 ```
 
 ## Project Overview

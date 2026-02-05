@@ -5,6 +5,7 @@ import ApiClient from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { useLanguage, LanguageProvider } from '../../../context/LanguageContext'
 import { useTranslations } from 'next-intl'
+import { BalanceChart } from './components/BalanceChart'
 
 interface LedgerEntry {
   id: string
@@ -176,22 +177,14 @@ function AccountContent() {
         </div>
       )}
 
-      {/* Account Summary Cards */}
+{/* Account Summary Cards - POUZE 3 KARTY: NÁROKY, VÝPLATY, nárok na vyplacení */}
       {accountSummary && (
         <div className="summary-grid">
-          <div className="summary-card available">
-            <div className="card-icon">💰</div>
-            <div className="card-content">
-              <span className="card-value">{formatCurrency(accountSummary.available_balance)}</span>
-              <span className="card-label">{t('availableToPayout')}</span>
-            </div>
-          </div>
-
           <div className="summary-card earned">
             <div className="card-icon">📈</div>
             <div className="card-content">
               <span className="card-value">{formatCurrency(accountSummary.total_earned)}</span>
-              <span className="card-label">{t('totalEarned')}</span>
+              <span className="card-label">NÁROKY</span>
             </div>
           </div>
 
@@ -199,49 +192,24 @@ function AccountContent() {
             <div className="card-icon">✅</div>
             <div className="card-content">
               <span className="card-value">{formatCurrency(accountSummary.total_paid_out)}</span>
-              <span className="card-label">{t('alreadyPaidOut')}</span>
+              <span className="card-label">VÝPLATY</span>
             </div>
           </div>
 
-          <div className="summary-card pending">
-            <div className="card-icon">⏳</div>
+          <div className="summary-card available">
+            <div className="card-icon">💰</div>
             <div className="card-content">
-              <span className="card-value">{formatCurrency(accountSummary.pending_commissions)}</span>
-              <span className="card-label">{t('pendingCommissions')}</span>
+              <span className="card-value">{formatCurrency(accountSummary.available_balance)}</span>
+              <span className="card-label">nárok na vyplacení</span>
             </div>
           </div>
         </div>
       )}
 
-      {/* Account Balance Breakdown */}
+      {/* Balance Chart */}
       {accountSummary && (
-        <div className="balance-breakdown">
-          <h2>{t('balanceCalculation')}</h2>
-          <div className="breakdown-formula">
-            <div className="formula-row positive">
-              <span className="formula-label">{t('totalCommissionsEarned')}:</span>
-              <span className="formula-value">+{formatCurrency(accountSummary.total_earned)}</span>
-            </div>
-            
-            <div className="formula-row negative">
-              <span className="formula-label">{t('adminAdjustments')}:</span>
-              <span className="formula-value">
-                {formatCurrency(accountSummary.total_paid_out - accountSummary.total_earned + accountSummary.available_balance + accountSummary.pending_commissions)}
-              </span>
-            </div>
-            
-            <div className="formula-row negative">
-              <span className="formula-label">{t('paidOut')}:</span>
-              <span className="formula-value">-{formatCurrency(accountSummary.total_paid_out)}</span>
-            </div>
-            
-            <div className="divider"></div>
-            
-            <div className="formula-row result">
-              <span className="formula-label">{t('availableBalance')}:</span>
-              <span className="formula-value">{formatCurrency(accountSummary.available_balance)}</span>
-            </div>
-          </div>
+        <div className="balance-chart-section">
+          <BalanceChart />
         </div>
       )}
 
