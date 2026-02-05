@@ -368,7 +368,12 @@ function CRMPageContent() {
             </thead>
             <tbody>
               {businesses.map((b) => (
-                <tr key={b.id} className={['won', 'lost', 'dnc'].includes(b.status_crm) ? 'closed' : ''}>
+                <tr 
+                  key={b.id} 
+                  className={['won', 'lost', 'dnc'].includes(b.status_crm) ? 'closed clickable-row' : 'clickable-row'}
+                  onClick={() => router.push(`/dashboard/crm/${b.id}`)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <td>
                     <strong>{b.name}</strong>
                     {b.email && <div className="sub-text">{b.email}</div>}
@@ -394,15 +399,21 @@ function CRMPageContent() {
                   </td>
                   <td>{b.owner_seller_name || '-'}</td>
                   <td className="actions">
-                    <button
+<button
                       className="btn-small"
-                      onClick={() => router.push(`/dashboard/crm/${b.id}`)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/dashboard/crm/${b.id}`);
+                      }}
                     >
                       Detail
                     </button>
-                    <button
+<button
                       className="btn-small btn-edit"
-                      onClick={() => openEditModal(b)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditModal(b);
+                      }}
                     >
                       Upravit
                     </button>
@@ -1129,8 +1140,16 @@ function CRMPageContent() {
             font-size: 14px;
           }
 
-          .actions {
+.actions {
             flex-direction: column;
+          }
+
+          .clickable-row:hover {
+            background: #f3f4f6 !important;
+          }
+
+          .crm-table .actions {
+            display: none;
           }
         }
       `}</style>

@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum
+from datetime import datetime
 from pydantic import BaseModel
 
 
@@ -671,3 +672,65 @@ class SellerClaimsResponse(BaseModel):
     total_earned: float
     already_invoiced: float
     available_to_claim: float
+
+
+class WeeklyInvoice(BaseModel):
+    """Weekly invoice summary for seller."""
+    
+    week_start: str
+    week_end: str
+    total_amount: float
+    commission_amount: float
+    projects_count: int
+    status: str
+    created_at: datetime | None = None
+
+
+class AdminDashboardStats(BaseModel):
+    """Admin dashboard statistics."""
+    
+    total_businesses: int
+    total_projects: int
+    total_sellers: int
+    active_sellers: int
+    monthly_revenue: float
+    pending_invoices: int
+    overdue_followups: int
+
+
+class SellerDashboard(BaseModel):
+    """Seller dashboard statistics."""
+    
+    total_businesses: int
+    active_projects: int
+    monthly_earnings: float
+    pending_followups: int
+    today_tasks: int
+    account_balance: float
+
+
+class ARESCompany(BaseModel):
+    """ARES API company data."""
+    
+    ico: str
+    name: str
+    address: str | None = None
+    city: str | None = None
+    postal_code: str | None = None
+    dic: str | None = None
+    vat_id: str | None = None
+    legal_form: str | None = None
+    status: str | None = None
+    created_at: datetime | None = None
+    dissolved_at: datetime | None = None
+
+
+class BalancePageResponse(BaseModel):
+    """Balance page response for seller."""
+    
+    current_balance: float
+    pending_payouts: float
+    total_earned: float
+    last_payout_date: datetime | None = None
+    ledger_entries: list[dict]
+    summary: dict

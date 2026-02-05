@@ -295,7 +295,7 @@ class ApiClient {
   static async screenshotTestWebsite(htmlContent: string, type: 'thumbnail' | 'screenshot') {
     const response = await axios.post(
       `${API_BASE_URL}/website/screenshot-test`,
-      { html_content: htmlContent, type: type },
+      { html_content: htmlContent, viewport: type },
       { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
     );
     return response.data;

@@ -566,7 +566,8 @@ const getStatusColor = (status: string) => {
               {generatedHtml && (
                 <div className="generated-preview">
                   <h4>Náhled vygenerovaného webu:</h4>
-                  <iframe
+<iframe
+                    sandbox="allow-scripts allow-same-origin"
                     srcDoc={generatedHtml}
                     className="preview-iframe"
                     title="Preview"
@@ -1300,8 +1301,36 @@ const getStatusColor = (status: string) => {
             padding: 16px;
           }
 
-          .quick-stats-grid {
+.quick-stats-grid {
             grid-template-columns: 1fr;
+          }
+
+          .quick-card {
+            padding: 16px;
+            flex-direction: row;
+            align-items: center;
+          }
+
+          .quick-card-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0;
+            margin-right: 12px;
+          }
+
+          .quick-card-value {
+            font-size: 1.5rem;
+          }
+
+          .quick-card-label {
+            font-size: 0.8rem;
+            margin-top: 2px;
+          }
+
+          .quick-card-action {
+            font-size: 0.75rem;
+            margin-top: 0;
+            margin-left: 12px;
+            white-space: nowrap;
           }
 
           .form-row {

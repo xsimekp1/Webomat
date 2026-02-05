@@ -880,7 +880,7 @@ export default function GenerateWebsitePage() {
                     <>
                       <div style={{ border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden' }}>
                         <iframe
-                          sandbox="allow-same-origin"
+                          sandbox="allow-scripts allow-same-origin"
                           srcDoc={result.html_content}
                           title="Preview"
                           style={{ width: '100%', height: 650, border: 'none', display: 'block' }}

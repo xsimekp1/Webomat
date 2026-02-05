@@ -133,3 +133,14 @@ class SellerEarningsResponse(BaseModel):
     period_months: int
     monthly_data: list[MonthlyEarnings]
     total_earnings: float
+
+
+class SellerWarnings(BaseModel):
+    """Seller warnings for dashboard."""
+    
+    has_unpaid_invoices: bool = False
+    has_overdue_followups: bool = False
+    has_inactive_projects: bool = False
+    pending_tasks_count: int = 0
+    last_login_at: datetime | None = None
+    account_balance_warning: bool = False
