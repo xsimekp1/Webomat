@@ -226,12 +226,12 @@ export default function WebProjectPage() {
     }
   }
 
-  const handleDeleteVersion = async (versionId: string) => {
+const handleDeleteVersion = async (versionId: string) => {
     setDeleting(versionId)
     try {
       await ApiClient.deleteVersion(versionId)
-      await loadProject()
-      setShowDeleteModal(null)
+      setShowDeleteModal(null) // Close modal immediately
+      await loadProject() // Reload data in background
       showToast('Verze byla smazana', 'success')
     } catch (err: any) {
       showToast(err.response?.data?.detail || 'Nepodarilo se smazat verzi', 'error')
