@@ -369,18 +369,18 @@ setActivityForm({
     }
   }
 
-// Check if this is a test contact
-const isTestContact = business?.name?.toLowerCase().includes('test') ||
-                       business?.name?.toLowerCase().includes('demo') ||
-                       business?.name?.toLowerCase().includes('sample')
+  // Check if this is a test contact
+  const isTestContact = business?.name?.toLowerCase().includes('test') ||
+                         business?.name?.toLowerCase().includes('demo') ||
+                         business?.name?.toLowerCase().includes('sample')
 
-const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false) => {
-  const businessName = business?.name || 'Neznámá firma'
+  const handleGenerateWebsite = async (projectId: string, dryRun: boolean = false) => {
+    const businessName = business?.name || 'Neznámá firma'
 
-  router.push(
-    `/dashboard/generate-website?businessId=${encodeURIComponent(businessId)}&projectId=${encodeURIComponent(projectId)}&businessName=${encodeURIComponent(businessName)}&dryRun=${dryRun ? '1' : '0'}`
-  )
-}
+    router.push(
+      `/dashboard/generate-website?businessId=${encodeURIComponent(businessId)}&projectId=${encodeURIComponent(projectId)}&businessName=${encodeURIComponent(businessName)}&dryRun=${dryRun ? '1' : '0'}`
+    )
+  }
 
   const formatDateTime = (dateStr: string | null) => {
     if (!dateStr) return '-'
