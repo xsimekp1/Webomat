@@ -78,10 +78,10 @@ WeeklyInvoice,
     LedgerEntryResponse,
     WeeklyRewardSummary,
     InvoiceIssuedResponse,
-    InvoiceIssuedCreate,
+InvoiceIssuedCreate,
     InvoiceStatusUpdate,
     AdminInvoiceListResponse,
-<<<<<<< HEAD
+    AdminInvoiceListItem,
     InvoiceRejectRequest,
     SellerClaimsResponse,
 )
@@ -100,11 +100,6 @@ from ..schemas.crm import (
     ProjectStatus,
     PackageType,
     ProjectCreate,
-=======
-    AdminInvoiceListItem,
-    InvoiceRejectRequest,
-    SellerClaimsResponse,
->>>>>>> b48556ab8a2886f9115acd8fe5a02409af977717
     ProjectUpdate,
     ProjectResponse,
     WebsiteVersionCreate,
