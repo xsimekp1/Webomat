@@ -56,7 +56,7 @@ interface AdminStats {
 }
 
 function DashboardPage() {
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
   const { showToast } = useToast()
   const { language } = useLanguage()
@@ -86,14 +86,14 @@ function DashboardPage() {
 
   // Load seller dashboard data
   useEffect(() => {
-    if (user && !isLoading) {
+    if (user && !authLoading) {
       ApiClient.getSellerDashboard()
         .then(setSellerData)
         .catch((err) => {
           console.error('Failed to load seller dashboard:', err)
         })
     }
-  }, [user, isLoading])
+  }, [user, authLoading])
 
   // Load admin stats
   useEffect(() => {
