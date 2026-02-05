@@ -39,8 +39,8 @@ git add backend/app/routers/crm.py
 Backend obsahuje API endpointy, takže se musí deploynout jako první:
 
 ```bash
-# Automatický redeploy
-powershell -ExecutionPolicy Bypass -Command "Invoke-RestMethod -Uri 'https://backboard.railway.app/graphql/v2' -Method Post -Headers @{'Content-Type'='application/json'; 'Authorization'='Bearer 66977604-f06c-4e9c-afd2-0440b57f6150'} -Body '{\"query\": \"mutation { serviceInstanceRedeploy(environmentId: \\\"9afdeb2c-17e7-44d5-bfe9-1258121a59aa\\\", serviceId: \\\"54b194dd-644f-4c26-a806-faabaaeacc7b\\\") }\"}'"
+# Automatický redeploy - použij token z env
+powershell -ExecutionPolicy Bypass -Command "Invoke-RestMethod -Uri 'https://backboard.railway.app/graphql/v2' -Method Post -Headers @{'Content-Type'='application/json'; 'Authorization'='Bearer $env:RAILWAY_TOKEN'} -Body '{\"query\": \"mutation { serviceInstanceRedeploy(environmentId: \\\"$env:RAILWAY_ENVIRONMENT_ID\\\", serviceId: \\\"$env:RAILWAY_SERVICE_ID\\\") }\"}'"
 
 # Počkat na redeploy (45s)
 sleep 45

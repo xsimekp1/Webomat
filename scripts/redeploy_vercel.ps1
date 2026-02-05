@@ -4,7 +4,7 @@
 # NOTE: Vercel auto-deploys on git push. Only use this script if you need
 # to manually trigger a redeploy without pushing new code.
 
-$VERCEL_TOKEN = "uanxoOOLz8mCzrjFupSNoznD"
+$VERCEL_TOKEN = $env:VERCEL_TOKEN
 
 Write-Host "Triggering Vercel deployment from git repository..."
 
