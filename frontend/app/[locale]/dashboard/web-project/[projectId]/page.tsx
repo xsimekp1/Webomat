@@ -235,6 +235,7 @@ const handleDeleteVersion = async (versionId: string) => {
       showToast('Verze byla smazana', 'success')
     } catch (err: any) {
       showToast(err.response?.data?.detail || 'Nepodarilo se smazat verzi', 'error')
+      setShowDeleteModal(null) // Close modal even on error
     } finally {
       setDeleting(null)
     }
