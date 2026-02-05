@@ -1,47 +1,37 @@
-01:56:55.651 Running build in Washington, D.C., USA (East) – iad1
-01:56:55.651 Build machine configuration: 2 cores, 8 GB
-01:56:55.788 Cloning github.com/xsimekp1/Webomat (Branch: master, Commit: 14bd563)
-01:56:56.301 Cloning completed: 512.000ms
-01:56:56.754 Restored build cache from previous deployment (HTyrieyR4yGr2t5LRJUdBdSViEHU)
-01:56:57.026 Running "vercel build"
-01:56:57.986 Vercel CLI 50.10.2
-01:56:58.276 Installing dependencies...
-01:57:06.950 
-01:57:06.951 up to date in 8s
-01:57:06.952 
-01:57:06.952 177 packages are looking for funding
-01:57:06.952   run `npm fund` for details
-01:57:06.985 Detected Next.js version: 14.2.21
-01:57:06.992 Running "npm run build"
-01:57:07.161 
-01:57:07.162 > webomat-frontend@0.1.0 build
-01:57:07.162 > next build
-01:57:07.162 
-01:57:07.827   ▲ Next.js 14.2.21
-01:57:07.829 
-01:57:07.937    Creating an optimized production build ...
-01:57:10.932 Failed to compile.
-01:57:10.932 
-01:57:10.933 ./app/[locale]/dashboard/crm/[id]/page.tsx
-01:57:10.933 Error: 
-01:57:10.933   [31mx[0m Unexpected token `div`. Expected jsx identifier
-01:57:10.933      ,-[[36;1;4m/vercel/path0/frontend/app/[locale]/dashboard/crm/[id]/page.tsx[0m:418:1]
-01:57:10.933  [2m418[0m |   }
-01:57:10.933  [2m419[0m | 
-01:57:10.933  [2m420[0m |   return (
-01:57:10.933  [2m421[0m |     <div className="detail-page">
-01:57:10.934      : [31;1m     ^^^[0m
-01:57:10.934  [2m422[0m |       <header className="detail-header">
-01:57:10.934  [2m423[0m |         <div className="header-left">
-01:57:10.934  [2m424[0m |           <button className="btn-back" onClick={() => router.push('/dashboard/crm')}>
-01:57:10.934      `----
-01:57:10.934 
-01:57:10.934 Caused by:
-01:57:10.934     Syntax Error
-01:57:10.934 
-01:57:10.934 Import trace for requested module:
-01:57:10.934 ./app/[locale]/dashboard/crm/[id]/page.tsx
-01:57:10.934 
-01:57:10.935 
-01:57:10.935 > Build failed because of webpack errors
-01:57:10.970 Error: Command "npm run build" exited with 1
+02:06:58.340 Running build in Washington, D.C., USA (East) – iad1
+02:06:58.340 Build machine configuration: 2 cores, 8 GB
+02:06:59.485 Cloning github.com/xsimekp1/Webomat (Branch: master, Commit: d20c304)
+02:06:59.942 Cloning completed: 457.000ms
+02:07:00.796 Restored build cache from previous deployment (HTyrieyR4yGr2t5LRJUdBdSViEHU)
+02:07:01.053 Running "vercel build"
+02:07:02.011 Vercel CLI 50.10.2
+02:07:02.322 Installing dependencies...
+02:07:08.063 
+02:07:08.064 up to date in 5s
+02:07:08.064 
+02:07:08.065 177 packages are looking for funding
+02:07:08.065   run `npm fund` for details
+02:07:08.095 Detected Next.js version: 14.2.21
+02:07:08.102 Running "npm run build"
+02:07:08.200 
+02:07:08.200 > webomat-frontend@0.1.0 build
+02:07:08.200 > next build
+02:07:08.200 
+02:07:08.899   ▲ Next.js 14.2.21
+02:07:08.899 
+02:07:09.010    Creating an optimized production build ...
+02:07:12.160 Failed to compile.
+02:07:12.160 
+02:07:12.160 ./app/[locale]/dashboard/crm/[id]/page.tsx
+02:07:12.160 Module not found: Can't resolve '@/context/AuthContext'
+02:07:12.161 
+02:07:12.161 https://nextjs.org/docs/messages/module-not-found
+02:07:12.161 
+02:07:12.161 ./app/[locale]/dashboard/crm/[id]/page.tsx
+02:07:12.161 Module not found: Can't resolve '@/lib/api'
+02:07:12.161 
+02:07:12.161 https://nextjs.org/docs/messages/module-not-found
+02:07:12.161 
+02:07:12.162 
+02:07:12.162 > Build failed because of webpack errors
+02:07:12.198 Error: Command "npm run build" exited with 1
