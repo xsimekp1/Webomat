@@ -32,8 +32,7 @@ export const BalanceChart = () => {
     try {
       setLoading(true)
       const ledgerResponse = await ApiClient.getSellerAccountLedger({
-        range: timeRange,
-        limit: 50
+        range: timeRange
       })
 
       // Transform data for chart - pokládáme na availability filter
