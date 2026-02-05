@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { LineChart, LineChartTooltip, Legend, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Area, AreaChart } from 'recharts'
+import { LineChart, Tooltip, Legend, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Area, AreaChart } from 'recharts'
 import ApiClient from '../../../../lib/api'
 import { useAuth } from '../../../../context/AuthContext'
 
@@ -146,16 +146,16 @@ export const BalanceChart = () => {
             tickFormatter={formatAmount}
             domain={[0, 'auto']}
           />
-          <LineChartTooltip 
+          <Tooltip 
             content={({ active, payload }: any) => {
               if (active && payload) {
                 return (
                   <div className="chart-tooltip">
-                    <p><strong>{formatDate(payload.date)}</strong></p>
-                    <p>Vyděláno: {formatAmount(payload.earned)}</p>
-                    <p>Zůstatek: {formatAmount(payload.balance)}</p>
-                    {payload.adjustments !== undefined && (
-                      <p>Adjustementy: {formatAmount(payload.adjustments)}</p>
+                    <p><strong>{formatDate(payload[0]?.payload?.date || '')}</strong></p>
+                    <p>Vyděláno: {formatAmount(payload[0]?.value || 0)}</p>
+                    <p>Zůstatek: {formatAmount(payload[1]?.value || 0)}</p>
+                    {payload[2]?.value !== undefined && (
+                      <p>Adjustementy: {formatAmount(payload[2]?.value)}</p>
                     )}
                   </div>
                 )
