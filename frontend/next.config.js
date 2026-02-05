@@ -1,5 +1,4 @@
 const createNextIntlPlugin = require('next-intl/plugin');
-const path = require('path');
 
 const withNextIntl = createNextIntlPlugin('./app/[locale]/i18n.ts');
 
@@ -9,13 +8,6 @@ const nextConfig = {
   // Force rebuild for Vercel
   images: {
     domains: ['cmtvixayfbqhdlftsgqg.supabase.co'],
-  },
-  webpack: (config) => {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@': path.resolve(__dirname, 'app'),
-    };
-    return config;
   },
   async headers() {
     return [

@@ -1,37 +1,39 @@
-02:06:58.340 Running build in Washington, D.C., USA (East) – iad1
-02:06:58.340 Build machine configuration: 2 cores, 8 GB
-02:06:59.485 Cloning github.com/xsimekp1/Webomat (Branch: master, Commit: d20c304)
-02:06:59.942 Cloning completed: 457.000ms
-02:07:00.796 Restored build cache from previous deployment (HTyrieyR4yGr2t5LRJUdBdSViEHU)
-02:07:01.053 Running "vercel build"
-02:07:02.011 Vercel CLI 50.10.2
-02:07:02.322 Installing dependencies...
-02:07:08.063 
-02:07:08.064 up to date in 5s
-02:07:08.064 
-02:07:08.065 177 packages are looking for funding
-02:07:08.065   run `npm fund` for details
-02:07:08.095 Detected Next.js version: 14.2.21
-02:07:08.102 Running "npm run build"
-02:07:08.200 
-02:07:08.200 > webomat-frontend@0.1.0 build
-02:07:08.200 > next build
-02:07:08.200 
-02:07:08.899   ▲ Next.js 14.2.21
-02:07:08.899 
-02:07:09.010    Creating an optimized production build ...
-02:07:12.160 Failed to compile.
-02:07:12.160 
-02:07:12.160 ./app/[locale]/dashboard/crm/[id]/page.tsx
-02:07:12.160 Module not found: Can't resolve '@/context/AuthContext'
-02:07:12.161 
-02:07:12.161 https://nextjs.org/docs/messages/module-not-found
-02:07:12.161 
-02:07:12.161 ./app/[locale]/dashboard/crm/[id]/page.tsx
-02:07:12.161 Module not found: Can't resolve '@/lib/api'
-02:07:12.161 
-02:07:12.161 https://nextjs.org/docs/messages/module-not-found
-02:07:12.161 
-02:07:12.162 
-02:07:12.162 > Build failed because of webpack errors
-02:07:12.198 Error: Command "npm run build" exited with 1
+02:11:51.368 Running build in Washington, D.C., USA (East) – iad1
+02:11:51.369 Build machine configuration: 2 cores, 8 GB
+02:11:51.756 Cloning github.com/xsimekp1/Webomat (Branch: master, Commit: 26625a1)
+02:11:52.046 Cloning completed: 289.000ms
+02:11:53.225 Restored build cache from previous deployment (HTyrieyR4yGr2t5LRJUdBdSViEHU)
+02:11:53.597 Running "vercel build"
+02:11:54.663 Vercel CLI 50.10.2
+02:11:54.975 Installing dependencies...
+02:12:01.324 
+02:12:01.325 up to date in 6s
+02:12:01.326 
+02:12:01.326 177 packages are looking for funding
+02:12:01.326   run `npm fund` for details
+02:12:01.362 Detected Next.js version: 14.2.21
+02:12:01.369 Running "npm run build"
+02:12:01.480 
+02:12:01.480 > webomat-frontend@0.1.0 build
+02:12:01.481 > next build
+02:12:01.481 
+02:12:03.088   ▲ Next.js 14.2.21
+02:12:03.089 
+02:12:03.191    Creating an optimized production build ...
+02:12:19.376  ✓ Compiled successfully
+02:12:19.377    Linting and checking validity of types ...
+02:12:19.714 
+02:12:19.714    We detected TypeScript in your project and created a tsconfig.json file for you.
+02:12:25.919 Failed to compile.
+02:12:25.919 
+02:12:25.920 ./app/[locale]/dashboard/crm/[id]/page.tsx:5:25
+02:12:25.920 Type error: Cannot find module '@/context/AuthContext' or its corresponding type declarations.
+02:12:25.920 
+02:12:25.920 [0m [90m 3 |[39m [36mimport[39m [33mReact[39m[33m,[39m { useState[33m,[39m useEffect } [36mfrom[39m [32m'react'[39m[0m
+02:12:25.920 [0m [90m 4 |[39m [36mimport[39m { useRouter[33m,[39m useParams } [36mfrom[39m [32m'next/navigation'[39m[0m
+02:12:25.921 [0m[31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m { useAuth } [36mfrom[39m [32m'@/context/AuthContext'[39m[0m
+02:12:25.921 [0m [90m   |[39m                         [31m[1m^[22m[39m[0m
+02:12:25.921 [0m [90m 6 |[39m [36mimport[39m [33mBusinessDetailHeader[39m [36mfrom[39m [32m'./components/BusinessDetailHeader'[39m[0m
+02:12:25.921 [0m [90m 7 |[39m [36mimport[39m api [36mfrom[39m [32m'@/lib/api'[39m[0m
+02:12:25.921 [0m [90m 8 |[39m[0m
+02:12:26.007 Error: Command "npm run build" exited with 1
