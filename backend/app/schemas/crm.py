@@ -671,3 +671,25 @@ class SellerClaimsResponse(BaseModel):
     total_earned: float
     already_invoiced: float
     available_to_claim: float
+
+
+class WeeklyInvoice(BaseModel):
+    """Týdenní faktura pro admin dashboard."""
+
+    week: str
+    count: int
+    amount: float
+
+
+class AdminDashboardStats(BaseModel):
+    """Statistiky pro admin dashboard."""
+
+    total_users: int
+    active_users: int
+    total_businesses: int
+    new_businesses_this_week: int
+    total_projects: int
+    projects_in_progress: int
+    total_invoices_issued: float
+    unpaid_invoices: float
+    weekly_invoices: list[WeeklyInvoice] = []
