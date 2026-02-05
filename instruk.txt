@@ -1,39 +1,11 @@
-02:11:51.368 Running build in Washington, D.C., USA (East) – iad1
-02:11:51.369 Build machine configuration: 2 cores, 8 GB
-02:11:51.756 Cloning github.com/xsimekp1/Webomat (Branch: master, Commit: 26625a1)
-02:11:52.046 Cloning completed: 289.000ms
-02:11:53.225 Restored build cache from previous deployment (HTyrieyR4yGr2t5LRJUdBdSViEHU)
-02:11:53.597 Running "vercel build"
-02:11:54.663 Vercel CLI 50.10.2
-02:11:54.975 Installing dependencies...
-02:12:01.324 
-02:12:01.325 up to date in 6s
-02:12:01.326 
-02:12:01.326 177 packages are looking for funding
-02:12:01.326   run `npm fund` for details
-02:12:01.362 Detected Next.js version: 14.2.21
-02:12:01.369 Running "npm run build"
-02:12:01.480 
-02:12:01.480 > webomat-frontend@0.1.0 build
-02:12:01.481 > next build
-02:12:01.481 
-02:12:03.088   ▲ Next.js 14.2.21
-02:12:03.089 
-02:12:03.191    Creating an optimized production build ...
-02:12:19.376  ✓ Compiled successfully
-02:12:19.377    Linting and checking validity of types ...
-02:12:19.714 
-02:12:19.714    We detected TypeScript in your project and created a tsconfig.json file for you.
-02:12:25.919 Failed to compile.
-02:12:25.919 
-02:12:25.920 ./app/[locale]/dashboard/crm/[id]/page.tsx:5:25
-02:12:25.920 Type error: Cannot find module '@/context/AuthContext' or its corresponding type declarations.
-02:12:25.920 
-02:12:25.920 [0m [90m 3 |[39m [36mimport[39m [33mReact[39m[33m,[39m { useState[33m,[39m useEffect } [36mfrom[39m [32m'react'[39m[0m
-02:12:25.920 [0m [90m 4 |[39m [36mimport[39m { useRouter[33m,[39m useParams } [36mfrom[39m [32m'next/navigation'[39m[0m
-02:12:25.921 [0m[31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m { useAuth } [36mfrom[39m [32m'@/context/AuthContext'[39m[0m
-02:12:25.921 [0m [90m   |[39m                         [31m[1m^[22m[39m[0m
-02:12:25.921 [0m [90m 6 |[39m [36mimport[39m [33mBusinessDetailHeader[39m [36mfrom[39m [32m'./components/BusinessDetailHeader'[39m[0m
-02:12:25.921 [0m [90m 7 |[39m [36mimport[39m api [36mfrom[39m [32m'@/lib/api'[39m[0m
-02:12:25.921 [0m [90m 8 |[39m[0m
-02:12:26.007 Error: Command "npm run build" exited with 1
+08:14:03.324 Failed to compile.
+08:14:03.326 Type error: Argument of type '{ name: string; ico: string; phone: string; email: string; address: string; notes: string; status_crm: string; next_follow_up_at: string; }' is not assignable to parameter of type 'SetStateAction<{ name: string; ico: string; phone: string; email: string; address: string; notes: string; status_crm: string; next_follow_up_at: string; contact_person: string; contact_name: string; }>'.
+08:14:03.326   Type '{ name: string; ico: string; phone: string; email: string; address: string; notes: string; status_crm: string; next_follow_up_at: string; }' is missing the following properties from type '{ name: string; ico: string; phone: string; email: string; address: string; notes: string; status_crm: string; next_follow_up_at: string; contact_person: string; contact_name: string; }': contact_person, contact_name
+08:14:03.326 [0m [90m 155 |[39m[0m
+08:14:03.326 [0m [90m 156 |[39m   [36mconst[39m openNewModal [33m=[39m () [33m=>[39m {[0m
+08:14:03.326 [0m[31m[1m>[22m[39m[90m 157 |[39m     setFormData({[0m
+08:14:03.326 [0m [90m     |[39m                 [31m[1m^[22m[39m[0m
+08:14:03.326 [0m [90m 158 |[39m       name[33m:[39m [32m''[39m[33m,[39m[0m
+08:14:03.327 [0m [90m 159 |[39m       ico[33m:[39m [32m''[39m[33m,[39m[0m
+08:14:03.327 [0m [90m 160 |[39m       phone[33m:[39m [32m''[39m[33m,[39m[0m
+08:14:03.412 Error: Command "npm run build" exited with 1

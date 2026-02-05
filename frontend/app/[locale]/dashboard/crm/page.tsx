@@ -22,6 +22,8 @@ interface Business {
   owner_seller_name: string | null
   next_follow_up_at: string | null
   created_at: string | null
+  contact_person: string | null
+  contact_name: string | null
 }
 
 interface CRMStats {
@@ -163,6 +165,8 @@ function CRMPageContent() {
       notes: '',
       status_crm: 'new',
       next_follow_up_at: '',
+      contact_person: '',
+      contact_name: '',
     })
     setShowNewModal(true)
   }
@@ -177,6 +181,8 @@ function CRMPageContent() {
       notes: business.notes || '',
       status_crm: business.status_crm,
       next_follow_up_at: business.next_follow_up_at ? business.next_follow_up_at.split('T')[0] : '',
+      contact_person: business.contact_person || '',
+      contact_name: business.contact_name || '',
     })
     setShowEditModal(business)
   }
