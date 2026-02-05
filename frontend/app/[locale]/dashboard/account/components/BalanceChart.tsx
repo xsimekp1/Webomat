@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { LineChart, Line, Tooltip, Legend, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Area, AreaChart } from 'recharts'
+import { BarChart, Bar, Tooltip, Legend, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Area, AreaChart } from 'recharts'
 import ApiClient from '../../../../lib/api'
 import { useAuth } from '../../../../context/AuthContext'
 
@@ -133,7 +133,7 @@ export const BalanceChart = () => {
       </div>
 
       <ResponsiveContainer width="100%" height={400}>
-        <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis 
             dataKey="date" 
@@ -174,30 +174,21 @@ export const BalanceChart = () => {
               </span>
             )}
           />
-          <Line 
-            type="monotone" 
+          <Bar 
             dataKey="earned" 
-            stroke="#10b981" 
-            strokeWidth={2}
-            dot={{ fill: '#10b981', strokeWidth: 2 }}
+            fill="#10b981"
           />
-          <Line 
-            type="monotone" 
+          <Bar 
             dataKey="balance" 
-            stroke="#8884d8" 
-            strokeWidth={2}
-            dot={{ fill: '#8884d8', strokeWidth: 2 }}
+            fill="#8884d8"
           />
           {user.role === 'admin' && (
-            <Line 
-              type="monotone" 
+            <Bar 
               dataKey="adjustments" 
-              stroke="#ffa726" 
-              strokeWidth={1}
-              strokeDasharray="5 5"
+              fill="#ffa726"
             />
           )}
-        </LineChart>
+        </BarChart>
       </ResponsiveContainer>
 
       <div className="chart-summary">
