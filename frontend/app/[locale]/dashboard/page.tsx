@@ -86,12 +86,14 @@ function DashboardPage() {
 
   // Load seller dashboard data
   useEffect(() => {
-    if (user) {
+    if (user && !isLoading) {
       ApiClient.getSellerDashboard()
         .then(setSellerData)
-        .catch(() => {})
+        .catch((err) => {
+          console.error('Failed to load seller dashboard:', err)
+        })
     }
-  }, [user])
+  }, [user, isLoading])
 
   // Load admin stats
   useEffect(() => {

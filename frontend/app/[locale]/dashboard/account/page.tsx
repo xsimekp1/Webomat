@@ -5,6 +5,7 @@ import ApiClient from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { useLanguage, LanguageProvider } from '../../../context/LanguageContext'
 import { useTranslations } from 'next-intl'
+import { BalanceChart } from './components/BalanceChart'
 
 interface LedgerEntry {
   id: string
@@ -205,28 +206,10 @@ function AccountContent() {
         </div>
       )}
 
-{/* Account Balance Breakdown - JEDNODUCHÝ VÝPOČET */}
+      {/* Balance Chart */}
       {accountSummary && (
-        <div className="balance-breakdown">
-          <h2>Výpočty</h2>
-          <div className="breakdown-formula">
-            <div className="formula-row positive">
-              <span className="formula-label">NÁROKY:</span>
-              <span className="formula-value">+{formatCurrency(accountSummary.total_earned)}</span>
-            </div>
-            
-            <div className="formula-row negative">
-              <span className="formula-label">VÝPLATY:</span>
-              <span className="formula-value">-{formatCurrency(accountSummary.total_paid_out)}</span>
-            </div>
-            
-            <div className="divider"></div>
-            
-            <div className="formula-row result">
-              <span className="formula-label">nárok na vyplacení:</span>
-              <span className="formula-value">{formatCurrency(accountSummary.available_balance)}</span>
-            </div>
-          </div>
+        <div className="balance-chart-section">
+          <BalanceChart />
         </div>
       )}
 
