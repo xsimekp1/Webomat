@@ -162,6 +162,18 @@ export const BalanceChart = () => {
               return null
             }}
           />
+          <Legend 
+            verticalAlign="top" 
+            height={36}
+            iconType="rect"
+            formatter={(value, entry) => (
+              <span style={{ color: entry.color }}>
+                {value === 'earned' && 'Vyděláno'}
+                {value === 'balance' && 'Zůstatek'}
+                {value === 'adjustments' && 'Adjustementy'}
+              </span>
+            )}
+          />
           <Line 
             type="monotone" 
             dataKey="earned" 
@@ -186,18 +198,6 @@ export const BalanceChart = () => {
             />
           )}
         </LineChart>
-        <Legend 
-          verticalAlign="top" 
-          height={36}
-          iconType="rect"
-          formatter={(value, entry) => (
-            <span style={{ color: entry.color }}>
-              {value === 'earned' && 'Vyděláno'}
-              {value === 'balance' && 'Zůstatek'}
-              {value === 'adjustments' && 'Adjustementy'}
-            </span>
-          )}
-        />
       </ResponsiveContainer>
 
       <div className="chart-summary">
