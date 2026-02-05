@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { LineChart, Tooltip, Legend, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Area, AreaChart } from 'recharts'
+import { LineChart, Line, Tooltip, Legend, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Area, AreaChart } from 'recharts'
 import ApiClient from '../../../../lib/api'
 import { useAuth } from '../../../../context/AuthContext'
 
