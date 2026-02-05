@@ -88,7 +88,10 @@ function DashboardPage() {
   useEffect(() => {
     if (user && !authLoading) {
       ApiClient.getSellerDashboard()
-        .then(setSellerData)
+        .then((data) => {
+          console.log('Dashboard data loaded:', data)
+          setSellerData(data)
+        })
         .catch((err) => {
           console.error('Failed to load seller dashboard:', err)
         })
