@@ -242,7 +242,7 @@ class ApiClient {
 
   static async getSellerDashboard() {
     const response = await axios.get(
-      `${API_BASE_URL}/crm/dashboard`,
+      `${API_BASE_URL}/crm/seller/dashboard`,
       { headers: ApiClient.getAuthHeaders() }
     );
     return response.data;
