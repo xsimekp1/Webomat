@@ -42,26 +42,26 @@ export const BalanceChart = () => {
       // Process in reverse chronological order
       const sortedTransactions = (ledgerResponse.ledger_entries || [])
         .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-        .filter(entry => entry.type !== 'payout_reserved') // Exclude pending transactions
+        .filter(entry => entry.entry_type !== 'payout_reserved') // Exclude pending transactions
 
       for (const entry of sortedTransactions) {
         const date = new Date(entry.created_at).toISOString().split('T')[0]
         
         // Calculate running balance
-        if (entry.type === 'commission_earned') {
+        if (entry.entry_type === 'commission_earned') {
           runningBalance += entry.amount
-        } else if (entry.type === 'admin_adjustment') {
+        } else if (entry.entry_type === 'admin_adjustment') {
           runningBalance += entry.amount
-        } else if (entry.type === 'payout_paid') {
+        } else if (entry.entry_type === 'payout_paid') {
           runningBalance += Math.abs(entry.amount) // Payouts are stored as negative
         }
 
         // Only show dates with balance changes for sales users
-        if (user.role === 'sales' && entry.type === 'commission_earned') {
+        if (user.role === 'sales' && entry.entry_type === 'commission_earned') {
           if (chartData.length === 0 || chartData[chartData.length - 1].date !== date) {
             chartData.push({
               date,
-              earned: runningBalance - Math.abs(entry.amount || 0),
+              earned: entry.amount,
               balance: runningBalance,
               adjustments: 0
             })
@@ -69,9 +69,9 @@ export const BalanceChart = () => {
         } else if (user.role === 'admin') {
           chartData.push({
             date,
-              earned: entry.type === 'commission_earned' ? entry.amount : 0,
-              balance: runningBalance,
-              adjustments: entry.type === 'admin_adjustment' ? entry.amount : 0
+            earned: entry.entry_type === 'commission_earned' ? entry.amount : 0,
+            balance: runningBalance,
+            adjustments: entry.entry_type === 'admin_adjustment' ? entry.amount : 0
           })
         }
       }
