@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { useAuth } from '@/app/context/AuthContext'
+import { useAuth } from '../../../context/AuthContext'
 import BusinessDetailHeader from './components/BusinessDetailHeader'
-import api from '@/app/lib/api'
+import api from '../../../lib/api'
 
 interface Business {
   id: string
