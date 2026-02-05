@@ -14,7 +14,10 @@ class Settings(BaseSettings):
 
     # CORS
     cors_origins: str = (
-        "http://localhost:3000,https://webomat.vercel.app,https://*.vercel.app"
+        "http://localhost:3000,"
+        "https://webomat.vercel.app,"
+        "https://frontend-*.vercel.app,"
+        "https://*.vercel.app"
     )
 
     # Azure OpenAI (optional)

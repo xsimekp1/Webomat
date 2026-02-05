@@ -28,7 +28,6 @@ from ..schemas.auth import (
     UserListItem,
     AdminPasswordReset,
     LanguageUpdate,
-    SellerWarnings,
     SellerEarningsResponse,
 )
 from ..schemas.crm import (

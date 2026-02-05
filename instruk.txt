@@ -1,11 +1,19 @@
-08:14:03.324 Failed to compile.
-08:14:03.326 Type error: Argument of type '{ name: string; ico: string; phone: string; email: string; address: string; notes: string; status_crm: string; next_follow_up_at: string; }' is not assignable to parameter of type 'SetStateAction<{ name: string; ico: string; phone: string; email: string; address: string; notes: string; status_crm: string; next_follow_up_at: string; contact_person: string; contact_name: string; }>'.
-08:14:03.326   Type '{ name: string; ico: string; phone: string; email: string; address: string; notes: string; status_crm: string; next_follow_up_at: string; }' is missing the following properties from type '{ name: string; ico: string; phone: string; email: string; address: string; notes: string; status_crm: string; next_follow_up_at: string; contact_person: string; contact_name: string; }': contact_person, contact_name
-08:14:03.326 [0m [90m 155 |[39m[0m
-08:14:03.326 [0m [90m 156 |[39m   [36mconst[39m openNewModal [33m=[39m () [33m=>[39m {[0m
-08:14:03.326 [0m[31m[1m>[22m[39m[90m 157 |[39m     setFormData({[0m
-08:14:03.326 [0m [90m     |[39m                 [31m[1m^[22m[39m[0m
-08:14:03.326 [0m [90m 158 |[39m       name[33m:[39m [32m''[39m[33m,[39m[0m
-08:14:03.327 [0m [90m 159 |[39m       ico[33m:[39m [32m''[39m[33m,[39m[0m
-08:14:03.327 [0m [90m 160 |[39m       phone[33m:[39m [32m''[39m[33m,[39m[0m
-08:14:03.412 Error: Command "npm run build" exited with 1
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    return callback(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/main.py", line 424, in main
+    run(
+    module = importlib.import_module(module_str)
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/main.py", line 594, in run
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    server.run()
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/server.py", line 67, in run
+    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+  File "/usr/local/lib/python3.11/importlib/__init__.py", line 126, in import_module
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    return _bootstrap._gcd_import(name[level:], package, level)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/uvicorn/_compat.py", line 30, in asyncio_run
+^^^^^^^^
+    return runner.run(main)
