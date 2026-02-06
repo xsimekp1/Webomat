@@ -83,10 +83,10 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           // This prevents race conditions when user manually changes language
           console.log('LanguageContext: Using URL locale locally:', urlLocale);
           setLanguageState(urlLocale);
-          localStorage.setItem('preferred_language', urlLocale);
-          
-          // Only update backend if it's different from stored preference
+
+          // Read stored preference BEFORE overwriting it
           const storedLanguage = localStorage.getItem('preferred_language');
+          localStorage.setItem('preferred_language', urlLocale);
           if (storedLanguage !== urlLocale) {
             console.log('LanguageContext: Backend preference differs, updating...');
             try {

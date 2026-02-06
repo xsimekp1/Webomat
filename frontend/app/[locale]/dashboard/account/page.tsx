@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import ApiClient from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
-import { useLanguage, LanguageProvider } from '../../../context/LanguageContext'
+import { useLanguage } from '../../../context/LanguageContext'
 import { useTranslations } from 'next-intl'
 import { BalanceChart } from './components/BalanceChart'
 
@@ -640,9 +640,5 @@ function AccountContent() {
 }
 
 export default function AccountPage() {
-  return (
-    <LanguageProvider>
-      <AccountContent />
-    </LanguageProvider>
-  )
+  return <AccountContent />
 }

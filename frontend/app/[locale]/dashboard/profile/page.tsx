@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../context/AuthContext'
-import { LanguageProvider, useLanguage } from '../../../context/LanguageContext'
+import { useLanguage } from '../../../context/LanguageContext'
 import { supabase } from '../../../utils/supabase'
 import ApiClient from '../../../lib/api'
 import LanguageSwitcher from '../../../../components/LanguageSwitcher'
@@ -757,9 +757,5 @@ const loadProfile = async (userId: string) => {
 }
 
 export default function ProfilePage() {
-  return (
-    <LanguageProvider>
-      <ProfileContent />
-    </LanguageProvider>
-  )
+  return <ProfileContent />
 }

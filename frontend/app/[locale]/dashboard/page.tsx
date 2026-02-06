@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
-import { useLanguage, LanguageProvider } from '../../context/LanguageContext'
+import { useLanguage } from '../../context/LanguageContext'
 import ApiClient from '../../lib/api'
 
 
@@ -1461,12 +1461,4 @@ const getStatusColor = (status: string) => {
   )
 }
 
-function DashboardPageWithLanguage() {
-  return (
-    <LanguageProvider>
-      <DashboardPage />
-    </LanguageProvider>
-  )
-}
-
-export default DashboardPageWithLanguage
+export default DashboardPage

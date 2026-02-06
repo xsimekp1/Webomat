@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Tento projekt běží v produkci!** Při úpravách kódu pracujeme na živém systému.
 
+**i18n:** Při vytváření nových funkcionalit s přesahem do frontendu je potřeba frontend psát rovnou pro oba jazyky (CS i EN) — překlady do `frontend/messages/cs.json` a `frontend/messages/en.json`.
+
 ## Quick Deploy Commands (pro Claude)
 
 **POSTUP PO ZMĚNÁCH:**

@@ -329,5 +329,3 @@ async def update_user_language(
         )
 
     return {"message": "Language updated successfully"}
-
-    return {"preferred_language": language_data.preferred_language}
