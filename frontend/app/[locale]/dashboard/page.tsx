@@ -5,8 +5,12 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { useLanguage } from '../../context/LanguageContext'
-import { useTranslations } from 'next-intl'
 import ApiClient from '../../lib/api'
+
+const dashboardStrings = {
+  cs: { greeting: (name: string) => `Ahoj, ${name}!`, fallbackName: 'uživateli' },
+  en: { greeting: (name: string) => `Hi, ${name}!`, fallbackName: 'user' },
+}
 
 
 
@@ -61,7 +65,6 @@ function DashboardPage() {
   const router = useRouter()
   const { showToast } = useToast()
   const { language } = useLanguage()
-  const t = useTranslations('dashboard')
   console.log('Dashboard: Current language from LanguageContext:', language)
 
   // Seller dashboard data
@@ -229,7 +232,7 @@ const getStatusColor = (status: string) => {
         {/* Welcome + Quick Stats */}
         <div className="welcome-row">
           <h2>
-            {t('greeting', { name: user.name?.split(' ')[0] || (language === 'cs' ? 'uživateli' : 'user') })}
+            {dashboardStrings[language].greeting(user.name?.split(' ')[0] || dashboardStrings[language].fallbackName)}
             <span style={{ marginLeft: '8px' }}>
               {language === 'cs' ? '🇨🇿' : '🇬🇧'}
             </span>
