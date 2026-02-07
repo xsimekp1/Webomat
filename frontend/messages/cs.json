@@ -135,6 +135,9 @@
     "payoutPaid": "Vyplaceno",
     "loading": "Načítám..."
   },
+  "dashboard": {
+    "greeting": "Ahoj, {name}!"
+  },
   "messages": {
     "profileUpdateFailed": "Nepodařilo se uložit profil",
     "passwordChangeFailed": "Nepodařilo se změnit heslo",

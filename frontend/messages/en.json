@@ -135,6 +135,9 @@
     "payoutPaid": "Payout paid",
     "loading": "Loading..."
   },
+  "dashboard": {
+    "greeting": "Hi, {name}!"
+  },
   "messages": {
     "profileUpdateFailed": "Failed to save profile",
     "passwordChangeFailed": "Failed to change password",
