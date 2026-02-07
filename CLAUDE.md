@@ -508,6 +508,18 @@ Při vytváření leadu se kontroluje:
 
 Endpoint: `GET /crm/businesses/check-duplicate?phone=&website=&name=`
 
+## Rozpracované funkcionality (WIP)
+
+| Funkce | Stav | Poznámka |
+|--------|------|----------|
+| **PDF generování faktur** | Placeholder | WeasyPrint enabled, zatím generuje zástupné PDF. Plná šablona s kompletními daty přijde později. |
+| **AI generátor webů** | Disabled v UI | Backend endpoint `/website/generate` funguje, ale UI tlačítko pro AI je disabled. Pouze DRY RUN dostupný. |
+| **Screenshoty webů** | Opraveno | Playwright + Chromium nainstalován v Dockerfile. Dříve chyběl browser binary na Railway. |
+
+**Debug/WIP indikátory ve frontendu:**
+- Na stránce detailu faktury je info banner o WIP stavu PDF generování
+- Při přidávání nových WIP funkcí vždy přidat viditelný indikátor v UI (info banner, badge, tooltip)
+
 ## DRY RUN Mode (implementováno)
 - Endpoint: POST /website/generate
 - Parametr: dry_run (boolean)

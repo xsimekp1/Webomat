@@ -18,6 +18,7 @@ export default function InvoiceDetailPage() {
   const { user } = useAuth()
   const { showToast } = useToast()
   const invoiceId = params.invoiceId as string
+  const locale = (params.locale as string) || 'cs'
 
   const [invoice, setInvoice] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -206,6 +207,15 @@ export default function InvoiceDetailPage() {
             Zpět
           </button>
         </div>
+      </div>
+
+      <div className="wip-banner">
+        <span className="wip-icon">&#9432;</span>
+        <span>
+          {locale === 'en'
+            ? 'PDF generation: WIP — a placeholder PDF will be generated. Full invoice template coming soon.'
+            : 'Generování PDF: WIP — vygeneruje se zástupné PDF. Plná šablona faktury bude brzy dostupná.'}
+        </span>
       </div>
 
       <div className="card invoice-detail-card">
@@ -439,6 +449,24 @@ export default function InvoiceDetailPage() {
       )}
 
       <style jsx>{`
+        .wip-banner {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          background: #fefce8;
+          border: 1px solid #fde68a;
+          border-radius: 0.5rem;
+          padding: 0.75rem 1rem;
+          margin-bottom: 1rem;
+          color: #92400e;
+          font-size: 0.875rem;
+        }
+
+        .wip-icon {
+          font-size: 1.25rem;
+          flex-shrink: 0;
+        }
+
         .invoice-detail-card {
           max-width: 800px;
         }
