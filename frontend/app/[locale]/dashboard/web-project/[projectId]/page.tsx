@@ -122,6 +122,7 @@ export default function WebProjectPage() {
   const { user } = useAuth()
   const { showToast } = useToast()
   const projectId = params.projectId as string
+  const locale = (params.locale as string) || 'cs'
 
   const [project, setProject] = useState<Project | null>(null)
   const [versions, setVersions] = useState<Version[]>([])
@@ -143,6 +144,7 @@ export default function WebProjectPage() {
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
   const [creatingInvoice, setCreatingInvoice] = useState(false)
   const [updatingInvoice, setUpdatingInvoice] = useState<string | null>(null)
+  const [generatingPdf, setGeneratingPdf] = useState<string | null>(null)
   const [invoiceForm, setInvoiceForm] = useState({
     amount_without_vat: 0,
     payment_type: 'setup' as 'setup' | 'monthly' | 'other',
@@ -298,6 +300,21 @@ const handleDeleteVersion = async (versionId: string) => {
       showToast(err.response?.data?.detail || 'Nepodarilo se aktualizovat fakturu', 'error')
     } finally {
       setUpdatingInvoice(null)
+    }
+  }
+
+  const handleGenerateAndDownloadPdf = async (invoiceId: string) => {
+    setGeneratingPdf(invoiceId)
+    try {
+      const result = await ApiClient.generateInvoicePdf(invoiceId)
+      if (result.pdf_url) {
+        window.open(result.pdf_url, '_blank')
+        showToast('PDF vygenerovano', 'success')
+      }
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || 'Chyba pri generovani PDF', 'error')
+    } finally {
+      setGeneratingPdf(null)
     }
   }
 
@@ -610,6 +627,19 @@ const handleDeleteVersion = async (versionId: string) => {
                   )}
 
                   <div className="invoice-actions">
+                    <button
+                      className="btn-secondary"
+                      onClick={() => handleGenerateAndDownloadPdf(invoice.id)}
+                      disabled={generatingPdf === invoice.id}
+                    >
+                      {generatingPdf === invoice.id ? 'Generuji PDF...' : 'Stahnout PDF'}
+                    </button>
+                    <button
+                      className="btn-secondary"
+                      onClick={() => router.push(`/${locale}/dashboard/invoices/${invoice.id}`)}
+                    >
+                      Detail
+                    </button>
                     {invoice.status === 'draft' && (
                       <button
                         className="btn-secondary"
