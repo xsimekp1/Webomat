@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '../../../../context/AuthContext'
 import { useToast } from '../../../../context/ToastContext'
 import ApiClient from '../../../../lib/api'
 import { formatCurrency, formatDate } from '../../../../lib/utils'
+import { useTranslations } from 'next-intl'
 
 interface AdminInvoice {
   id: string
@@ -31,20 +32,23 @@ interface AdminInvoicesResponse {
   limit: number
 }
 
-const STATUS_OPTIONS = [
-  { value: '', label: 'Vše' },
-  { value: 'pending_approval', label: 'Čeká na schválení' },
-  { value: 'draft', label: 'Návrh' },
-  { value: 'issued', label: 'Vystaveno' },
-  { value: 'paid', label: 'Zaplaceno' },
-  { value: 'overdue', label: 'Po splatnosti' },
-  { value: 'cancelled', label: 'Stornováno' },
-]
-
 export default function AdminInvoicesPage() {
   const { user, isLoading, isAuthenticated } = useAuth()
   const { showToast } = useToast()
   const router = useRouter()
+  const params = useParams()
+  const locale = (params.locale as string) || 'cs'
+  const t = useTranslations('adminInvoices')
+
+  const STATUS_OPTIONS = [
+    { value: '', label: t('statusAll') },
+    { value: 'pending_approval', label: t('statusPendingApproval') },
+    { value: 'draft', label: t('statusDraft') },
+    { value: 'issued', label: t('statusIssued') },
+    { value: 'paid', label: t('statusPaid') },
+    { value: 'overdue', label: t('statusOverdue') },
+    { value: 'cancelled', label: t('statusCancelled') },
+  ]
 
   const [invoices, setInvoices] = useState<AdminInvoice[]>([])
   const [total, setTotal] = useState(0)
@@ -64,16 +68,17 @@ export default function AdminInvoicesPage() {
   // Action loading states
   const [approving, setApproving] = useState<string | null>(null)
   const [markingPaid, setMarkingPaid] = useState<string | null>(null)
+  const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isLoading) {
       if (!isAuthenticated) {
         router.push('/')
       } else if (user?.role !== 'admin') {
-        router.push('/dashboard')
+        router.push(`/${locale}/dashboard`)
       }
     }
-  }, [isLoading, isAuthenticated, user, router])
+  }, [isLoading, isAuthenticated, user, router, locale])
 
   useEffect(() => {
     if (user?.role === 'admin') {
@@ -92,7 +97,7 @@ export default function AdminInvoicesPage() {
       setInvoices(response.items)
       setTotal(response.total)
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Nepodařilo se načíst faktury')
+      setError(err.response?.data?.detail || t('loadError'))
     } finally {
       setLoading(false)
     }
@@ -102,10 +107,10 @@ export default function AdminInvoicesPage() {
     try {
       setApproving(invoiceId)
       await ApiClient.approveInvoice(invoiceId)
-      showToast('Faktura byla schválena', 'success')
+      showToast(t('approved'), 'success')
       loadInvoices()
     } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Chyba při schvalování', 'error')
+      showToast(err.response?.data?.detail || t('approveError'), 'error')
     } finally {
       setApproving(null)
     }
@@ -113,19 +118,19 @@ export default function AdminInvoicesPage() {
 
   const handleReject = async () => {
     if (!rejectModal || !rejectReason.trim()) {
-      showToast('Zadejte důvod zamítnutí', 'error')
+      showToast(t('enterRejectReason'), 'error')
       return
     }
 
     try {
       setRejecting(true)
       await ApiClient.rejectInvoice(rejectModal.invoiceId, rejectReason.trim())
-      showToast('Faktura byla zamítnuta', 'success')
+      showToast(t('rejected'), 'success')
       setRejectModal(null)
       setRejectReason('')
       loadInvoices()
     } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Chyba při zamítání', 'error')
+      showToast(err.response?.data?.detail || t('rejectError'), 'error')
     } finally {
       setRejecting(false)
     }
@@ -138,23 +143,37 @@ export default function AdminInvoicesPage() {
         status: 'paid',
         paid_date: new Date().toISOString().split('T')[0]
       })
-      showToast('Faktura označena jako zaplacená', 'success')
+      showToast(t('paid'), 'success')
       loadInvoices()
     } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Chyba při aktualizaci', 'error')
+      showToast(err.response?.data?.detail || t('paidError'), 'error')
     } finally {
       setMarkingPaid(null)
     }
   }
 
+  const handleDownloadPdf = async (invoiceId: string) => {
+    try {
+      setDownloadingPdf(invoiceId)
+      const result = await ApiClient.generateInvoicePdf(invoiceId)
+      if (result.pdf_url) {
+        window.open(result.pdf_url, '_blank')
+      }
+    } catch (err: any) {
+      showToast(err.response?.data?.detail || t('loadError'), 'error')
+    } finally {
+      setDownloadingPdf(null)
+    }
+  }
+
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
-      draft: 'Návrh',
-      pending_approval: 'Čeká na schválení',
-      issued: 'Vystaveno',
-      paid: 'Zaplaceno',
-      overdue: 'Po splatnosti',
-      cancelled: 'Stornováno',
+      draft: t('statusDraft'),
+      pending_approval: t('statusPendingApproval'),
+      issued: t('statusIssued'),
+      paid: t('statusPaid'),
+      overdue: t('statusOverdue'),
+      cancelled: t('statusCancelled'),
     }
     return labels[status] || status
   }
@@ -171,19 +190,10 @@ export default function AdminInvoicesPage() {
     return colors[status] || '#6b7280'
   }
 
-  const getPaymentTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      setup: 'Jednorázový',
-      monthly: 'Měsíční',
-      other: 'Ostatní',
-    }
-    return labels[type] || type
-  }
-
   const totalPages = Math.ceil(total / limit)
 
   if (isLoading || !user) {
-    return <div className="loading">Načítám...</div>
+    return <div className="loading">{t('loading')}</div>
   }
 
   if (user.role !== 'admin') {
@@ -193,10 +203,10 @@ export default function AdminInvoicesPage() {
   return (
     <div className="admin-page">
       <header className="admin-header">
-        <button onClick={() => router.push('/dashboard')} className="btn-back">
-          Zpět na dashboard
+        <button onClick={() => router.push(`/${locale}/dashboard`)} className="btn-back">
+          {t('backToDashboard')}
         </button>
-        <h1>Správa faktur</h1>
+        <h1>{t('title')}</h1>
       </header>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -205,7 +215,7 @@ export default function AdminInvoicesPage() {
         {/* Filters */}
         <div className="filters">
           <div className="filter-group">
-            <label>Status:</label>
+            <label>{t('statusLabel')}</label>
             <select
               value={statusFilter}
               onChange={(e) => {
@@ -221,30 +231,30 @@ export default function AdminInvoicesPage() {
             </select>
           </div>
           <div className="filter-info">
-            Celkem: <strong>{total}</strong> faktur
+            {t('totalCount', { count: total })}
           </div>
         </div>
 
         {/* Table */}
         {loading ? (
-          <div className="loading">Načítám faktury...</div>
+          <div className="loading">{t('loadingInvoices')}</div>
         ) : invoices.length === 0 ? (
           <div className="empty-state">
-            <p>Žádné faktury nenalezeny</p>
+            <p>{t('noInvoices')}</p>
           </div>
         ) : (
           <>
             <table className="invoices-table">
               <thead>
                 <tr>
-                  <th>Č. faktury</th>
-                  <th>Klient</th>
-                  <th>Obchodník</th>
-                  <th>Částka</th>
-                  <th>Status</th>
-                  <th>Vystaveno</th>
-                  <th>Splatnost</th>
-                  <th>Akce</th>
+                  <th>{t('colInvoiceNumber')}</th>
+                  <th>{t('colClient')}</th>
+                  <th>{t('colSeller')}</th>
+                  <th>{t('colAmount')}</th>
+                  <th>{t('colStatus')}</th>
+                  <th>{t('colIssueDate')}</th>
+                  <th>{t('colDueDate')}</th>
+                  <th>{t('colActions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -252,11 +262,11 @@ export default function AdminInvoicesPage() {
                   <tr key={inv.id}>
                     <td>
                       <a
-                        href={`/dashboard/invoices/${inv.id}`}
+                        href={`/${locale}/dashboard/invoices/${inv.id}`}
                         className="invoice-link"
                         onClick={(e) => {
                           e.preventDefault()
-                          router.push(`/dashboard/invoices/${inv.id}`)
+                          router.push(`/${locale}/dashboard/invoices/${inv.id}`)
                         }}
                       >
                         {inv.invoice_number}
@@ -277,7 +287,7 @@ export default function AdminInvoicesPage() {
                       </span>
                       {inv.rejected_reason && (
                         <div className="rejection-reason" title={inv.rejected_reason}>
-                          Důvod: {inv.rejected_reason.substring(0, 30)}...
+                          {t('rejectionReasonPrefix')}{inv.rejected_reason.substring(0, 30)}...
                         </div>
                       )}
                     </td>
@@ -291,13 +301,13 @@ export default function AdminInvoicesPage() {
                             onClick={() => handleApprove(inv.id)}
                             disabled={approving === inv.id}
                           >
-                            {approving === inv.id ? '...' : 'Schválit'}
+                            {approving === inv.id ? t('approving') : t('approve')}
                           </button>
                           <button
                             className="btn-small btn-danger"
                             onClick={() => setRejectModal({ invoiceId: inv.id, invoiceNumber: inv.invoice_number })}
                           >
-                            Zamítnout
+                            {t('reject')}
                           </button>
                         </>
                       )}
@@ -307,14 +317,21 @@ export default function AdminInvoicesPage() {
                           onClick={() => handleMarkPaid(inv.id)}
                           disabled={markingPaid === inv.id}
                         >
-                          {markingPaid === inv.id ? '...' : 'Zaplaceno'}
+                          {markingPaid === inv.id ? t('markingPaid') : t('markAsPaid')}
                         </button>
                       )}
                       <button
-                        className="btn-small"
-                        onClick={() => router.push(`/dashboard/invoices/${inv.id}`)}
+                        className="btn-small btn-pdf"
+                        onClick={() => handleDownloadPdf(inv.id)}
+                        disabled={downloadingPdf === inv.id}
                       >
-                        Detail
+                        {downloadingPdf === inv.id ? t('downloadingPdf') : t('downloadPdf')}
+                      </button>
+                      <button
+                        className="btn-small"
+                        onClick={() => router.push(`/${locale}/dashboard/invoices/${inv.id}`)}
+                      >
+                        {t('detail')}
                       </button>
                     </td>
                   </tr>
@@ -330,17 +347,17 @@ export default function AdminInvoicesPage() {
                   disabled={page === 1}
                   className="btn-page"
                 >
-                  Předchozí
+                  {t('prevPage')}
                 </button>
                 <span className="page-info">
-                  Stránka {page} z {totalPages}
+                  {t('pageInfo', { page, total: totalPages })}
                 </span>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
                   className="btn-page"
                 >
-                  Další
+                  {t('nextPage')}
                 </button>
               </div>
             )}
@@ -352,17 +369,17 @@ export default function AdminInvoicesPage() {
       {rejectModal && (
         <div className="modal-overlay" onClick={() => setRejectModal(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Zamítnout fakturu</h2>
+            <h2>{t('rejectModalTitle')}</h2>
             <p>
-              Zamítnout fakturu: <strong>{rejectModal.invoiceNumber}</strong>
+              {t('rejectModalInvoice', { number: rejectModal.invoiceNumber })}
             </p>
             <div className="field">
-              <label htmlFor="rejectReason">Důvod zamítnutí *</label>
+              <label htmlFor="rejectReason">{t('rejectReasonLabel')}</label>
               <textarea
                 id="rejectReason"
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Zadejte důvod zamítnutí..."
+                placeholder={t('rejectReasonPlaceholder')}
                 rows={4}
               />
             </div>
@@ -375,14 +392,14 @@ export default function AdminInvoicesPage() {
                 className="btn-secondary"
                 disabled={rejecting}
               >
-                Zrušit
+                {t('cancel')}
               </button>
               <button
                 onClick={handleReject}
                 className="btn-danger"
                 disabled={rejecting || !rejectReason.trim()}
               >
-                {rejecting ? 'Zamítám...' : 'Zamítnout'}
+                {rejecting ? t('rejecting') : t('reject')}
               </button>
             </div>
           </div>
@@ -548,6 +565,12 @@ export default function AdminInvoicesPage() {
         }
         .btn-success:hover {
           background: #16a34a;
+        }
+        .btn-pdf {
+          background: #7c3aed;
+        }
+        .btn-pdf:hover {
+          background: #6d28d9;
         }
 
         /* Pagination */

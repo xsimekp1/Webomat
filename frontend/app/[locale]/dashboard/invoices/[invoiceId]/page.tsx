@@ -151,8 +151,10 @@ export default function InvoiceDetailPage() {
 
     try {
       setDownloadingPdf(true)
-      const pdfUrl = await ApiClient.downloadInvoicePdf(invoice.id)
-      window.open(pdfUrl, '_blank')
+      const result = await ApiClient.generateInvoicePdf(invoice.id)
+      if (result.pdf_url) {
+        window.open(result.pdf_url, '_blank')
+      }
     } catch (err: any) {
       showToast(err.response?.data?.detail || t('downloadError'), 'error')
     } finally {
@@ -202,13 +204,6 @@ export default function InvoiceDetailPage() {
             {tc('back')}
           </button>
         </div>
-      </div>
-
-      <div className="wip-banner">
-        <span className="wip-icon">&#9432;</span>
-        <span>
-          {t('wipBanner')}
-        </span>
       </div>
 
       <div className="card invoice-detail-card">
@@ -442,24 +437,6 @@ export default function InvoiceDetailPage() {
       )}
 
       <style jsx>{`
-        .wip-banner {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          background: #fefce8;
-          border: 1px solid #fde68a;
-          border-radius: 0.5rem;
-          padding: 0.75rem 1rem;
-          margin-bottom: 1rem;
-          color: #92400e;
-          font-size: 0.875rem;
-        }
-
-        .wip-icon {
-          font-size: 1.25rem;
-          flex-shrink: 0;
-        }
-
         .invoice-detail-card {
           max-width: 800px;
         }
