@@ -227,7 +227,21 @@
     "adminAdjustment": "Admin adjustment",
     "payoutReserved": "Payout reserved",
     "payoutPaid": "Payout paid",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "claims": "CLAIMS",
+    "payouts": "PAYOUTS",
+    "claimForPayout": "available for payout",
+    "loadError": "Failed to load account data",
+    "chartTitle": "Account activity overview",
+    "chartPeriod": "Period:",
+    "chartLoadingGraph": "Loading chart...",
+    "chartEarned": "Earned",
+    "chartBalance": "Balance",
+    "chartAdjustments": "Adjustments",
+    "chartLastBalance": "Last balance:",
+    "chartTotalEarned": "Total earned:",
+    "chartTotalAdjustments": "Total adjustments:",
+    "commissionFrom": "Commission from {name}"
   },
   "dashboard": {
     "greeting": "Hi, {name}!",

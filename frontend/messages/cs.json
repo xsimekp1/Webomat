@@ -227,7 +227,21 @@
     "adminAdjustment": "Admin úprava",
     "payoutReserved": "Rezervace k výplatě",
     "payoutPaid": "Vyplaceno",
-    "loading": "Načítám..."
+    "loading": "Načítám...",
+    "claims": "NÁROKY",
+    "payouts": "VÝPLATY",
+    "claimForPayout": "nárok na vyplacení",
+    "loadError": "Nepodařilo se načíst data účtu",
+    "chartTitle": "Přehled pohybů na účtu",
+    "chartPeriod": "Období:",
+    "chartLoadingGraph": "Načítám graf...",
+    "chartEarned": "Vyděláno",
+    "chartBalance": "Zůstatek",
+    "chartAdjustments": "Úpravy",
+    "chartLastBalance": "Poslední zůstatek:",
+    "chartTotalEarned": "Celkem vybráno:",
+    "chartTotalAdjustments": "Celkové úpravy:",
+    "commissionFrom": "Provize z {name}"
   },
   "dashboard": {
     "greeting": "Ahoj, {name}!",

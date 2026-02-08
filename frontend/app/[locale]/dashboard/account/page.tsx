@@ -89,7 +89,7 @@ function AccountContent() {
         reserved_for_payout
       })
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Nepodařilo se načíst data účtu')
+      setError(err.response?.data?.detail || t('loadError'))
     } finally {
       setLoading(false)
     }
@@ -135,8 +135,8 @@ function AccountContent() {
     // Automaticky generuj popis pro různé typy
     switch (entry.entry_type) {
       case 'commission_earned':
-        return entry.business_name 
-          ? (language === 'en' ? `Commission from ${entry.business_name}` : `Provize z ${entry.business_name}`)
+        return entry.business_name
+          ? t('commissionFrom', { name: entry.business_name })
           : t('commissionEarned')
       case 'payout_paid':
         return t('payoutPaid')
@@ -150,7 +150,7 @@ function AccountContent() {
   }
 
   if (!user) {
-    return <div className="loading">Načítám...</div>
+    return <div className="loading">{t('loading')}</div>
   }
 
   if (loading && !accountSummary) {
@@ -184,7 +184,7 @@ function AccountContent() {
             <div className="card-icon">📈</div>
             <div className="card-content">
               <span className="card-value">{formatCurrency(accountSummary.total_earned)}</span>
-              <span className="card-label">NÁROKY</span>
+              <span className="card-label">{t('claims')}</span>
             </div>
           </div>
 
@@ -192,7 +192,7 @@ function AccountContent() {
             <div className="card-icon">✅</div>
             <div className="card-content">
               <span className="card-value">{formatCurrency(accountSummary.total_paid_out)}</span>
-              <span className="card-label">VÝPLATY</span>
+              <span className="card-label">{t('payouts')}</span>
             </div>
           </div>
 
@@ -200,7 +200,7 @@ function AccountContent() {
             <div className="card-icon">💰</div>
             <div className="card-content">
               <span className="card-value">{formatCurrency(accountSummary.available_balance)}</span>
-              <span className="card-label">nárok na vyplacení</span>
+              <span className="card-label">{t('claimForPayout')}</span>
             </div>
           </div>
         </div>
@@ -244,7 +244,7 @@ function AccountContent() {
       {/* Ledger Entries Table */}
       <div className="ledger-section">
         {loading ? (
-          <div className="loading">{language === 'en' ? 'Loading...' : 'Načítám...'}</div>
+          <div className="loading">{t('loading')}</div>
         ) : ledgerData.length === 0 ? (
           <div className="empty-state">
             <p>{t('noTransactionsFound')}</p>
