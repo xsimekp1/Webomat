@@ -411,18 +411,18 @@ export default function BusinessDetailPage() {
   }
 
   if (isLoading || !user) {
-    return <div className="loading">Načítám...</div>
+    return <div className="loading">{t('loading')}</div>
   }
 
   if (loading) {
-    return <div className="loading">Načítám detail...</div>
+    return <div className="loading">{t('loadingDetail')}</div>
   }
 
   if (!business) {
     return (
       <div className="error-page">
-        <h2>Lead nenalezen</h2>
-        <button onClick={() => router.push('/dashboard/crm')}>Zpět na seznam</button>
+        <h2>{t('notFound')}</h2>
+        <button onClick={() => router.push('/dashboard/crm')}>{t('backToList')}</button>
       </div>
     )
   }
@@ -432,7 +432,7 @@ export default function BusinessDetailPage() {
       <header className="detail-header">
         <div className="header-left">
           <button className="btn-back" onClick={() => router.push('/dashboard/crm')}>
-            ← Zpět
+            {t('backButton')}
           </button>
           <div className="business-title">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -451,16 +451,16 @@ export default function BusinessDetailPage() {
               }}
               onClick={() => { setNewStatus(business.status_crm); setShowStatusModal(true); }}
             >
-              {STATUS_CONFIG[business.status_crm]?.label || business.status_crm} ▾
+              {getStatusLabel(business.status_crm)} ▾
             </span>
           </div>
         </div>
         <div className="header-actions">
           <button className="btn-activity" onClick={() => setShowActivityModal(true)}>
-            + Přidat aktivitu
+            {t('addActivity')}
           </button>
           <button className="btn-delete" onClick={handleDelete} disabled={deleting}>
-            {deleting ? 'Mažu...' : 'Smazat'}
+            {deleting ? t('deleting') : tc('delete')}
           </button>
         </div>
       </header>
@@ -470,10 +470,10 @@ export default function BusinessDetailPage() {
       <div className="detail-grid">
         {/* Info Card */}
         <div className="card info-card">
-          <h3>Kontaktní údaje</h3>
+          <h3>{t('contactInfo')}</h3>
 
           <div className="info-row">
-            <span className="label">Telefon:</span>
+            <span className="label">{t('phone')}</span>
             {business.phone ? (
               <a href={`tel:${business.phone}`} className="phone-link">{business.phone}</a>
             ) : (
@@ -482,7 +482,7 @@ export default function BusinessDetailPage() {
           </div>
 
           <div className="info-row">
-            <span className="label">Email:</span>
+            <span className="label">{t('email')}</span>
             {business.email ? (
               <a href={`mailto:${business.email}`} className="email-link">{business.email}</a>
             ) : (
@@ -491,12 +491,12 @@ export default function BusinessDetailPage() {
           </div>
 
           <div className="info-row">
-            <span className="label">Adresa:</span>
+            <span className="label">{t('address')}</span>
             <span>{business.address || '-'}</span>
           </div>
 
           <div className="info-row">
-            <span className="label">Web:</span>
+            <span className="label">{t('website')}</span>
             {business.website ? (
               <a href={business.website} target="_blank" rel="noopener noreferrer" className="web-link">
                 {business.website}
@@ -507,58 +507,58 @@ export default function BusinessDetailPage() {
           </div>
 
           <div className="info-row">
-            <span className="label">Kategorie:</span>
+            <span className="label">{t('category')}</span>
             <span>{business.category || '-'}</span>
           </div>
 
           <div className="info-row">
-            <span className="label">Follow-up:</span>
+            <span className="label">{t('followUp')}</span>
             <span className={business.next_follow_up_at && new Date(business.next_follow_up_at) < new Date() ? 'overdue' : ''}>
               {formatDate(business.next_follow_up_at)}
             </span>
           </div>
 
           <div className="info-row">
-            <span className="label">Přiřazeno:</span>
-            <span>{business.owner_seller_name || 'Nepřiřazeno'}</span>
+            <span className="label">{t('assignedTo')}</span>
+            <span>{business.owner_seller_name || t('unassigned')}</span>
           </div>
 
           {/* Fakturační údaje */}
           {(business.ico || business.dic || business.billing_address || business.bank_account || business.contact_person) && (
             <div className="billing-section">
-              <h4>Fakturační údaje</h4>
+              <h4>{t('billingInfo')}</h4>
 
               {business.ico && (
                 <div className="info-row">
-                  <span className="label">IČO:</span>
+                  <span className="label">{t('icoLabel')}</span>
                   <span>{business.ico}</span>
                 </div>
               )}
 
               {business.dic && (
                 <div className="info-row">
-                  <span className="label">DIČ:</span>
+                  <span className="label">{t('dicLabel')}</span>
                   <span>{business.dic}</span>
                 </div>
               )}
 
               {business.contact_person && (
                 <div className="info-row">
-                  <span className="label">Kontakt:</span>
+                  <span className="label">{t('contactLabel')}</span>
                   <span>{business.contact_person}</span>
                 </div>
               )}
 
               {business.billing_address && (
                 <div className="info-row">
-                  <span className="label">Fakt. adresa:</span>
+                  <span className="label">{t('billingAddress')}</span>
                   <span>{business.billing_address}</span>
                 </div>
               )}
 
               {business.bank_account && (
                 <div className="info-row">
-                  <span className="label">Účet:</span>
+                  <span className="label">{t('accountLabel')}</span>
                   <span className="bank-account">{business.bank_account}</span>
                 </div>
               )}
@@ -567,26 +567,26 @@ export default function BusinessDetailPage() {
 
           {business.notes && (
             <div className="notes-section">
-              <h4>Poznámky</h4>
+              <h4>{t('notesTitle')}</h4>
               <p>{business.notes}</p>
             </div>
           )}
 
           <div className="meta-info">
-            <span>Vytvořeno: {formatDateTime(business.created_at)}</span>
+            <span>{t('createdAt', { date: formatDateTime(business.created_at) })}</span>
             {business.updated_at && (
-              <span>Upraveno: {formatDateTime(business.updated_at)}</span>
+              <span>{t('updatedAt', { date: formatDateTime(business.updated_at) })}</span>
             )}
           </div>
         </div>
 
         {/* Activities Card */}
         <div className="card activities-card">
-          <h3>Komunikační log ({activities.length})</h3>
+          <h3>{t('communicationLog', { count: activities.length })}</h3>
 
           {activities.length === 0 ? (
             <div className="empty-activities">
-              <p>Zatím žádné aktivity</p>
+              <p>{t('noActivities')}</p>
             </div>
           ) : (
             <div className="activities-list">
@@ -602,9 +602,9 @@ export default function BusinessDetailPage() {
                     </div>
                     <p className="activity-description">{activity.description}</p>
                     {activity.outcome && (
-                      <p className="activity-outcome">Výsledek: {activity.outcome}</p>
+                      <p className="activity-outcome">{t('outcome', { text: activity.outcome })}</p>
                     )}
-                    <span className="activity-seller">— {activity.seller_name || 'Neznámý'}</span>
+                    <span className="activity-seller">— {activity.seller_name || t('unknown')}</span>
                   </div>
                 </div>
               ))}
@@ -615,7 +615,7 @@ export default function BusinessDetailPage() {
         {/* Projects Card (Right Column) */}
         <div className="card projects-card">
           <div className="card-header-row">
-            <h3>Projekty ({projects.length})</h3>
+            <h3>{t('projects', { count: projects.length })}</h3>
           </div>
           {projects.length > 0 ? (
             <div className="projects-list-mini">
@@ -630,7 +630,7 @@ export default function BusinessDetailPage() {
                       <img src={project.latest_thumbnail_url} alt="Náhled" />
                     ) : (
                       <div className="thumbnail-placeholder-mini">
-                        <span>Bez náhledu</span>
+                        <span>{t('noPreview')}</span>
                       </div>
                     )}
                   </div>
@@ -643,7 +643,7 @@ export default function BusinessDetailPage() {
                           backgroundColor: PROJECT_STATUS_CONFIG[project.status]?.bg || '#f5f5f5',
                         }}
                       >
-                        {PROJECT_STATUS_CONFIG[project.status]?.label || project.status}
+                        {getProjectStatusLabel(project.status)}
                       </span>
                       <span
                         className="package-badge-mini"
@@ -652,9 +652,9 @@ export default function BusinessDetailPage() {
                         {PACKAGE_CONFIG[project.package]?.label || project.package}
                       </span>
                     </div>
-                    <span className="project-domain-mini">{project.domain || 'Bez domény'}</span>
+                    <span className="project-domain-mini">{project.domain || t('noDomain')}</span>
                     {project.versions_count > 0 && (
-                      <span className="versions-count-mini">{project.versions_count} verzí</span>
+                      <span className="versions-count-mini">{t('versionsCount', { count: project.versions_count })}</span>
                     )}
                   </div>
                   <button
@@ -663,7 +663,7 @@ export default function BusinessDetailPage() {
                       e.stopPropagation()
                       router.push(`/dashboard/web-project/${project.id}`)
                     }}
-                    title="Správa webu"
+                    title={t('webManagement')}
                   >
                     🌐
                   </button>
@@ -672,8 +672,8 @@ export default function BusinessDetailPage() {
             </div>
           ) : (
             <div className="empty-projects">
-              <p>Žádné projekty</p>
-              <span className="hint">Klikněte + pro vytvoření</span>
+              <p>{t('noProjects')}</p>
+              <span className="hint">{t('noProjectsHint')}</span>
             </div>
           )}
         </div>
@@ -683,44 +683,44 @@ export default function BusinessDetailPage() {
       {showActivityModal && (
         <div className="modal-overlay" onClick={() => setShowActivityModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Přidat aktivitu</h2>
+            <h2>{t('addActivityTitle')}</h2>
 
             <div className="form-group">
-              <label>Typ aktivity</label>
+              <label>{t('activityType')}</label>
               <select
                 value={activityForm.activity_type}
                 onChange={(e) => setActivityForm({ ...activityForm, activity_type: e.target.value })}
               >
-                <option value="call">📞 Hovor</option>
-                <option value="email">📧 Email</option>
-                <option value="meeting">🤝 Schůzka</option>
-                <option value="note">📝 Poznámka</option>
-                <option value="message">💬 Zpráva</option>
+                <option value="call">📞 {t('activityCall')}</option>
+                <option value="email">📧 {t('activityEmail')}</option>
+                <option value="meeting">🤝 {t('activityMeeting')}</option>
+                <option value="note">📝 {t('activityNote')}</option>
+                <option value="message">💬 {t('activityMessage')}</option>
               </select>
             </div>
 
             <div className="form-group">
-              <label>Popis *</label>
+              <label>{t('description')}</label>
               <textarea
                 value={activityForm.description}
                 onChange={(e) => setActivityForm({ ...activityForm, description: e.target.value })}
-                placeholder="Co se stalo..."
+                placeholder={t('descriptionPlaceholder')}
                 rows={4}
               />
             </div>
 
             <div className="form-group">
-              <label>Výsledek</label>
+              <label>{t('outcomeLabel')}</label>
               <input
                 type="text"
                 value={activityForm.outcome}
                 onChange={(e) => setActivityForm({ ...activityForm, outcome: e.target.value })}
-                placeholder="Volat zítra, poslat nabídku..."
+                placeholder={t('outcomePlaceholder')}
               />
             </div>
 
             <div className="form-group">
-              <label>Další follow-up</label>
+              <label>{t('nextFollowUp')}</label>
               <input
                 type="datetime-local"
                 value={activityForm.next_follow_up_at}
@@ -734,29 +734,29 @@ export default function BusinessDetailPage() {
                 min={new Date().toISOString().slice(0, 16)}
               />
               <small style={{ color: '#94a3b8', fontSize: '12px' }}>
-                Nelze nastavit datum v minulosti
+                {t('cannotSetPastDate')}
               </small>
             </div>
 
             <div className="form-group">
-              <label>Změnit status na</label>
+              <label>{t('changeStatusTo')}</label>
               <select
                 value={activityForm.new_status}
                 onChange={(e) => setActivityForm({ ...activityForm, new_status: e.target.value })}
               >
-                <option value="">Bez změny</option>
-                {Object.entries(STATUS_CONFIG).map(([key, { label }]) => (
-                  <option key={key} value={key}>{label}</option>
+                <option value="">{t('noChange')}</option>
+                {Object.keys(STATUS_CONFIG).map((key) => (
+                  <option key={key} value={key}>{getStatusLabel(key)}</option>
                 ))}
               </select>
             </div>
 
             <div className="modal-actions">
               <button className="btn-secondary" onClick={() => setShowActivityModal(false)}>
-                Zrušit
+                {tc('cancel')}
               </button>
               <button className="btn-primary" onClick={handleAddActivity} disabled={saving}>
-                {saving ? 'Ukládám...' : 'Přidat'}
+                {saving ? tc('saving') : t('add')}
               </button>
             </div>
           </div>
@@ -767,27 +767,27 @@ export default function BusinessDetailPage() {
       {showStatusModal && (
         <div className="modal-overlay" onClick={() => setShowStatusModal(false)}>
           <div className="modal modal-small" onClick={(e) => e.stopPropagation()}>
-            <h2>Změnit status</h2>
+            <h2>{t('changeStatus')}</h2>
 
             <div className="status-options">
-              {Object.entries(STATUS_CONFIG).map(([key, { label, color, bg }]) => (
+              {Object.entries(STATUS_CONFIG).map(([key, { color, bg }]) => (
                 <button
                   key={key}
                   className={`status-option ${newStatus === key ? 'selected' : ''}`}
                   style={{ borderColor: color, backgroundColor: newStatus === key ? bg : 'white' }}
                   onClick={() => setNewStatus(key)}
                 >
-                  {label}
+                  {getStatusLabel(key)}
                 </button>
               ))}
             </div>
 
             <div className="modal-actions">
               <button className="btn-secondary" onClick={() => setShowStatusModal(false)}>
-                Zrušit
+                {tc('cancel')}
               </button>
               <button className="btn-primary" onClick={handleStatusChange} disabled={saving}>
-                {saving ? 'Ukládám...' : 'Uložit'}
+                {saving ? tc('saving') : tc('save')}
               </button>
             </div>
           </div>
@@ -798,15 +798,15 @@ export default function BusinessDetailPage() {
       {showWebsiteModal && (
         <div className="modal-overlay" onClick={() => setShowWebsiteModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>🌐 Generování webové stránky</h2>
+            <h2>🌐 {t('generateWebsite')}</h2>
 
             <div style={{ textAlign: 'center', padding: '30px 20px' }}>
               <div style={{ fontSize: '48px', marginBottom: '20px' }}>🚀</div>
               <p style={{ fontSize: '16px', color: '#374151', marginBottom: '20px', lineHeight: '1.6' }}>
-                Otevřu specializovanou stránku pro generování webu s velkým preview a možnostmi exportu.
+                {t('generateWebsiteDesc')}
               </p>
               <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '30px' }}>
-                Můžete vybrat mezi DRY RUN testem a plným AI generováním.
+                {t('generateWebsiteHint')}
               </p>
 
               <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -827,7 +827,7 @@ export default function BusinessDetailPage() {
                     cursor: generatingWebsite ? 'not-allowed' : 'pointer'
                   }}
                 >
-                  🔧 DRY RUN Test
+                  🔧 {t('dryRunTest')}
                 </button>
 
                 <button
@@ -847,20 +847,20 @@ export default function BusinessDetailPage() {
                     cursor: 'not-allowed'
                   }}
                 >
-                  🤖 AI Generování (brzy)
+                  🤖 {t('aiGenerationSoon')}
                 </button>
               </div>
 
               {generatingWebsite && (
                 <p style={{ marginTop: '20px', color: '#667eea', fontSize: '14px' }}>
-                  ⏳ Přesměrování na generovací stránku...
+                  ⏳ {t('redirecting')}
                 </p>
               )}
             </div>
 
             <div className="modal-actions" style={{ justifyContent: 'center' }}>
               <button className="btn-secondary" onClick={() => setShowWebsiteModal(false)}>
-                Zrušit
+                {tc('cancel')}
               </button>
             </div>
           </div>

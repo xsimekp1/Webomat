@@ -38,14 +38,14 @@ interface CRMStats {
   follow_ups_today: number
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  new: { label: 'Nový', color: '#3b82f6', bg: '#dbeafe' },
-  calling: { label: 'Voláno', color: '#eab308', bg: '#fef9c3' },
-  interested: { label: 'Zájem', color: '#f97316', bg: '#ffedd5' },
-  offer_sent: { label: 'Nabídka', color: '#8b5cf6', bg: '#ede9fe' },
-  won: { label: 'Vyhráno', color: '#22c55e', bg: '#dcfce7' },
-  lost: { label: 'Ztraceno', color: '#6b7280', bg: '#f3f4f6' },
-  dnc: { label: 'DNC', color: '#ef4444', bg: '#fee2e2' },
+const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
+  new: { color: '#3b82f6', bg: '#dbeafe' },
+  calling: { color: '#eab308', bg: '#fef9c3' },
+  interested: { color: '#f97316', bg: '#ffedd5' },
+  offer_sent: { color: '#8b5cf6', bg: '#ede9fe' },
+  won: { color: '#22c55e', bg: '#dcfce7' },
+  lost: { color: '#6b7280', bg: '#f3f4f6' },
+  dnc: { color: '#ef4444', bg: '#fee2e2' },
 }
 
 function CRMPageContent() {
@@ -406,7 +406,7 @@ function CRMPageContent() {
                         backgroundColor: STATUS_CONFIG[b.status_crm]?.bg || '#f5f5f5',
                       }}
                     >
-                      {STATUS_CONFIG[b.status_crm]?.label || b.status_crm}
+                      {getStatusLabel(b.status_crm)}
                     </span>
                   </td>
                   <td className={isOverdue(b.next_follow_up_at) ? 'overdue' : ''}>
@@ -555,8 +555,8 @@ function CRMPageContent() {
                   value={formData.status_crm}
                   onChange={(e) => setFormData({ ...formData, status_crm: e.target.value })}
                 >
-                  {Object.entries(STATUS_CONFIG).map(([key, { label }]) => (
-                    <option key={key} value={key}>{label}</option>
+                  {Object.keys(STATUS_CONFIG).map((key) => (
+                    <option key={key} value={key}>{getStatusLabel(key)}</option>
                   ))}
                 </select>
               </div>
