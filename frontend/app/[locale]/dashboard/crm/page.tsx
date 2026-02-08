@@ -2,10 +2,10 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import ApiClient from '../../../lib/api'
 import { useAuth } from '../../../context/AuthContext'
 import { useToast } from '../../../context/ToastContext'
-import { useLanguage } from '../../../context/LanguageContext'
 
 
 interface Business {
@@ -53,7 +53,22 @@ function CRMPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { showToast } = useToast()
+  const t = useTranslations('crm')
+  const tc = useTranslations('common')
   const filterParam = searchParams.get('filter')
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      new: t('statusNew'),
+      calling: t('statusCalling'),
+      interested: t('statusInterested'),
+      offer_sent: t('statusOfferSent'),
+      won: t('statusWon'),
+      lost: t('statusLost'),
+      dnc: t('statusDnc'),
+    }
+    return labels[status] || status
+  }
 
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [stats, setStats] = useState<CRMStats | null>(null)
@@ -132,7 +147,7 @@ function CRMPageContent() {
       setTotal(businessesRes.total)
       setStats(statsRes)
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Chyba při načítání dat')
+      setError(err.response?.data?.detail || t('loadError'))
     } finally {
       setLoading(false)
     }
@@ -189,7 +204,7 @@ function CRMPageContent() {
 
   const handleFillFromARES = async () => {
     if (!formData.ico || formData.ico.length !== 8) {
-      showToast('Zadejte platné IČO (8 číslic)', 'warning')
+      showToast(t('aresInvalidIco'), 'warning')
       return
     }
 
@@ -205,10 +220,10 @@ function CRMPageContent() {
         // You can add more fields here as needed
       }))
 
-      showToast('Data z ARES byla načtena', 'success')
+      showToast(t('aresLoaded'), 'success')
     } catch (error: any) {
       console.error('ARES API error:', error)
-      showToast('Chyba při načítání dat z ARES: ' + (error.response?.data?.detail || error.message), 'error')
+      showToast(t('aresError', { detail: error.response?.data?.detail || error.message }), 'error')
     } finally {
       setLoading(false)
     }
@@ -216,7 +231,7 @@ function CRMPageContent() {
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      setError('Název firmy je povinný')
+      setError(t('companyRequired'))
       return
     }
 
@@ -240,7 +255,7 @@ function CRMPageContent() {
       setShowEditModal(null)
       fetchData()
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Chyba při ukládání')
+      setError(err.response?.data?.detail || t('saveError'))
     } finally {
       setSaving(false)
     }

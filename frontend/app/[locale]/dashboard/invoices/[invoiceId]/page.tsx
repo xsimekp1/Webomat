@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react'
 import ApiClient from '../../../../lib/api'
 import { useAuth } from '../../../../context/AuthContext'
 import { useToast } from '../../../../context/ToastContext'
-import { useLanguage } from '../../../../context/LanguageContext'
 import { useTranslations } from 'next-intl'
 
 
@@ -18,7 +17,8 @@ export default function InvoiceDetailPage() {
   const { user } = useAuth()
   const { showToast } = useToast()
   const invoiceId = params.invoiceId as string
-  const locale = (params.locale as string) || 'cs'
+  const t = useTranslations('invoiceDetail')
+  const tc = useTranslations('common')
 
   const [invoice, setInvoice] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -43,7 +43,7 @@ export default function InvoiceDetailPage() {
       const data = await ApiClient.getInvoiceDetail(invoiceId)
       setInvoice(data)
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Chyba při načítání faktury')
+      setError(err.response?.data?.detail || t('loadError'))
     } finally {
       setLoading(false)
     }
@@ -51,7 +51,7 @@ export default function InvoiceDetailPage() {
 
   const updateInvoiceStatus = async (newStatus: 'draft' | 'issued' | 'paid' | 'overdue' | 'cancelled', paidDate?: string) => {
     if (!invoice || user?.role !== 'admin') {
-      showToast('Pouze admin může měnit status faktury', 'error')
+      showToast(t('onlyAdminCanChange'), 'error')
       return
     }
 
@@ -61,11 +61,11 @@ export default function InvoiceDetailPage() {
         status: newStatus,
         paid_date: paidDate
       })
-      
+
       await loadInvoice()
-      showToast(`Faktura označena jako ${newStatus === 'paid' ? 'zaplacená' : newStatus}`, 'success')
+      showToast(t('statusUpdated', { status: newStatus === 'paid' ? t('statusPaid') : newStatus }), 'success')
     } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Chyba při aktualizaci faktury', 'error')
+      showToast(err.response?.data?.detail || t('updateError'), 'error')
     } finally {
       setUpdating(false)
     }
@@ -77,9 +77,9 @@ export default function InvoiceDetailPage() {
       setSubmitting(true)
       await ApiClient.submitInvoiceForApproval(invoice.id)
       await loadInvoice()
-      showToast('Faktura odeslána ke schválení', 'success')
+      showToast(t('submitSuccess'), 'success')
     } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Chyba při odesílání ke schválení', 'error')
+      showToast(err.response?.data?.detail || t('submitError'), 'error')
     } finally {
       setSubmitting(false)
     }
@@ -91,9 +91,9 @@ export default function InvoiceDetailPage() {
       setApproving(true)
       await ApiClient.approveInvoice(invoice.id)
       await loadInvoice()
-      showToast('Faktura byla schválena', 'success')
+      showToast(t('approveSuccess'), 'success')
     } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Chyba při schvalování', 'error')
+      showToast(err.response?.data?.detail || t('approveError'), 'error')
     } finally {
       setApproving(false)
     }
@@ -101,7 +101,7 @@ export default function InvoiceDetailPage() {
 
   const handleReject = async () => {
     if (!invoice || !rejectReason.trim()) {
-      showToast('Zadejte důvod zamítnutí', 'error')
+      showToast(t('enterRejectReason'), 'error')
       return
     }
     try {
@@ -110,9 +110,9 @@ export default function InvoiceDetailPage() {
       setShowRejectModal(false)
       setRejectReason('')
       await loadInvoice()
-      showToast('Faktura byla zamítnuta', 'success')
+      showToast(t('rejectSuccess'), 'success')
     } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Chyba při zamítání', 'error')
+      showToast(err.response?.data?.detail || t('rejectError'), 'error')
     } finally {
       setRejecting(false)
     }
@@ -131,24 +131,19 @@ export default function InvoiceDetailPage() {
   }
 
   const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'draft': return 'Návrh'
-      case 'pending_approval': return 'Čeká na schválení'
-      case 'issued': return 'Vystaveno'
-      case 'paid': return 'Zaplaceno'
-      case 'overdue': return 'Po splatnosti'
-      case 'cancelled': return 'Stornováno'
-      default: return status
+    const map: Record<string, string> = {
+      draft: t('statusDraft'), pending_approval: t('statusPendingApproval'),
+      issued: t('statusIssued'), paid: t('statusPaidLabel'),
+      overdue: t('statusOverdue'), cancelled: t('statusCancelled'),
     }
+    return map[status] || status
   }
 
   const getPaymentTypeLabel = (type: string) => {
-    switch (type) {
-      case 'setup': return 'Jednorázový poplatek'
-      case 'monthly': return 'Měsíční poplatek'
-      case 'other': return 'Ostatní'
-      default: return type
+    const map: Record<string, string> = {
+      setup: t('paymentSetup'), monthly: t('paymentMonthly'), other: t('paymentOther'),
     }
+    return map[type] || type
   }
 
   const handleDownloadPdf = async () => {
@@ -159,7 +154,7 @@ export default function InvoiceDetailPage() {
       const pdfUrl = await ApiClient.downloadInvoicePdf(invoice.id)
       window.open(pdfUrl, '_blank')
     } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Chyba při stahování PDF', 'error')
+      showToast(err.response?.data?.detail || t('downloadError'), 'error')
     } finally {
       setDownloadingPdf(false)
     }
@@ -169,7 +164,7 @@ export default function InvoiceDetailPage() {
     return (
       <div className="page">
         <div className="page-header">
-          <h1>Načítám fakturu...</h1>
+          <h1>{t('loading')}</h1>
         </div>
       </div>
     )
@@ -179,12 +174,12 @@ export default function InvoiceDetailPage() {
     return (
       <div className="page">
         <div className="page-header">
-          <h1>Chyba</h1>
+          <h1>{t('error')}</h1>
         </div>
         <div className="card">
-          <p>{error || 'Faktura nebyla nalezena'}</p>
+          <p>{error || t('notFound')}</p>
           <button className="btn-primary" onClick={() => router.back()}>
-            Zpět
+            {tc('back')}
           </button>
         </div>
       </div>
@@ -194,17 +189,17 @@ export default function InvoiceDetailPage() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Detail faktury</h1>
+        <h1>{t('title')}</h1>
         <div className="page-header-actions">
           <button
             className="btn-primary"
             onClick={handleDownloadPdf}
             disabled={downloadingPdf}
           >
-            {downloadingPdf ? 'Stahuji...' : 'Stáhnout PDF'}
+            {downloadingPdf ? t('downloading') : t('downloadPdf')}
           </button>
           <button className="btn-secondary" onClick={() => router.back()}>
-            Zpět
+            {tc('back')}
           </button>
         </div>
       </div>
@@ -212,19 +207,17 @@ export default function InvoiceDetailPage() {
       <div className="wip-banner">
         <span className="wip-icon">&#9432;</span>
         <span>
-          {locale === 'en'
-            ? 'PDF generation: WIP — a placeholder PDF will be generated. Full invoice template coming soon.'
-            : 'Generování PDF: WIP — vygeneruje se zástupné PDF. Plná šablona faktury bude brzy dostupná.'}
+          {t('wipBanner')}
         </span>
       </div>
 
       <div className="card invoice-detail-card">
         <div className="invoice-header">
           <div className="invoice-number">
-            <h2>Faktura #{invoice.invoice_number}</h2>
-            <span 
+            <h2>{t('invoiceNumber', { number: invoice.invoice_number })}</h2>
+            <span
               className="status-badge"
-              style={{ 
+              style={{
                 color: getStatusColor(invoice.status),
                 backgroundColor: `${getStatusColor(invoice.status)}20`
               }}
@@ -234,47 +227,47 @@ export default function InvoiceDetailPage() {
           </div>
           <div className="invoice-amount">
             <div className="total-amount">{formatCurrency(invoice.amount_total)}</div>
-            <div className="vat-info">včetně DPH</div>
+            <div className="vat-info">{t('includingVat')}</div>
           </div>
         </div>
 
         <div className="invoice-info">
           <div className="info-section">
-            <h3>Informace o faktuře</h3>
+            <h3>{t('invoiceInfo')}</h3>
             <div className="info-grid">
               <div className="info-item">
-                <label>Klient:</label>
+                <label>{t('client')}</label>
                 <span>{invoice.business_name}</span>
               </div>
               <div className="info-item">
-                <label>Číslo faktury:</label>
+                <label>{t('invoiceNumberLabel')}</label>
                 <span>{invoice.invoice_number}</span>
               </div>
               <div className="info-item">
-                <label>Typ platby:</label>
+                <label>{t('paymentType')}</label>
                 <span>{getPaymentTypeLabel(invoice.payment_type)}</span>
               </div>
               <div className="info-item">
-                <label>Men:</label>
+                <label>{t('currency')}</label>
                 <span>{invoice.currency}</span>
               </div>
               <div className="info-item">
-                <label>Datum vystavení:</label>
+                <label>{t('issueDate')}</label>
                 <span>{formatDate(invoice.issue_date)}</span>
               </div>
               <div className="info-item">
-                <label>Datum splatnosti:</label>
+                <label>{t('dueDate')}</label>
                 <span>{formatDate(invoice.due_date)}</span>
               </div>
               {invoice.paid_date && (
                 <div className="info-item">
-                  <label>Datum zaplacení:</label>
+                  <label>{t('paidDate')}</label>
                   <span>{formatDate(invoice.paid_date)}</span>
                 </div>
               )}
               {invoice.variable_symbol && (
                 <div className="info-item">
-                  <label>Variabilní symbol:</label>
+                  <label>{t('variableSymbol')}</label>
                   <span>{invoice.variable_symbol}</span>
                 </div>
               )}
@@ -282,20 +275,20 @@ export default function InvoiceDetailPage() {
           </div>
 
           <div className="info-section">
-            <h3>Finanční detaily</h3>
+            <h3>{t('financialDetails')}</h3>
             <div className="price-breakdown">
               <div className="price-row">
-                <span>Částka bez DPH:</span>
+                <span>{t('amountWithoutVat')}</span>
                 <span>{formatCurrency(invoice.amount_without_vat)}</span>
               </div>
               {invoice.vat_amount && (
                 <div className="price-row">
-                  <span>DPH ({invoice.vat_rate}%):</span>
+                  <span>{t('vat', { rate: invoice.vat_rate })}</span>
                   <span>{formatCurrency(invoice.vat_amount)}</span>
                 </div>
               )}
               <div className="price-row total">
-                <span>Celkem:</span>
+                <span>{t('total')}</span>
                 <span>{formatCurrency(invoice.amount_total)}</span>
               </div>
             </div>
@@ -304,7 +297,7 @@ export default function InvoiceDetailPage() {
 
         {invoice.description && (
           <div className="info-section">
-            <h3>Popis</h3>
+            <h3>{t('descriptionTitle')}</h3>
             <p>{invoice.description}</p>
           </div>
         )}
@@ -312,7 +305,7 @@ export default function InvoiceDetailPage() {
         {/* Show rejection reason if invoice was rejected */}
         {invoice.rejected_reason && (
           <div className="info-section rejection-section">
-            <h3>Důvod zamítnutí</h3>
+            <h3>{t('rejectionReason')}</h3>
             <p className="rejection-reason">{invoice.rejected_reason}</p>
           </div>
         )}
@@ -320,19 +313,19 @@ export default function InvoiceDetailPage() {
         {/* Actions for Sales - Submit for approval */}
         {invoice.status === 'draft' && (
           <div className="invoice-actions">
-            <h3>Akce</h3>
+            <h3>{t('actionsTitle')}</h3>
             <div className="action-buttons">
               <button
                 className="btn-primary"
                 onClick={handleSubmitForApproval}
                 disabled={submitting}
               >
-                {submitting ? 'Odesílám...' : 'Odeslat ke schválení'}
+                {submitting ? t('submitting') : t('submitForApproval')}
               </button>
             </div>
             {invoice.rejected_reason && (
               <p className="action-hint">
-                Faktura byla vrácena k úpravě. Po opravě ji můžete znovu odeslat ke schválení.
+                {t('returnedForEdit')}
               </p>
             )}
           </div>
@@ -341,9 +334,9 @@ export default function InvoiceDetailPage() {
         {/* Status info for pending approval (sales view) */}
         {invoice.status === 'pending_approval' && user?.role !== 'admin' && (
           <div className="invoice-actions">
-            <h3>Stav</h3>
+            <h3>{t('statusTitle')}</h3>
             <p className="pending-info">
-              Faktura čeká na schválení administrátorem.
+              {t('pendingApproval')}
             </p>
           </div>
         )}
@@ -351,7 +344,7 @@ export default function InvoiceDetailPage() {
         {/* Admin actions */}
         {user?.role === 'admin' && (
           <div className="invoice-actions">
-            <h3>Admin akce</h3>
+            <h3>{t('adminActions')}</h3>
             <div className="action-buttons">
               {invoice.status === 'pending_approval' && (
                 <>
@@ -360,13 +353,13 @@ export default function InvoiceDetailPage() {
                     onClick={handleApprove}
                     disabled={approving}
                   >
-                    {approving ? 'Schvaluji...' : 'Schválit'}
+                    {approving ? t('approving') : t('approveButton')}
                   </button>
                   <button
                     className="btn-danger"
                     onClick={() => setShowRejectModal(true)}
                   >
-                    Zamítnout
+                    {t('rejectButton')}
                   </button>
                 </>
               )}
@@ -376,7 +369,7 @@ export default function InvoiceDetailPage() {
                   onClick={() => updateInvoiceStatus('issued')}
                   disabled={updating}
                 >
-                  {updating ? 'Aktualizuji...' : 'Vystavit přímo'}
+                  {updating ? t('updating') : t('issueDirectly')}
                 </button>
               )}
               {(invoice.status === 'issued' || invoice.status === 'overdue') && (
@@ -385,7 +378,7 @@ export default function InvoiceDetailPage() {
                   onClick={() => updateInvoiceStatus('paid', new Date().toISOString().split('T')[0])}
                   disabled={updating}
                 >
-                  {updating ? 'Aktualizuji...' : 'Označit jako zaplaceno'}
+                  {updating ? t('updating') : t('markAsPaid')}
                 </button>
               )}
               {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
@@ -394,7 +387,7 @@ export default function InvoiceDetailPage() {
                   onClick={() => updateInvoiceStatus('cancelled')}
                   disabled={updating}
                 >
-                  Stornovat
+                  {t('cancelInvoice')}
                 </button>
               )}
             </div>
@@ -403,8 +396,8 @@ export default function InvoiceDetailPage() {
 
         <div className="invoice-meta">
           <small>
-            Vytvořeno: {formatDate(invoice.created_at)}
-            {invoice.updated_at && ` • Aktualizováno: ${formatDate(invoice.updated_at)}`}
+            {t('createdAt', { date: formatDate(invoice.created_at) })}
+            {invoice.updated_at && ` \u2022 ${t('updatedAt', { date: formatDate(invoice.updated_at) })}`}
           </small>
         </div>
       </div>
@@ -413,15 +406,15 @@ export default function InvoiceDetailPage() {
       {showRejectModal && (
         <div className="modal-overlay" onClick={() => setShowRejectModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Zamítnout fakturu</h2>
-            <p>Zamítnout fakturu: <strong>#{invoice.invoice_number}</strong></p>
+            <h2>{t('rejectModal')}</h2>
+            <p>{t('rejectInvoiceNumber', { number: invoice.invoice_number })}</p>
             <div className="field">
-              <label htmlFor="rejectReason">Důvod zamítnutí *</label>
+              <label htmlFor="rejectReason">{t('rejectReasonLabel')}</label>
               <textarea
                 id="rejectReason"
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Zadejte důvod zamítnutí..."
+                placeholder={t('rejectReasonPlaceholder')}
                 rows={4}
               />
             </div>
@@ -434,14 +427,14 @@ export default function InvoiceDetailPage() {
                 className="btn-secondary"
                 disabled={rejecting}
               >
-                Zrušit
+                {tc('cancel')}
               </button>
               <button
                 onClick={handleReject}
                 className="btn-danger"
                 disabled={rejecting || !rejectReason.trim()}
               >
-                {rejecting ? 'Zamítám...' : 'Zamítnout'}
+                {rejecting ? t('rejecting') : t('rejectButton')}
               </button>
             </div>
           </div>

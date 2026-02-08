@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useAuth } from '../../../../context/AuthContext'
 import { useToast } from '../../../../context/ToastContext'
 import ApiClient from '../../../../lib/api'
@@ -73,56 +74,55 @@ interface Invoice {
   business_name: string | null
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  offer: 'Nabídka',
-  interested: 'Zájem',
-  in_progress: 'V práci',
-  sent_for_review: 'K odeslání',
-  revisions: 'Připomínky',
-  invoiced: 'Fakturováno',
-  closed: 'Uzavřeno',
-  rejected: 'Zamítnuto',
-  unpaid: 'Nezaplaceno',
-  cancelled: 'Zrušeno',
-}
-
-const DOMAIN_STATUS_LABELS: Record<string, string> = {
-  planned: 'Planovana',
-  purchased: 'Zakoupena',
-  deployed: 'Nasazena',
-  not_needed: 'Neni potreba',
-  other: 'Jina',
-}
-
-const DEPLOYMENT_STATUS_LABELS: Record<string, string> = {
-  none: 'Nenasazeno',
-  deploying: 'Nasazuje se...',
-  deployed: 'Nasazeno',
-  failed: 'Chyba',
-  unpublished: 'Odebrano',
-}
-
-const INVOICE_STATUS_LABELS: Record<string, string> = {
-  draft: 'Koncept',
-  issued: 'Vystaveno',
-  paid: 'Zaplaceno',
-  overdue: 'Po splatnosti',
-  cancelled: 'Zruseno',
-}
-
-const PAYMENT_TYPE_LABELS: Record<string, string> = {
-  setup: 'Zrizeni',
-  monthly: 'Mesicni',
-  other: 'Jine',
-}
-
 export default function WebProjectPage() {
   const router = useRouter()
   const params = useParams()
   const { user } = useAuth()
   const { showToast } = useToast()
+  const t = useTranslations('webProject')
+  const tc = useTranslations('common')
   const projectId = params.projectId as string
   const locale = (params.locale as string) || 'cs'
+
+  const getStatusLabel = (status: string) => {
+    const map: Record<string, string> = {
+      offer: t('statusOffer'), interested: t('statusInterested'), in_progress: t('statusInProgress'),
+      sent_for_review: t('statusSentForReview'), revisions: t('statusRevisions'), invoiced: t('statusInvoiced'),
+      closed: t('statusClosed'), rejected: t('statusRejected'), unpaid: t('statusUnpaid'), cancelled: t('statusCancelled'),
+    }
+    return map[status] || status
+  }
+
+  const getDomainStatusLabel = (status: string) => {
+    const map: Record<string, string> = {
+      planned: t('domainPlanned'), purchased: t('domainPurchased'), deployed: t('domainDeployed'),
+      not_needed: t('domainNotNeeded'), other: t('domainOther'),
+    }
+    return map[status] || status
+  }
+
+  const getDeploymentStatusLabel = (status: string) => {
+    const map: Record<string, string> = {
+      none: t('deployNone'), deploying: t('deployDeploying'), deployed: t('deployDeployed'),
+      failed: t('deployFail'), unpublished: t('deployUnpublished'),
+    }
+    return map[status] || status
+  }
+
+  const getInvoiceStatusLabel = (status: string) => {
+    const map: Record<string, string> = {
+      draft: t('invoiceDraft'), issued: t('invoiceIssued'), paid: t('invoicePaid'),
+      overdue: t('invoiceOverdue'), cancelled: t('invoiceCancelled'),
+    }
+    return map[status] || status
+  }
+
+  const getPaymentTypeLabel = (type: string) => {
+    const map: Record<string, string> = {
+      setup: t('paymentTypeSetup'), monthly: t('paymentTypeMonthly'), other: t('paymentTypeOther'),
+    }
+    return map[type] || type
+  }
 
   const [project, setProject] = useState<Project | null>(null)
   const [versions, setVersions] = useState<Version[]>([])
@@ -169,7 +169,7 @@ export default function WebProjectPage() {
         setInvoiceForm(prev => ({ ...prev, amount_without_vat: projectData.price_setup }))
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Nepodarilo se nacist projekt')
+      setError(err.response?.data?.detail || t('loadError'))
     } finally {
       setLoading(false)
     }
@@ -186,22 +186,22 @@ export default function WebProjectPage() {
     try {
       await ApiClient.deployVersion(versionId)
       await loadProject()
-      showToast('Verze byla nasazena', 'success')
+      showToast(t('versionDeployed'), 'success')
     } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Nepodarilo se nasadit verzi', 'error')
+      showToast(err.response?.data?.detail || t('deployFailed'), 'error')
     } finally {
       setDeploying(null)
     }
   }
 
   const handleUndeploy = async (versionId: string) => {
-    if (!confirm('Opravdu chcete odebrat nasazeni?')) return
+    if (!confirm(t('undeployConfirm'))) return
     try {
       await ApiClient.undeployVersion(versionId)
       await loadProject()
-      showToast('Nasazeni bylo odebrano', 'success')
+      showToast(t('undeploySuccess'), 'success')
     } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Nepodarilo se odebrat nasazeni', 'error')
+      showToast(err.response?.data?.detail || t('undeployFailed'), 'error')
     }
   }
 
@@ -210,9 +210,9 @@ export default function WebProjectPage() {
     try {
       const link = await ApiClient.createShareLink(versionId, { expires_in_days: 7 })
       setShareLinks(prev => ({ ...prev, [versionId]: link }))
-      showToast('Odkaz pro sdileni byl vytvoren', 'success')
+      showToast(t('shareLinkCreated'), 'success')
     } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Nepodarilo se vytvorit odkaz', 'error')
+      showToast(err.response?.data?.detail || t('shareLinkFailed'), 'error')
     } finally {
       setCreatingLink(null)
     }
@@ -222,9 +222,9 @@ export default function WebProjectPage() {
     try {
       await ApiClient.markVersionAsCurrent(versionId)
       await loadProject()
-      showToast('Verze byla nastavena jako aktualni', 'success')
+      showToast(t('currentSet'), 'success')
     } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Nepodarilo se nastavit jako aktualni', 'error')
+      showToast(err.response?.data?.detail || t('currentSetFailed'), 'error')
     }
   }
 
@@ -234,9 +234,9 @@ const handleDeleteVersion = async (versionId: string) => {
       await ApiClient.deleteVersion(versionId)
       setShowDeleteModal(null) // Close modal immediately
       await loadProject() // Reload data in background
-      showToast('Verze byla smazana', 'success')
+      showToast(t('versionDeleted'), 'success')
     } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Nepodarilo se smazat verzi', 'error')
+      showToast(err.response?.data?.detail || t('versionDeleteFailed'), 'error')
       setShowDeleteModal(null) // Close modal even on error
     } finally {
       setDeleting(null)
@@ -248,10 +248,10 @@ const handleDeleteVersion = async (versionId: string) => {
     try {
       await ApiClient.deleteProject(projectId)
       setShowDeleteProjectModal(false)
-      showToast('Projekt byl smazan', 'success')
+      showToast(t('projectDeleted'), 'success')
       router.push('/dashboard')
     } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Nepodarilo se smazat projekt', 'error')
+      showToast(err.response?.data?.detail || t('projectDeleteFailed'), 'error')
     } finally {
       setDeletingProject(false)
     }
@@ -259,7 +259,7 @@ const handleDeleteVersion = async (versionId: string) => {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
-    showToast('Odkaz byl zkopirovan do schranky', 'success')
+    showToast(t('linkCopied'), 'success')
   }
 
   const handleCreateInvoice = async () => {
@@ -274,9 +274,9 @@ const handleDeleteVersion = async (versionId: string) => {
       })
       await loadProject()
       setShowInvoiceModal(false)
-      showToast('Faktura byla vytvorena', 'success')
+      showToast(t('invoiceCreated'), 'success')
     } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Nepodarilo se vytvorit fakturu', 'error')
+      showToast(err.response?.data?.detail || t('invoiceCreateFailed'), 'error')
     } finally {
       setCreatingInvoice(false)
     }
@@ -292,12 +292,12 @@ const handleDeleteVersion = async (versionId: string) => {
       await loadProject()
       showToast(
         newStatus === 'paid'
-          ? 'Faktura oznacena jako zaplacena - provize byla pripocitana'
-          : 'Status faktury byl aktualizovan',
+          ? t('invoicePaidCommission')
+          : t('invoiceStatusUpdated'),
         'success'
       )
     } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Nepodarilo se aktualizovat fakturu', 'error')
+      showToast(err.response?.data?.detail || t('invoiceUpdateFailed'), 'error')
     } finally {
       setUpdatingInvoice(null)
     }
@@ -309,10 +309,10 @@ const handleDeleteVersion = async (versionId: string) => {
       const result = await ApiClient.generateInvoicePdf(invoiceId)
       if (result.pdf_url) {
         window.open(result.pdf_url, '_blank')
-        showToast('PDF vygenerovano', 'success')
+        showToast(t('pdfGenerated'), 'success')
       }
     } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Chyba pri generovani PDF', 'error')
+      showToast(err.response?.data?.detail || t('pdfGenerateFailed'), 'error')
     } finally {
       setGeneratingPdf(null)
     }
@@ -321,7 +321,7 @@ const handleDeleteVersion = async (versionId: string) => {
   if (loading) {
     return (
       <div className="web-project-page">
-        <div className="loading">Nacitam projekt...</div>
+        <div className="loading">{t('loading')}</div>
       </div>
     )
   }
@@ -329,8 +329,8 @@ const handleDeleteVersion = async (versionId: string) => {
   if (error || !project) {
     return (
       <div className="web-project-page">
-        <div className="error-message">{error || 'Projekt nenalezen'}</div>
-        <button onClick={() => router.push(getBackUrl(project?.business_id || ''))}>Zpet</button>
+        <div className="error-message">{error || t('notFound')}</div>
+        <button onClick={() => router.push(getBackUrl(project?.business_id || ''))}>{t('backButton')}</button>
       </div>
     )
   }
@@ -341,25 +341,25 @@ const handleDeleteVersion = async (versionId: string) => {
       <div className="page-header">
         <div className="header-left">
           <button className="btn-back" onClick={() => router.push(getBackUrl(project.business_id))}>
-            ← Zpet
+            {t('backButton')}
           </button>
           <div className="header-info">
-            <h1>Sprava webu</h1>
+            <h1>{t('title')}</h1>
             <div className="project-meta">
               <span className={`status-badge status-${project.status}`}>
-                {STATUS_LABELS[project.status] || project.status}
+                {getStatusLabel(project.status)}
               </span>
               <span className="package-badge">{project.package}</span>
               {project.domain && <span className="domain">{project.domain}</span>}
             </div>
           </div>
         </div>
-        <button 
-          className="btn-danger delete-project-btn" 
+        <button
+          className="btn-danger delete-project-btn"
           onClick={() => setShowDeleteProjectModal(true)}
           disabled={deletingProject}
         >
-          {deletingProject ? 'Mazání...' : 'Smazat projekt'}
+          {deletingProject ? t('deletingProject') : t('deleteProject')}
         </button>
       </div>
 
@@ -369,19 +369,19 @@ const handleDeleteVersion = async (versionId: string) => {
           className={`tab ${activeTab === 'versions' ? 'active' : ''}`}
           onClick={() => setActiveTab('versions')}
         >
-          Verze ({versions.length})
+          {t('versionsTab', { count: versions.length })}
         </button>
         <button
           className={`tab ${activeTab === 'invoices' ? 'active' : ''}`}
           onClick={() => setActiveTab('invoices')}
         >
-          Faktury ({invoices.length})
+          {t('invoicesTab', { count: invoices.length })}
         </button>
         <button
           className={`tab ${activeTab === 'settings' ? 'active' : ''}`}
           onClick={() => setActiveTab('settings')}
         >
-          Nastaveni
+          {t('settingsTab')}
         </button>
       </div>
 
@@ -394,15 +394,15 @@ const handleDeleteVersion = async (versionId: string) => {
               className="btn-primary"
               onClick={() => router.push(`/dashboard/generate-website?projectId=${projectId}`)}
             >
-              + Generovat novou verzi
+              {t('generateNewVersion')}
             </button>
           </div>
 
           {/* Versions list */}
           {versions.length === 0 ? (
             <div className="empty-state">
-              <p>Zatim zadne verze</p>
-              <span>Vygenerujte prvni verzi webu</span>
+              <p>{t('noVersions')}</p>
+              <span>{t('generateFirstVersion')}</span>
             </div>
           ) : (
             <div className="versions-list">
@@ -415,10 +415,10 @@ const handleDeleteVersion = async (versionId: string) => {
                     <div className="version-info">
                       <span className="version-number">v{version.version_number}</span>
                       {version.is_current && (
-                        <span className="current-badge">Aktualni</span>
+                        <span className="current-badge">{t('current')}</span>
                       )}
                       <span className={`deployment-badge deployment-${version.deployment_status || 'none'}`}>
-                        {DEPLOYMENT_STATUS_LABELS[version.deployment_status || 'none']}
+                        {getDeploymentStatusLabel(version.deployment_status || 'none')}
                       </span>
                     </div>
                     <span className="version-date">
@@ -438,7 +438,7 @@ const handleDeleteVersion = async (versionId: string) => {
                       />
                     ) : (
                       <div className="thumbnail-placeholder">
-                        <span>Zadny nahled</span>
+                        <span>{t('noPreview')}</span>
                       </div>
                     )}
                   </div>
@@ -474,7 +474,7 @@ const handleDeleteVersion = async (versionId: string) => {
                       <button
                         onClick={() => copyToClipboard(shareLinks[version.id].preview_url)}
                       >
-                        Kopirovat
+                        {t('copyLink')}
                       </button>
                     </div>
                   )}
@@ -493,7 +493,7 @@ const handleDeleteVersion = async (versionId: string) => {
                           }
                         }}
                       >
-                        Nahled
+                        {t('preview')}
                       </button>
                     )}
 
@@ -503,7 +503,7 @@ const handleDeleteVersion = async (versionId: string) => {
                         className="btn-danger"
                         onClick={() => handleUndeploy(version.id)}
                       >
-                        Odebrat
+                        {t('undeploy')}
                       </button>
                     ) : (
                       <button
@@ -511,7 +511,7 @@ const handleDeleteVersion = async (versionId: string) => {
                         onClick={() => handleDeploy(version.id)}
                         disabled={deploying === version.id || !version.html_content}
                       >
-                        {deploying === version.id ? 'Nasazuje se...' : 'Nasadit'}
+                        {deploying === version.id ? t('deploying') : t('deploy')}
                       </button>
                     )}
 
@@ -521,7 +521,7 @@ const handleDeleteVersion = async (versionId: string) => {
                       onClick={() => handleCreateShareLink(version.id)}
                       disabled={creatingLink === version.id}
                     >
-                      {creatingLink === version.id ? 'Vytvari se...' : 'Sdilet'}
+                      {creatingLink === version.id ? t('creatingLink') : t('share')}
                     </button>
 
                     {/* Mark as Current */}
@@ -530,7 +530,7 @@ const handleDeleteVersion = async (versionId: string) => {
                         className="btn-secondary"
                         onClick={() => handleMarkAsCurrent(version.id)}
                       >
-                        Nastavit jako aktualni
+                        {t('setAsCurrent')}
                       </button>
                     )}
 
@@ -540,7 +540,7 @@ const handleDeleteVersion = async (versionId: string) => {
                       onClick={() => setShowDeleteModal(version.id)}
                       disabled={deleting === version.id}
                     >
-                      Smazat
+                      {tc('delete')}
                     </button>
                   </div>
                 </div>
@@ -558,14 +558,14 @@ const handleDeleteVersion = async (versionId: string) => {
               className="btn-primary"
               onClick={() => setShowInvoiceModal(true)}
             >
-              + Vystavit fakturu
+              {t('createInvoice')}
             </button>
           </div>
 
           {invoices.length === 0 ? (
             <div className="empty-state">
-              <p>Zatim zadne faktury</p>
-              <span>Vystavte prvni fakturu pro tento projekt</span>
+              <p>{t('noInvoices')}</p>
+              <span>{t('createFirstInvoice')}</span>
             </div>
           ) : (
             <div className="invoices-list">
@@ -578,10 +578,10 @@ const handleDeleteVersion = async (versionId: string) => {
                     <div className="invoice-info">
                       <span className="invoice-number">{invoice.invoice_number}</span>
                       <span className={`status-badge status-${invoice.status}`}>
-                        {INVOICE_STATUS_LABELS[invoice.status] || invoice.status}
+                        {getInvoiceStatusLabel(invoice.status)}
                       </span>
                       <span className="payment-type-badge">
-                        {PAYMENT_TYPE_LABELS[invoice.payment_type] || invoice.payment_type}
+                        {getPaymentTypeLabel(invoice.payment_type)}
                       </span>
                     </div>
                     <span className="invoice-amount">
@@ -591,30 +591,30 @@ const handleDeleteVersion = async (versionId: string) => {
 
                   <div className="invoice-details">
                     <div className="detail-row">
-                      <span className="label">Castka bez DPH:</span>
+                      <span className="label">{t('amountWithoutVat')}</span>
                       <span>{invoice.amount_without_vat.toLocaleString('cs-CZ')} Kc</span>
                     </div>
                     <div className="detail-row">
-                      <span className="label">DPH ({invoice.vat_rate}%):</span>
+                      <span className="label">{t('vatLabel', { rate: invoice.vat_rate })}</span>
                       <span>{(invoice.vat_amount || 0).toLocaleString('cs-CZ')} Kc</span>
                     </div>
                     <div className="detail-row">
-                      <span className="label">Datum vystaveni:</span>
+                      <span className="label">{t('issueDate')}</span>
                       <span>{new Date(invoice.issue_date).toLocaleDateString('cs-CZ')}</span>
                     </div>
                     <div className="detail-row">
-                      <span className="label">Datum splatnosti:</span>
+                      <span className="label">{t('dueDateLabel')}</span>
                       <span>{new Date(invoice.due_date).toLocaleDateString('cs-CZ')}</span>
                     </div>
                     {invoice.paid_date && (
                       <div className="detail-row">
-                        <span className="label">Zaplaceno:</span>
+                        <span className="label">{t('paidDate')}</span>
                         <span>{new Date(invoice.paid_date).toLocaleDateString('cs-CZ')}</span>
                       </div>
                     )}
                     {invoice.variable_symbol && (
                       <div className="detail-row">
-                        <span className="label">Var. symbol:</span>
+                        <span className="label">{t('varSymbol')}</span>
                         <span>{invoice.variable_symbol}</span>
                       </div>
                     )}
@@ -632,13 +632,13 @@ const handleDeleteVersion = async (versionId: string) => {
                       onClick={() => handleGenerateAndDownloadPdf(invoice.id)}
                       disabled={generatingPdf === invoice.id}
                     >
-                      {generatingPdf === invoice.id ? 'Generuji PDF...' : 'Stahnout PDF'}
+                      {generatingPdf === invoice.id ? t('generatingPdf') : t('downloadPdf')}
                     </button>
                     <button
                       className="btn-secondary"
                       onClick={() => router.push(`/${locale}/dashboard/invoices/${invoice.id}`)}
                     >
-                      Detail
+                      {tc('detail')}
                     </button>
                     {invoice.status === 'draft' && (
                       <button
@@ -646,7 +646,7 @@ const handleDeleteVersion = async (versionId: string) => {
                         onClick={() => handleUpdateInvoiceStatus(invoice.id, 'issued')}
                         disabled={updatingInvoice === invoice.id}
                       >
-                        {updatingInvoice === invoice.id ? 'Aktualizuji...' : 'Vystavit'}
+                        {updatingInvoice === invoice.id ? t('updating') : t('issue')}
                       </button>
                     )}
                     {(invoice.status === 'issued' || invoice.status === 'overdue') && (
@@ -655,7 +655,7 @@ const handleDeleteVersion = async (versionId: string) => {
                         onClick={() => handleUpdateInvoiceStatus(invoice.id, 'paid')}
                         disabled={updatingInvoice === invoice.id}
                       >
-                        {updatingInvoice === invoice.id ? 'Aktualizuji...' : 'Oznacit jako zaplaceno'}
+                        {updatingInvoice === invoice.id ? t('updating') : t('markAsPaid')}
                       </button>
                     )}
                     {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
@@ -664,7 +664,7 @@ const handleDeleteVersion = async (versionId: string) => {
                         onClick={() => handleUpdateInvoiceStatus(invoice.id, 'cancelled')}
                         disabled={updatingInvoice === invoice.id}
                       >
-                        Stornovat
+                        {t('cancel')}
                       </button>
                     )}
                   </div>
@@ -679,28 +679,28 @@ const handleDeleteVersion = async (versionId: string) => {
       {activeTab === 'settings' && (
         <div className="settings-section">
           <div className="settings-card">
-            <h3>Informace o projektu</h3>
+            <h3>{t('projectInfo')}</h3>
             <div className="settings-grid">
               <div className="setting-item">
-                <label>Balicek</label>
+                <label>{t('packageLabel')}</label>
                 <span>{project.package}</span>
               </div>
               <div className="setting-item">
-                <label>Status</label>
-                <span>{STATUS_LABELS[project.status] || project.status}</span>
+                <label>{t('statusLabel')}</label>
+                <span>{getStatusLabel(project.status)}</span>
               </div>
               <div className="setting-item">
-                <label>Domena</label>
+                <label>{t('domainLabel')}</label>
                 <span>{project.domain || '-'}</span>
               </div>
               <div className="setting-item">
-                <label>Stav domeny</label>
+                <label>{t('domainStatusLabel')}</label>
                 <span>
-                  {DOMAIN_STATUS_LABELS[project.domain_status || 'planned']}
+                  {getDomainStatusLabel(project.domain_status || 'planned')}
                 </span>
               </div>
               <div className="setting-item">
-                <label>Cena setup</label>
+                <label>{t('priceSetup')}</label>
                 <span>
                   {project.price_setup
                     ? `${project.price_setup.toLocaleString('cs-CZ')} Kc`
@@ -708,7 +708,7 @@ const handleDeleteVersion = async (versionId: string) => {
                 </span>
               </div>
               <div className="setting-item">
-                <label>Cena mesicne</label>
+                <label>{t('priceMonthly')}</label>
                 <span>
                   {project.price_monthly
                     ? `${project.price_monthly.toLocaleString('cs-CZ')} Kc`
@@ -716,7 +716,7 @@ const handleDeleteVersion = async (versionId: string) => {
                 </span>
               </div>
               <div className="setting-item">
-                <label>Deadline</label>
+                <label>{t('deadline')}</label>
                 <span>
                   {project.required_deadline
                     ? new Date(project.required_deadline).toLocaleDateString('cs-CZ')
@@ -724,7 +724,7 @@ const handleDeleteVersion = async (versionId: string) => {
                 </span>
               </div>
               <div className="setting-item">
-                <label>Rozpocet</label>
+                <label>{t('budget')}</label>
                 <span>
                   {project.budget
                     ? `${project.budget.toLocaleString('cs-CZ')} Kc`
@@ -737,21 +737,21 @@ const handleDeleteVersion = async (versionId: string) => {
           {/* Notes */}
           {project.notes && (
             <div className="settings-card">
-              <h3>Poznamky</h3>
+              <h3>{t('notesTitle')}</h3>
               <p>{project.notes}</p>
             </div>
           )}
 
           {project.internal_notes && (
             <div className="settings-card">
-              <h3>Interni poznamky</h3>
+              <h3>{t('internalNotes')}</h3>
               <p>{project.internal_notes}</p>
             </div>
           )}
 
           {project.client_notes && (
             <div className="settings-card">
-              <h3>Poznamky od klienta</h3>
+              <h3>{t('clientNotes')}</h3>
               <p>{project.client_notes}</p>
             </div>
           )}
@@ -762,22 +762,22 @@ const handleDeleteVersion = async (versionId: string) => {
       {showDeleteModal && (
         <div className="modal-overlay">
           <div className="modal">
-            <h3>Opravdu chcete smazat verzi?</h3>
-            <p>Tato akce nelze vrátit zpět. Verze bude označena jako archivní.</p>
+            <h3>{t('deleteVersionConfirm')}</h3>
+            <p>{t('deleteVersionWarning')}</p>
             <div className="modal-actions">
               <button
                 className="btn-secondary"
                 onClick={() => setShowDeleteModal(null)}
                 disabled={deleting === showDeleteModal}
               >
-                Zrusit
+                {tc('cancel')}
               </button>
               <button
                 className="btn-danger"
                 onClick={() => handleDeleteVersion(showDeleteModal)}
                 disabled={deleting === showDeleteModal}
               >
-                {deleting === showDeleteModal ? 'Mazani...' : 'Smazat'}
+                {deleting === showDeleteModal ? t('deletingVersion') : tc('delete')}
               </button>
             </div>
           </div>
@@ -788,17 +788,17 @@ const handleDeleteVersion = async (versionId: string) => {
       {showDeleteProjectModal && (
         <div className="modal-overlay">
           <div className="modal">
-            <h3>Opravdu chcete smazat celý projekt?</h3>
+            <h3>{t('deleteProjectConfirm')}</h3>
             <p>
-              <strong>Upozornění:</strong> Tuto akci nelze vrátit zpět.
+              <strong>{t('deleteProjectWarningTitle')}</strong> {t('deleteVersionWarning')}
             </p>
             <ul className="modal-warnings">
-              <li>Projekt bude trvale smazán (označen jako cancelled)</li>
-              <li>Všechny verze budou archivovány</li>
-              <li>Přiřazené faktury a komise zůstanou zachovány</li>
+              <li>{t('deleteProjectWarning1')}</li>
+              <li>{t('deleteProjectWarning2')}</li>
+              <li>{t('deleteProjectWarning3')}</li>
             </ul>
             <p>
-              Pokud máte nasazené verze, nejdříve je musíte odstranit.
+              {t('deleteProjectDeployWarning')}
             </p>
             <div className="modal-actions">
               <button
@@ -806,14 +806,14 @@ const handleDeleteVersion = async (versionId: string) => {
                 onClick={() => setShowDeleteProjectModal(false)}
                 disabled={deletingProject}
               >
-                Zrušit
+                {tc('cancel')}
               </button>
               <button
                 className="btn-danger"
                 onClick={handleDeleteProject}
                 disabled={deletingProject}
               >
-                {deletingProject ? 'Mazání...' : 'Smazat projekt'}
+                {deletingProject ? t('deletingProject') : t('deleteProject')}
               </button>
             </div>
           </div>
@@ -824,10 +824,10 @@ const handleDeleteVersion = async (versionId: string) => {
       {showInvoiceModal && (
         <div className="modal-overlay">
           <div className="modal invoice-modal">
-            <h3>Vystavit fakturu</h3>
+            <h3>{t('createInvoiceTitle')}</h3>
             <div className="invoice-form">
               <div className="form-group">
-                <label>Castka bez DPH (Kc)</label>
+                <label>{t('amountWithoutVatLabel')}</label>
                 <input
                   type="number"
                   value={invoiceForm.amount_without_vat}
@@ -837,20 +837,20 @@ const handleDeleteVersion = async (versionId: string) => {
               </div>
 
               <div className="form-group">
-                <label>Typ platby</label>
+                <label>{t('paymentType')}</label>
                 <select
                   value={invoiceForm.payment_type}
                   onChange={(e) => setInvoiceForm({ ...invoiceForm, payment_type: e.target.value as 'setup' | 'monthly' | 'other' })}
                 >
-                  <option value="setup">Zrizeni webu</option>
-                  <option value="monthly">Mesicni provoz</option>
-                  <option value="other">Jine</option>
+                  <option value="setup">{t('paymentSetup')}</option>
+                  <option value="monthly">{t('paymentMonthly')}</option>
+                  <option value="other">{t('paymentOther')}</option>
                 </select>
               </div>
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Sazba DPH (%)</label>
+                  <label>{t('vatRateLabel')}</label>
                   <input
                     type="number"
                     value={invoiceForm.vat_rate}
@@ -859,7 +859,7 @@ const handleDeleteVersion = async (versionId: string) => {
                 </div>
 
                 <div className="form-group">
-                  <label>Splatnost (dni)</label>
+                  <label>{t('dueDaysLabel')}</label>
                   <input
                     type="number"
                     value={invoiceForm.due_days}
@@ -869,26 +869,26 @@ const handleDeleteVersion = async (versionId: string) => {
               </div>
 
               <div className="form-group">
-                <label>Popis (nepovinne)</label>
+                <label>{t('descriptionOptional')}</label>
                 <textarea
                   value={invoiceForm.description}
                   onChange={(e) => setInvoiceForm({ ...invoiceForm, description: e.target.value })}
-                  placeholder="Popis fakturovanych sluzeb..."
+                  placeholder={t('descriptionPlaceholder')}
                   rows={3}
                 />
               </div>
 
               <div className="invoice-preview">
                 <div className="preview-row">
-                  <span>Castka bez DPH:</span>
+                  <span>{t('amountWithoutVat')}</span>
                   <span>{invoiceForm.amount_without_vat.toLocaleString('cs-CZ')} Kc</span>
                 </div>
                 <div className="preview-row">
-                  <span>DPH ({invoiceForm.vat_rate}%):</span>
+                  <span>{t('vatLabel', { rate: invoiceForm.vat_rate })}</span>
                   <span>{(invoiceForm.amount_without_vat * (invoiceForm.vat_rate / 100)).toLocaleString('cs-CZ')} Kc</span>
                 </div>
                 <div className="preview-row total">
-                  <span>Celkem:</span>
+                  <span>{t('totalLabel')}</span>
                   <span>{(invoiceForm.amount_without_vat * (1 + invoiceForm.vat_rate / 100)).toLocaleString('cs-CZ')} Kc</span>
                 </div>
               </div>
@@ -900,14 +900,14 @@ const handleDeleteVersion = async (versionId: string) => {
                 onClick={() => setShowInvoiceModal(false)}
                 disabled={creatingInvoice}
               >
-                Zrusit
+                {tc('cancel')}
               </button>
               <button
                 className="btn-primary"
                 onClick={handleCreateInvoice}
                 disabled={creatingInvoice || invoiceForm.amount_without_vat <= 0}
               >
-                {creatingInvoice ? 'Vytvarim...' : 'Vytvorit fakturu'}
+                {creatingInvoice ? t('creating') : t('createInvoiceButton')}
               </button>
             </div>
           </div>

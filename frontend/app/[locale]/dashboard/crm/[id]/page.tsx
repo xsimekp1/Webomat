@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import ApiClient from '../../../../lib/api'
 import { useAuth } from '../../../../context/AuthContext'
 import { storeCrmPage } from '../../../../lib/navigation'
@@ -57,15 +58,15 @@ interface Project {
   latest_thumbnail_url: string | null
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  new: { label: 'Nový', color: '#3b82f6', bg: '#dbeafe' },
-  calling: { label: 'Voláno', color: '#eab308', bg: '#fef9c3' },
-  interested: { label: 'Zájem', color: '#f97316', bg: '#ffedd5' },
-  offer_sent: { label: 'Nabídka', color: '#8b5cf6', bg: '#ede9fe' },
-  designed: { label: 'Designováno', color: '#06b6d4', bg: '#cffafe' },
-  won: { label: 'Vyhráno', color: '#22c55e', bg: '#dcfce7' },
-  lost: { label: 'Ztraceno', color: '#6b7280', bg: '#f3f4f6' },
-  dnc: { label: 'DNC', color: '#ef4444', bg: '#fee2e2' },
+const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
+  new: { color: '#3b82f6', bg: '#dbeafe' },
+  calling: { color: '#eab308', bg: '#fef9c3' },
+  interested: { color: '#f97316', bg: '#ffedd5' },
+  offer_sent: { color: '#8b5cf6', bg: '#ede9fe' },
+  designed: { color: '#06b6d4', bg: '#cffafe' },
+  won: { color: '#22c55e', bg: '#dcfce7' },
+  lost: { color: '#6b7280', bg: '#f3f4f6' },
+  dnc: { color: '#ef4444', bg: '#fee2e2' },
 }
 
 const ACTIVITY_ICONS: Record<string, string> = {
@@ -76,17 +77,17 @@ const ACTIVITY_ICONS: Record<string, string> = {
   message: '💬',
 }
 
-const PROJECT_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  offer: { label: 'Nabídka', color: '#8b5cf6', bg: '#ede9fe' },
-  interested: { label: 'Zájem', color: '#06b6d4', bg: '#ecfeff' },
-  in_progress: { label: 'V práci', color: '#f97316', bg: '#ffedd5' },
-  sent_for_review: { label: 'K odeslání', color: '#3b82f6', bg: '#dbeafe' },
-  revisions: { label: 'Připomínky', color: '#a855f7', bg: '#f3e8ff' },
-  invoiced: { label: 'Fakturováno', color: '#22c55e', bg: '#dcfce7' },
-  closed: { label: 'Uzavřeno', color: '#6b7280', bg: '#f3f4f6' },
-  rejected: { label: 'Zamítnuto', color: '#dc2626', bg: '#fef2f2' },
-  unpaid: { label: 'Nezaplaceno', color: '#dc2626', bg: '#fef2f2' },
-  cancelled: { label: 'Zrušeno', color: '#6b7280', bg: '#f3f4f6' },
+const PROJECT_STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
+  offer: { color: '#8b5cf6', bg: '#ede9fe' },
+  interested: { color: '#06b6d4', bg: '#ecfeff' },
+  in_progress: { color: '#f97316', bg: '#ffedd5' },
+  sent_for_review: { color: '#3b82f6', bg: '#dbeafe' },
+  revisions: { color: '#a855f7', bg: '#f3e8ff' },
+  invoiced: { color: '#22c55e', bg: '#dcfce7' },
+  closed: { color: '#6b7280', bg: '#f3f4f6' },
+  rejected: { color: '#dc2626', bg: '#fef2f2' },
+  unpaid: { color: '#dc2626', bg: '#fef2f2' },
+  cancelled: { color: '#6b7280', bg: '#f3f4f6' },
 }
 
 const PACKAGE_CONFIG: Record<string, { label: string; color: string }> = {
@@ -100,7 +101,43 @@ export default function BusinessDetailPage() {
   const { user, isLoading, isAuthenticated } = useAuth()
   const router = useRouter()
   const params = useParams()
+  const t = useTranslations('businessDetail')
+  const tc = useTranslations('common')
   const businessId = Array.isArray(params.id) ? params.id[0] : params.id
+
+  const STATUS_LABEL_MAP: Record<string, string> = {
+    new: 'statusNew',
+    calling: 'statusCalling',
+    interested: 'statusInterested',
+    offer_sent: 'statusOfferSent',
+    designed: 'statusDesigned',
+    won: 'statusWon',
+    lost: 'statusLost',
+    dnc: 'statusDnc',
+  }
+
+  const PROJECT_STATUS_LABEL_MAP: Record<string, string> = {
+    offer: 'projectOffer',
+    interested: 'projectInterested',
+    in_progress: 'projectInProgress',
+    sent_for_review: 'projectSentForReview',
+    revisions: 'projectRevisions',
+    invoiced: 'projectInvoiced',
+    closed: 'projectClosed',
+    rejected: 'projectRejected',
+    unpaid: 'projectUnpaid',
+    cancelled: 'projectCancelled',
+  }
+
+  const getStatusLabel = (status: string): string => {
+    const key = STATUS_LABEL_MAP[status]
+    return key ? t(key) : status
+  }
+
+  const getProjectStatusLabel = (status: string): string => {
+    const key = PROJECT_STATUS_LABEL_MAP[status]
+    return key ? t(key) : status
+  }
   const [business, setBusiness] = useState<Business | null>(null)
   const [activities, setActivities] = useState<Activity[]>([])
   const [projects, setProjects] = useState<Project[]>([])
@@ -165,7 +202,7 @@ export default function BusinessDetailPage() {
       )
       setProjects(filteredProjects)
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Chyba při načítání dat')
+      setError(err.response?.data?.detail || t('loadError'))
     } finally {
       setLoading(false)
     }
@@ -181,7 +218,7 @@ export default function BusinessDetailPage() {
 
   const handleAddActivity = async () => {
     if (!activityForm.description.trim()) {
-      setError('Popis aktivity je povinný')
+      setError(t('activityRequired'))
       return
     }
 
@@ -207,7 +244,7 @@ export default function BusinessDetailPage() {
       })
       fetchData()
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Chyba při ukládání')
+      setError(err.response?.data?.detail || t('saveError'))
     } finally {
       setSaving(false)
     }
@@ -224,14 +261,14 @@ export default function BusinessDetailPage() {
       setShowStatusModal(false)
       fetchData()
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Chyba při změně statusu')
+      setError(err.response?.data?.detail || t('statusChangeError'))
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async () => {
-    if (!confirm('Opravdu chcete smazat tuto firmu? Tato akce je nevratná.')) {
+    if (!confirm(t('deleteConfirm'))) {
       return
     }
 

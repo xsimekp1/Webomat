@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useAuth } from '../../../context/AuthContext'
 import ApiClient from '../../../lib/api'
 
@@ -18,6 +19,9 @@ interface UserListItem {
 export default function AdminUsersPage() {
   const { user, isLoading, isAuthenticated } = useAuth()
   const router = useRouter()
+  const t = useTranslations('admin')
+  const tc = useTranslations('common')
+  const ta = useTranslations('auth')
   const [users, setUsers] = useState<UserListItem[]>([])
   const [loadingUsers, setLoadingUsers] = useState(true)
   const [error, setError] = useState('')
@@ -51,7 +55,7 @@ export default function AdminUsersPage() {
       const data = await ApiClient.getUsers()
       setUsers(data)
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Nepodařilo se načíst uživatele')
+      setError(err.response?.data?.detail || t('loadUsersFailed'))
     } finally {
       setLoadingUsers(false)
     }
@@ -64,7 +68,7 @@ export default function AdminUsersPage() {
       loadUsers()
       setTimeout(() => setSuccessMessage(''), 3000)
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Akce se nezdařila')
+      setError(err.response?.data?.detail || t('actionFailed'))
       setTimeout(() => setError(''), 3000)
     }
   }
@@ -79,13 +83,13 @@ export default function AdminUsersPage() {
         newPassword || undefined
       )
       setSuccessMessage(
-        `${result.message}. Dočasné heslo: ${result.temporary_password}`
+        `${result.message}. ${t('tempPassword', { password: result.temporary_password })}`
       )
       setResetPasswordModal(null)
       setNewPassword('')
       setTimeout(() => setSuccessMessage(''), 10000)
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Reset hesla selhal')
+      setError(err.response?.data?.detail || t('actionFailed'))
       setTimeout(() => setError(''), 3000)
     } finally {
       setResetting(false)
