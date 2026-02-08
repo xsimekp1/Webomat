@@ -186,7 +186,14 @@
     "dashboard": "Dashboard",
     "profile": "Profil",
     "admin": "Administrace",
-    "logout": "Odhlásit se"
+    "logout": "Odhlásit se",
+    "feedback": "Připomínky",
+    "feedbackTooltip": "Připomínky k platformě",
+    "invoices": "Faktury",
+    "invoicesTooltip": "Správa faktur",
+    "feedbackManageTooltip": "Správa připomínek",
+    "profileTooltip": "Můj profil",
+    "loading": "Načítám..."
   },
   "account": {
     "title": "Můj účet",

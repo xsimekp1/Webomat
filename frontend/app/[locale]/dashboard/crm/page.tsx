@@ -273,17 +273,17 @@ function CRMPageContent() {
   }
 
   if (isLoading || !user) {
-    return <div className="loading">Načítám...</div>
+    return <div className="loading">{tc('loading')}</div>
   }
 
   return (
     <div className="crm-page">
       <header className="crm-header">
         <div className="header-left">
-          <h1>{followUpFilter ? 'Follow-upy k vyřízení' : 'CRM Pipeline'}</h1>
+          <h1>{followUpFilter ? t('followUpsTitle') : t('title')}</h1>
         </div>
         <div className="header-right">
-          <button className="btn-new" onClick={openNewModal}>+ Nový lead</button>
+          <button className="btn-new" onClick={openNewModal}>{t('newLead')}</button>
         </div>
       </header>
 
@@ -292,27 +292,27 @@ function CRMPageContent() {
         <div className="stats-grid">
           <div className="stat-card">
             <span className="stat-value">{stats.total_leads}</span>
-            <span className="stat-label">Celkem</span>
+            <span className="stat-label">{t('total')}</span>
           </div>
           <div className="stat-card highlight">
             <span className="stat-value">{stats.follow_ups_today}</span>
-            <span className="stat-label">Dnes</span>
+            <span className="stat-label">{t('today')}</span>
           </div>
           <div className="stat-card" style={{ borderColor: STATUS_CONFIG.new.color }}>
             <span className="stat-value">{stats.new_leads}</span>
-            <span className="stat-label">Nové</span>
+            <span className="stat-label">{t('new')}</span>
           </div>
           <div className="stat-card" style={{ borderColor: STATUS_CONFIG.calling.color }}>
             <span className="stat-value">{stats.calling}</span>
-            <span className="stat-label">Voláno</span>
+            <span className="stat-label">{t('calling')}</span>
           </div>
           <div className="stat-card" style={{ borderColor: STATUS_CONFIG.interested.color }}>
             <span className="stat-value">{stats.interested}</span>
-            <span className="stat-label">Zájem</span>
+            <span className="stat-label">{t('interested')}</span>
           </div>
           <div className="stat-card" style={{ borderColor: STATUS_CONFIG.won.color }}>
             <span className="stat-value">{stats.won}</span>
-            <span className="stat-label">Vyhráno</span>
+            <span className="stat-label">{t('won')}</span>
           </div>
         </div>
       )}
@@ -322,12 +322,12 @@ function CRMPageContent() {
         <form onSubmit={handleSearch} className="search-form">
           <input
             type="text"
-            placeholder="Hledat firmu..."
+            placeholder={t('searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="search-input"
           />
-          <button type="submit" className="btn-search">Hledat</button>
+          <button type="submit" className="btn-search">{tc('search')}</button>
         </form>
 
         <select
@@ -335,14 +335,14 @@ function CRMPageContent() {
           onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
           className="status-filter"
         >
-          <option value="">Všechny stavy</option>
-          <option value="new">Nový</option>
-          <option value="calling">Voláno</option>
-          <option value="interested">Zájem</option>
-          <option value="offer_sent">Nabídka odeslána</option>
-          <option value="won">Vyhráno</option>
-          <option value="lost">Ztraceno</option>
-          <option value="dnc">DNC</option>
+          <option value="">{t('allStatuses')}</option>
+          <option value="new">{t('statusNew')}</option>
+          <option value="calling">{t('statusCalling')}</option>
+          <option value="interested">{t('statusInterested')}</option>
+          <option value="offer_sent">{t('statusOfferSent')}</option>
+          <option value="won">{t('statusWon')}</option>
+          <option value="lost">{t('statusLost')}</option>
+          <option value="dnc">{t('statusDnc')}</option>
         </select>
       </div>
 
@@ -350,10 +350,10 @@ function CRMPageContent() {
       {followUpFilter && (
         <div className="filter-indicator">
           <span className="filter-badge">
-            📋 Zobrazeny pouze kontakty s follow-up do dneška
+            📋 {t('followUpFilterActive')}
           </span>
           <button className="btn-clear-filter" onClick={clearFollowUpFilter}>
-            × Zrušit filtr
+            × {t('clearFilter')}
           </button>
         </div>
       )}
@@ -363,22 +363,22 @@ function CRMPageContent() {
       {/* Table */}
       <div className="table-container">
         {loading ? (
-          <div className="loading-table">Načítám...</div>
+          <div className="loading-table">{tc('loading')}</div>
         ) : businesses.length === 0 ? (
           <div className="empty-state">
-            <p>Žádné leady nenalezeny</p>
-            <button className="btn-new" onClick={openNewModal}>+ Vytvořit první lead</button>
+            <p>{t('noLeadsFound')}</p>
+            <button className="btn-new" onClick={openNewModal}>{t('createFirstLead')}</button>
           </div>
         ) : (
           <table className="crm-table">
             <thead>
               <tr>
-                <th>Firma</th>
-                <th>Telefon</th>
-                <th>Status</th>
-                <th>Follow-up</th>
-                <th>Přiřazeno</th>
-                <th>Akce</th>
+                <th>{t('company')}</th>
+                <th>{t('phone')}</th>
+                <th>{t('status')}</th>
+                <th>{t('followUp')}</th>
+                <th>{t('assignedTo')}</th>
+                <th>{tc('actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -421,7 +421,7 @@ function CRMPageContent() {
                         router.push(`/dashboard/crm/${b.id}`);
                       }}
                     >
-                      Detail
+                      {tc('detail')}
                     </button>
 <button
                       className="btn-small btn-edit"
@@ -430,7 +430,7 @@ function CRMPageContent() {
                         openEditModal(b);
                       }}
                     >
-                      Upravit
+                      {tc('edit')}
                     </button>
                   </td>
                 </tr>
@@ -447,14 +447,14 @@ function CRMPageContent() {
             disabled={page === 1}
             onClick={() => setPage(p => p - 1)}
           >
-            ← Předchozí
+            {tc('previous')}
           </button>
-          <span>Strana {page} z {Math.ceil(total / limit)}</span>
+          <span>{tc('pageOf', { page, total: Math.ceil(total / limit) })}</span>
           <button
             disabled={page * limit >= total}
             onClick={() => setPage(p => p + 1)}
           >
-            Další →
+            {tc('next')}
           </button>
         </div>
       )}
@@ -463,11 +463,11 @@ function CRMPageContent() {
       {(showNewModal || showEditModal) && (
         <div className="modal-overlay" onClick={() => { setShowNewModal(false); setShowEditModal(null); }}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>{showEditModal ? 'Upravit lead' : 'Nový lead'}</h2>
+            <h2>{showEditModal ? t('editLead') : t('newLeadTitle')}</h2>
 
              <div className="form-row">
                <div className="form-group">
-                 <label>IČO</label>
+                 <label>{t('ico')}</label>
                  <div style={{ display: 'flex', gap: '8px' }}>
                    <input
                      type="text"
@@ -486,7 +486,7 @@ function CRMPageContent() {
                      {loading ? (
                        <>
                          <div className="spinner"></div>
-                         Načítám...
+                         {t('aresLoading')}
                        </>
                      ) : (
                        <>
@@ -498,7 +498,7 @@ function CRMPageContent() {
                  </div>
                </div>
                <div className="form-group">
-                 <label>Název firmy *</label>
+                 <label>{t('companyName')}</label>
                  <input
                    type="text"
                    value={formData.name}
@@ -510,7 +510,7 @@ function CRMPageContent() {
 
             <div className="form-row">
                <div className="form-group">
-                 <label>Telefon</label>
+                 <label>{t('phone')}</label>
                  <input
                    type="tel"
                    value={formData.phone}
@@ -519,7 +519,7 @@ function CRMPageContent() {
                  />
                </div>
                <div className="form-group">
-                 <label>Email</label>
+                 <label>{t('email')}</label>
                  <input
                    type="email"
                    value={formData.email}
@@ -528,18 +528,18 @@ function CRMPageContent() {
                  />
                </div>
                <div className="form-group">
-                 <label>Kontaktní osoba</label>
+                 <label>{t('contactPerson')}</label>
                  <input
                    type="text"
                    value={formData.contact_name}
                    onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
-                   placeholder="Jméno a příjmení (jedno pole)"
+                   placeholder={t('contactNamePlaceholder')}
                  />
                </div>
             </div>
 
             <div className="form-group">
-              <label>Adresa</label>
+              <label>{t('address')}</label>
               <input
                 type="text"
                 value={formData.address}
@@ -550,7 +550,7 @@ function CRMPageContent() {
 
             <div className="form-row">
               <div className="form-group">
-                <label>Status</label>
+                <label>{t('status')}</label>
                 <select
                   value={formData.status_crm}
                   onChange={(e) => setFormData({ ...formData, status_crm: e.target.value })}
@@ -561,7 +561,7 @@ function CRMPageContent() {
                 </select>
               </div>
               <div className="form-group">
-                <label>Follow-up</label>
+                <label>{t('followUp')}</label>
                 <input
                   type="date"
                   value={formData.next_follow_up_at}
@@ -571,11 +571,11 @@ function CRMPageContent() {
             </div>
 
             <div className="form-group">
-              <label>Poznámky</label>
+              <label>{t('notes')}</label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Poznámky k leadu..."
+                placeholder={t('notesPlaceholder')}
                 rows={3}
               />
             </div>
@@ -585,14 +585,14 @@ function CRMPageContent() {
                 className="btn-secondary"
                 onClick={() => { setShowNewModal(false); setShowEditModal(null); }}
               >
-                Zrušit
+                {tc('cancel')}
               </button>
               <button
                 className="btn-primary"
                 onClick={handleSave}
                 disabled={saving}
               >
-                {saving ? 'Ukládám...' : 'Uložit'}
+                {saving ? tc('saving') : tc('save')}
               </button>
             </div>
           </div>
@@ -1174,8 +1174,9 @@ function CRMPageContent() {
 
 // Wrap with Suspense for useSearchParams
 export default function CRMPage() {
+  const tc = useTranslations('common')
   return (
-    <Suspense fallback={<div className="loading">Načítám...</div>}>
+    <Suspense fallback={<div className="loading">{tc('loading')}</div>}>
       <CRMPageContent />
     </Suspense>
   )

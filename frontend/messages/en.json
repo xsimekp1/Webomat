@@ -186,7 +186,14 @@
     "dashboard": "Dashboard",
     "profile": "Profile",
     "admin": "Administration",
-    "logout": "Logout"
+    "logout": "Logout",
+    "feedback": "Feedback",
+    "feedbackTooltip": "Platform feedback",
+    "invoices": "Invoices",
+    "invoicesTooltip": "Invoice management",
+    "feedbackManageTooltip": "Manage feedback",
+    "profileTooltip": "My profile",
+    "loading": "Loading..."
   },
   "account": {
     "title": "My Account",
