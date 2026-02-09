@@ -182,7 +182,7 @@ class ApiClient {
     bank_account_iban?: string;
     bank_account?: string;
   }) {
-    const response = await axios.put(
+    const response = await axios.post(
       `${API_BASE_URL}/users/me`,
       data,
       { headers: { ...ApiClient.getAuthHeaders(), 'Content-Type': 'application/json' } }
