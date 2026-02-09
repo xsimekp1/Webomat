@@ -6,11 +6,14 @@ Testuje GET /crm/seller/dashboard:
 - Pending projekty
 - Unpaid faktury
 - Lead counts a follow-ups
+- Schema validace
 """
 import pytest
 import logging
 from unittest.mock import patch, MagicMock
 from datetime import datetime, date, timedelta
+
+from app.schemas.crm import SellerDashboard
 
 logger = logging.getLogger(__name__)
 
@@ -246,3 +249,54 @@ class TestSellerDashboard:
 
         assert response.status_code == 200
         # recent_invoices jsou vráceny z invoices_received
+
+
+class TestSellerDashboardSchema:
+    """Testy pro SellerDashboard schema — ověření správných polí."""
+
+    def test_seller_dashboard_schema_fields(self):
+        """SellerDashboard musí mít správná pole (ne duplicitní definici)."""
+        expected_fields = {
+            "available_balance",
+            "pending_projects_amount",
+            "recent_invoices",
+            "weekly_rewards",
+            "pending_projects",
+            "unpaid_client_invoices",
+            "total_leads",
+            "follow_ups_today",
+        }
+        actual_fields = set(SellerDashboard.model_fields.keys())
+        assert expected_fields == actual_fields, (
+            f"SellerDashboard fields mismatch.\n"
+            f"Expected: {expected_fields}\n"
+            f"Actual: {actual_fields}\n"
+            f"Missing: {expected_fields - actual_fields}\n"
+            f"Extra: {actual_fields - expected_fields}"
+        )
+
+    def test_seller_dashboard_schema_not_overridden(self):
+        """SellerDashboard nesmí mít pole z duplicitní (špatné) definice."""
+        wrong_fields = {"total_businesses", "active_projects", "monthly_earnings",
+                        "pending_followups", "today_tasks", "account_balance"}
+        actual_fields = set(SellerDashboard.model_fields.keys())
+        overlap = wrong_fields & actual_fields
+        assert not overlap, (
+            f"SellerDashboard contains fields from wrong duplicate definition: {overlap}"
+        )
+
+    def test_seller_dashboard_instantiation(self):
+        """SellerDashboard lze vytvořit se správnými daty."""
+        dashboard = SellerDashboard(
+            available_balance=1500.0,
+            pending_projects_amount=5000.0,
+            recent_invoices=[],
+            weekly_rewards=[],
+            pending_projects=[],
+            unpaid_client_invoices=[],
+            total_leads=10,
+            follow_ups_today=3,
+        )
+        assert dashboard.available_balance == 1500.0
+        assert dashboard.total_leads == 10
+        assert dashboard.follow_ups_today == 3

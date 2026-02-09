@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { BarChart, Bar, Tooltip, Legend, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Area, AreaChart } from 'recharts'
+import { useTranslations } from 'next-intl'
 import ApiClient from '../../../../lib/api'
 import { useAuth } from '../../../../context/AuthContext'
+import { useLanguage } from '../../../../context/LanguageContext'
 
 interface BalanceData {
   date: string
@@ -22,6 +24,8 @@ interface ChartDataPoint {
 
 export const BalanceChart = () => {
   const { user } = useAuth()
+  const { language } = useLanguage()
+  const t = useTranslations('account')
   const [data, setData] = useState<ChartDataPoint[]>([])
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState<'3m' | '6m' | '12m'>('3m')
@@ -89,14 +93,16 @@ export const BalanceChart = () => {
   }, [timeRange, user?.role])
 
   const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('cs-CZ', {
+    return new Intl.NumberFormat(language === 'en' ? 'en-US' : 'cs-CZ', {
       style: 'currency',
-      currency: 'CZK'
+      currency: 'CZK',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(amount)
   }
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('cs-CZ', {
+    return new Date(dateStr).toLocaleDateString(language === 'en' ? 'en-US' : 'cs-CZ', {
       day: '2-digit',
       month: 'short',
       year: 'numeric'
@@ -107,7 +113,7 @@ export const BalanceChart = () => {
     return (
       <div className="loading-chart">
         <div className="spinner"></div>
-        <p>Načítám graf...</p>
+        <p>{t('chartLoadingGraph')}</p>
       </div>
     )
   }
@@ -115,18 +121,18 @@ export const BalanceChart = () => {
   return (
     <div className="balance-chart">
       <div className="chart-header">
-        <h3>Přehled pohybů na účtu</h3>
-        
+        <h3>{t('chartTitle')}</h3>
+
         <div className="chart-controls">
           <label>
-            Období:
-            <select 
-              value={timeRange} 
+            {t('chartPeriod')}
+            <select
+              value={timeRange}
               onChange={(e) => setTimeRange(e.target.value as '3m' | '6m' | '12m')}
             >
-              <option value="3m">Poslední 3 měsíce</option>
-              <option value="6m">Poslední 6 měsíců</option>
-              <option value="12m">Poslední rok</option>
+              <option value="3m">{t('last3Months')}</option>
+              <option value="6m">{t('last6Months')}</option>
+              <option value="12m">{t('lastYear')}</option>
             </select>
           </label>
         </div>
@@ -151,10 +157,10 @@ export const BalanceChart = () => {
                 return (
                   <div className="chart-tooltip">
                     <p><strong>{formatDate(payload[0]?.payload?.date || '')}</strong></p>
-                    <p>Vyděláno: {formatAmount(payload[0]?.value || 0)}</p>
-                    <p>Zůstatek: {formatAmount(payload[1]?.value || 0)}</p>
+                    <p>{t('chartEarned')}: {formatAmount(payload[0]?.value || 0)}</p>
+                    <p>{t('chartBalance')}: {formatAmount(payload[1]?.value || 0)}</p>
                     {payload[2]?.value !== undefined && (
-                      <p>Adjustementy: {formatAmount(payload[2]?.value)}</p>
+                      <p>{t('chartAdjustments')}: {formatAmount(payload[2]?.value)}</p>
                     )}
                   </div>
                 )
@@ -168,9 +174,9 @@ export const BalanceChart = () => {
             iconType="rect"
             formatter={(value, entry) => (
               <span style={{ color: entry.color }}>
-                {value === 'earned' && 'Vyděláno'}
-                {value === 'balance' && 'Zůstatek'}
-                {value === 'adjustments' && 'Adjustementy'}
+                {value === 'earned' && t('chartEarned')}
+                {value === 'balance' && t('chartBalance')}
+                {value === 'adjustments' && t('chartAdjustments')}
               </span>
             )}
           />
@@ -195,13 +201,13 @@ export const BalanceChart = () => {
         {data.length > 0 && (
           <>
             <div className="summary-item">
-              <strong>Poslední zůstatek:</strong>
+              <strong>{t('chartLastBalance')}</strong>
               <span>{formatAmount(data[data.length - 1]?.balance || 0)}</span>
             </div>
             
             {user.role === 'sales' && (
               <div className="summary-item">
-                <strong>Celkem vybráno:</strong>
+                <strong>{t('chartTotalEarned')}</strong>
                 <span>{formatAmount(
                   data.reduce((sum, item) => sum + item.earned, 0)
                 )}</span>
@@ -210,7 +216,7 @@ export const BalanceChart = () => {
             
             {user.role === 'admin' && (
               <div className="summary-item">
-                <strong>Celkové adjustementy:</strong>
+                <strong>{t('chartTotalAdjustments')}</strong>
                 <span>{formatAmount(
                   data.reduce((sum, item) => sum + (item.adjustments || 0), 0)
                 )}</span>

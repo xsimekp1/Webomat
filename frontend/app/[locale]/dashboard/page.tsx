@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
-import { useLanguage, LanguageProvider } from '../../context/LanguageContext'
+import { useLanguage } from '../../context/LanguageContext'
+import { useTranslations } from 'next-intl'
 import ApiClient from '../../lib/api'
 
 
@@ -60,6 +61,8 @@ function DashboardPage() {
   const router = useRouter()
   const { showToast } = useToast()
   const { language } = useLanguage()
+  const t = useTranslations('dashboard')
+  const tc = useTranslations('common')
   console.log('Dashboard: Current language from LanguageContext:', language)
 
   // Seller dashboard data
@@ -122,7 +125,7 @@ function DashboardPage() {
       })
       setGeneratedHtml(result.html_content)
     } catch (err: any) {
-      setGeneratorError(err.response?.data?.detail || 'Chyba při generování')
+      setGeneratorError(err.response?.data?.detail || t('generationError'))
     } finally {
       setGenerating(false)
     }
@@ -138,7 +141,7 @@ function DashboardPage() {
       const result = await ApiClient.deployTestWebsite(generatedHtml, testBusinessName)
       setDeployedUrl(result.url)
     } catch (err: any) {
-      setGeneratorError(err.response?.data?.detail || 'Chyba při nasazení')
+      setGeneratorError(err.response?.data?.detail || t('deployError'))
     } finally {
       setDeploying(false)
     }
@@ -151,7 +154,7 @@ function DashboardPage() {
       setShowReminderModal(true)
       setReminderData(reminder)
     } catch (err: any) {
-      setError('Nepodařilo se vygenerovat upomínku')
+      setError(t('reminderFailed'))
     }
   }
 
@@ -164,7 +167,7 @@ function DashboardPage() {
         .then(setSellerData)
         .catch(() => {})
     } catch (err: any) {
-      setError('Nepodařilo se odeslat upomínku')
+      setError(t('sendReminderFailed'))
     }
   }
 
@@ -193,11 +196,11 @@ function DashboardPage() {
 
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
-      won: 'Vyhráno',
-      in_production: 'Ve výrobě',
-      delivered: 'Dodáno',
-      offer: 'Nabídka',
-      live: 'Živé',
+      won: t('statusWon'),
+      in_production: t('statusInProduction'),
+      delivered: t('statusDelivered'),
+      offer: t('statusOffer'),
+      live: t('statusLive'),
     }
     return labels[status] || status
   }
@@ -227,7 +230,7 @@ const getStatusColor = (status: string) => {
         {/* Welcome + Quick Stats */}
         <div className="welcome-row">
           <h2>
-            Ahoj, {user.name?.split(' ')[0] || 'uživateli'}! 
+            {t('greeting', { name: user.name?.split(' ')[0] || t('fallbackName') })}
             <span style={{ marginLeft: '8px' }}>
               {language === 'cs' ? '🇨🇿' : '🇬🇧'}
             </span>
@@ -240,27 +243,27 @@ const getStatusColor = (status: string) => {
             <div className="quick-card-icon">💰</div>
             <div className="quick-card-content">
               <span className="quick-card-value">{formatCurrency(sellerData?.available_balance || 0)}</span>
-              <span className="quick-card-label">K vyplacení</span>
+              <span className="quick-card-label">{t('availableToPayout')}</span>
             </div>
-            <div className="quick-card-action">Detail účtu →</div>
+            <div className="quick-card-action">{t('accountDetail')}</div>
           </div>
 
           <div className="quick-card calls-card" onClick={() => router.push('/dashboard/crm?filter=followup')}>
             <div className="quick-card-icon">📞</div>
             <div className="quick-card-content">
               <span className="quick-card-value">{sellerData?.follow_ups_today ?? '--'}</span>
-              <span className="quick-card-label">Follow-upy</span>
+              <span className="quick-card-label">{t('followUps')}</span>
             </div>
-            <div className="quick-card-action">Otevřít seznam →</div>
+            <div className="quick-card-action">{t('openList')}</div>
           </div>
 
           <div className="quick-card leads-card" onClick={() => router.push('/dashboard/crm')}>
             <div className="quick-card-icon">📊</div>
             <div className="quick-card-content">
               <span className="quick-card-value">{sellerData?.total_leads ?? '--'}</span>
-              <span className="quick-card-label">Moje leady</span>
+              <span className="quick-card-label">{t('myLeads')}</span>
             </div>
-            <div className="quick-card-action">Jít do CRM →</div>
+            <div className="quick-card-action">{t('goToCrm')}</div>
           </div>
         </div>
 
@@ -288,9 +291,9 @@ const getStatusColor = (status: string) => {
         {sellerData?.pending_projects && sellerData.pending_projects.length > 0 && (
           <section className="dashboard-section">
             <div className="section-header">
-              <h3>🔧 Rozpracované projekty ({sellerData.pending_projects.length})</h3>
+              <h3>🔧 {t('pendingProjectsCount', { count: sellerData.pending_projects.length })}</h3>
               <button className="btn-link" onClick={() => router.push('/dashboard/crm?filter=projects')}>
-                Zobrazit vše
+                {t('showAll')}
               </button>
             </div>
             <div className="projects-scroll">
@@ -307,7 +310,7 @@ const getStatusColor = (status: string) => {
                   <div className="project-version">
                     {project.latest_version_number
                       ? `v${project.latest_version_number}`
-                      : 'Bez verze'}
+                      : tc('noVersion')}
                     {project.latest_version_date && (
                       <span className="version-date"> · {formatDate(project.latest_version_date)}</span>
                     )}
@@ -323,15 +326,15 @@ const getStatusColor = (status: string) => {
         {(!sellerData?.pending_projects || sellerData.pending_projects.length === 0) && (
           <section className="dashboard-section">
             <div className="section-header">
-              <h3>🔧 Rozpracované projekty</h3>
+              <h3>🔧 {t('pendingProjects')}</h3>
             </div>
             <div className="empty-state">
-              <p>Zatím nemáte žádné rozpracované projekty.</p>
+              <p>{t('noPendingProjects')}</p>
               <small style={{ display: 'block', marginTop: '8px', color: '#94a3b8' }}>
-                Po uzavření dealu vytvořte projekt a objeví se zde
+                {t('noPendingProjectsHint')}
               </small>
               <button className="btn-primary" onClick={() => router.push('/dashboard/crm')}>
-                Přidat nový lead
+                {t('addNewLead')}
               </button>
             </div>
           </section>
@@ -341,7 +344,7 @@ const getStatusColor = (status: string) => {
         {sellerData?.unpaid_client_invoices && sellerData.unpaid_client_invoices.length > 0 && (
           <section className="dashboard-section warning-section">
             <div className="section-header">
-              <h3>⚠️ Nezaplacené faktury od klientů ({sellerData.unpaid_client_invoices.length})</h3>
+              <h3>⚠️ {t('unpaidInvoices', { count: sellerData.unpaid_client_invoices.length })}</h3>
             </div>
             <div className="invoices-table">
               {sellerData.unpaid_client_invoices.map((invoice) => (
@@ -355,11 +358,11 @@ const getStatusColor = (status: string) => {
                   <div className="invoice-amount">{formatCurrency(invoice.amount_total)}</div>
                   <div className="invoice-status">
                     {invoice.days_overdue > 0 ? (
-                      <span className="status-overdue">{invoice.days_overdue} dní po splatnosti</span>
+                      <span className="status-overdue">{t('daysOverdue', { days: invoice.days_overdue })}</span>
                     ) : invoice.days_overdue === 0 ? (
-                      <span className="status-today">Splatnost dnes</span>
+                      <span className="status-today">{t('dueToday')}</span>
                     ) : (
-                      <span className="status-upcoming">za {Math.abs(invoice.days_overdue)} dní</span>
+                      <span className="status-upcoming">{t('dueInDays', { days: Math.abs(invoice.days_overdue) })}</span>
                     )}
                   </div>
                   <button 
@@ -368,7 +371,7 @@ const getStatusColor = (status: string) => {
                       e.stopPropagation()
                       handleGenerateReminder(invoice.id)
                     }}
-                    title="Generovat upomínku"
+                    title={t('generateReminder')}
                   >
                     📧
                   </button>
@@ -381,11 +384,11 @@ const getStatusColor = (status: string) => {
         {/* Quick Actions */}
         <section className="quick-actions">
           <button className="action-btn primary" onClick={() => router.push('/dashboard/crm?action=new')}>
-            + Nový lead
+            {t('newLead')}
           </button>
           {user.role === 'admin' && (
             <button className="action-btn" onClick={() => router.push('/dashboard/admin')}>
-              👥 Správa uživatelů
+              👥 {t('userManagement')}
             </button>
           )}
         </section>
@@ -393,15 +396,15 @@ const getStatusColor = (status: string) => {
         {/* Admin Section */}
         {user.role === 'admin' && (
           <div className="admin-section">
-            <h2>Admin Dashboard</h2>
+            <h2>{t('adminDashboard')}</h2>
 
             {/* Admin Stats Grid */}
             <div className="admin-stats-grid">
               <div className="admin-stat-card">
                 <div className="stat-icon">🏆</div>
-                <h3>Vyhráno</h3>
+                <h3>{t('won')}</h3>
                 <p className="stat-value">{adminStats?.projects_won ?? '--'}</p>
-                <p className="stat-label">Čeká na výrobu</p>
+                <p className="stat-label">{t('waitingForProduction')}</p>
               </div>
               <div className="admin-stat-card">
                 <div className="stat-icon">🔧</div>
@@ -571,7 +574,8 @@ const getStatusColor = (status: string) => {
               {generatedHtml && (
                 <div className="generated-preview">
                   <h4>Náhled vygenerovaného webu:</h4>
-                  <iframe
+<iframe
+                    sandbox="allow-scripts allow-same-origin"
                     srcDoc={generatedHtml}
                     className="preview-iframe"
                     title="Preview"
@@ -1305,8 +1309,36 @@ const getStatusColor = (status: string) => {
             padding: 16px;
           }
 
-          .quick-stats-grid {
+.quick-stats-grid {
             grid-template-columns: 1fr;
+          }
+
+          .quick-card {
+            padding: 16px;
+            flex-direction: row;
+            align-items: center;
+          }
+
+          .quick-card-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0;
+            margin-right: 12px;
+          }
+
+          .quick-card-value {
+            font-size: 1.5rem;
+          }
+
+          .quick-card-label {
+            font-size: 0.8rem;
+            margin-top: 2px;
+          }
+
+          .quick-card-action {
+            font-size: 0.75rem;
+            margin-top: 0;
+            margin-left: 12px;
+            white-space: nowrap;
           }
 
           .form-row {
@@ -1432,12 +1464,4 @@ const getStatusColor = (status: string) => {
   )
 }
 
-function DashboardPageWithLanguage() {
-  return (
-    <LanguageProvider>
-      <DashboardPage />
-    </LanguageProvider>
-  )
-}
-
-export default DashboardPageWithLanguage
+export default DashboardPage

@@ -123,6 +123,49 @@ def generate_payment_qr(
         return None
 
 
+def generate_placeholder_pdf(invoice_number: str = "", business_name: str = "") -> bytes:
+    """
+    Generate a simple placeholder PDF when full template/data is not available.
+    Returns a minimal PDF with a "work in progress" message.
+    """
+    html_content = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8">
+<style>
+    body {{ font-family: Arial, sans-serif; padding: 60px; color: #333; }}
+    .header {{ text-align: center; margin-bottom: 40px; }}
+    .header h1 {{ color: #2563eb; font-size: 28px; }}
+    .info {{ background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 24px; margin: 20px 0; }}
+    .info p {{ margin: 8px 0; font-size: 16px; }}
+    .wip {{ text-align: center; margin-top: 40px; padding: 20px; background: #fefce8; border: 1px solid #fde68a; border-radius: 8px; }}
+    .wip p {{ color: #92400e; font-size: 14px; }}
+</style>
+</head>
+<body>
+    <div class="header">
+        <h1>Webomat - Faktura</h1>
+        {f'<h2>{invoice_number}</h2>' if invoice_number else ''}
+    </div>
+    <div class="info">
+        {f'<p><strong>Klient:</strong> {business_name}</p>' if business_name else ''}
+        {f'<p><strong>Číslo faktury:</strong> {invoice_number}</p>' if invoice_number else ''}
+    </div>
+    <div class="wip">
+        <p><strong>PDF generování v přípravě</strong></p>
+        <p>Plná verze faktury s kompletními údaji bude dostupná brzy.</p>
+    </div>
+</body>
+</html>"""
+
+    try:
+        from weasyprint import HTML
+        pdf_bytes = HTML(string=html_content).write_pdf()
+        return pdf_bytes
+    except ImportError:
+        logger.error("WeasyPrint not available for placeholder PDF")
+        raise
+
+
 def render_invoice_pdf(
     template_name: str,
     invoice: dict,

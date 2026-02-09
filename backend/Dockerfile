@@ -3,8 +3,9 @@
 
 FROM python:3.11-slim
 
-# Install system dependencies for WeasyPrint
+# Install system dependencies for WeasyPrint + Playwright
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    # WeasyPrint deps
     libcairo2 \
     libpango-1.0-0 \
     libpangocairo-1.0-0 \
@@ -12,6 +13,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libffi-dev \
     shared-mime-info \
     fonts-liberation \
+    # Playwright/Chromium deps
+    libnss3 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libgbm1 \
+    libasound2 \
+    libpangocairo-1.0-0 \
+    libxshmfence1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -22,6 +37,9 @@ COPY requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Install Playwright Chromium browser
+RUN playwright install chromium && playwright install-deps chromium
 
 # Copy application code
 COPY . .

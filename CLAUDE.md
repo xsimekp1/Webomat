@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Tento projekt běží v produkci!** Při úpravách kódu pracujeme na živém systému.
 
+**i18n:** Při vytváření nových funkcionalit s přesahem do frontendu je potřeba frontend psát rovnou pro oba jazyky (CS i EN) — překlady do `frontend/messages/cs.json` a `frontend/messages/en.json`.
+
 ## Quick Deploy Commands (pro Claude)
 
 **POSTUP PO ZMĚNÁCH:**
@@ -505,6 +507,17 @@ Při vytváření leadu se kontroluje:
 2. **Varování** (vrátí similar_names): `name` - pro soukromé osoby bez IČO
 
 Endpoint: `GET /crm/businesses/check-duplicate?phone=&website=&name=`
+
+## Rozpracované funkcionality (WIP)
+
+| Funkce | Stav | Poznámka |
+|--------|------|----------|
+| **PDF generování faktur** | Hotovo | WeasyPrint + Jinja2 šablona s QR kódem pro platby. PDF se generuje on-the-fly nebo z cache (Supabase Storage). |
+| **AI generátor webů** | Disabled v UI | Backend endpoint `/website/generate` funguje, ale UI tlačítko pro AI je disabled. Pouze DRY RUN dostupný. |
+| **Screenshoty webů** | Opraveno | Playwright + Chromium nainstalován v Dockerfile. Dříve chyběl browser binary na Railway. |
+
+**Debug/WIP indikátory ve frontendu:**
+- Při přidávání nových WIP funkcí vždy přidat viditelný indikátor v UI (info banner, badge, tooltip)
 
 ## DRY RUN Mode (implementováno)
 - Endpoint: POST /website/generate

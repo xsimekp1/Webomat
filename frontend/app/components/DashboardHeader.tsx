@@ -2,12 +2,15 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useAuth } from '../context/AuthContext'
 import FeedbackModal from './feedback/FeedbackModal'
 
 export default function DashboardHeader() {
   const { user, logout } = useAuth()
   const router = useRouter()
+  const t = useTranslations('navigation')
+  const ta = useTranslations('auth')
   const [showFeedback, setShowFeedback] = useState(false)
 
   return (
@@ -22,16 +25,16 @@ export default function DashboardHeader() {
           {user ? (
             <>
               <span className="user-info">
-                {user.name} <span className="role-badge">{user.role === 'admin' ? 'Admin' : 'Obchodník'}</span>
+                {user.name} <span className="role-badge">{user.role === 'admin' ? ta('admin') : ta('sales')}</span>
               </span>
 
               {/* Feedback button for all users */}
               <button
                 onClick={() => setShowFeedback(true)}
                 className="btn-feedback-text"
-                title="Připomínky k platformě"
+                title={t('feedbackTooltip')}
               >
-                💬 Připomínky
+                💬 {t('feedback')}
               </button>
 
               {/* Admin: link to invoices management */}
@@ -39,9 +42,9 @@ export default function DashboardHeader() {
                 <button
                   onClick={() => router.push('/dashboard/admin/invoices')}
                   className="btn-nav"
-                  title="Správa faktur"
+                  title={t('invoicesTooltip')}
                 >
-                  Faktury
+                  {t('invoices')}
                 </button>
               )}
 
@@ -50,7 +53,7 @@ export default function DashboardHeader() {
                 <button
                   onClick={() => router.push('/dashboard/admin/feedback')}
                   className="btn-icon"
-                  title="Správa připomínek"
+                  title={t('feedbackManageTooltip')}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -63,18 +66,18 @@ export default function DashboardHeader() {
               )}
 
 
-              <button onClick={() => router.push('/dashboard/profile')} className="btn-icon" title="Můj profil">
+              <button onClick={() => router.push('/dashboard/profile')} className="btn-icon" title={t('profileTooltip')}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                   <circle cx="12" cy="7" r="4"/>
                 </svg>
               </button>
               <button onClick={logout} className="btn-logout">
-                Odhlásit
+                {t('logout')}
               </button>
             </>
           ) : (
-            <span className="user-info">Načítám...</span>
+            <span className="user-info">{t('loading')}</span>
           )}
         </div>
       </header>

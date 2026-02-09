@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum
+from datetime import datetime
 from pydantic import BaseModel
 
 
@@ -674,6 +675,18 @@ class SellerClaimsResponse(BaseModel):
 
 
 class WeeklyInvoice(BaseModel):
+    """Weekly invoice summary for seller."""
+    
+    week_start: str
+    week_end: str
+    total_amount: float
+    commission_amount: float
+    projects_count: int
+    status: str
+    created_at: datetime | None = None
+
+
+class WeeklyInvoiceAdmin(BaseModel):
     """Týdenní faktura pro admin dashboard."""
 
     week: str
@@ -682,14 +695,14 @@ class WeeklyInvoice(BaseModel):
 
 
 class AdminDashboardStats(BaseModel):
-    """Statistiky pro admin dashboard."""
-
-    total_users: int
-    active_users: int
+    """Admin dashboard statistics."""
+    
     total_businesses: int
-    new_businesses_this_week: int
     total_projects: int
-    projects_in_progress: int
-    total_invoices_issued: float
-    unpaid_invoices: float
-    weekly_invoices: list[WeeklyInvoice] = []
+    total_sellers: int
+    active_sellers: int
+    monthly_revenue: float
+    pending_invoices: int
+    overdue_followups: int
+
+

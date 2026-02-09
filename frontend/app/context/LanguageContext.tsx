@@ -65,9 +65,12 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Load language from user profile or localStorage on mount
   useEffect(() => {
     const loadLanguage = async () => {
+      // Check if user is logged in (has token) before making API calls
+      const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('token');
+
       try {
-        console.log('LanguageContext: Loading language...');
-        
+        console.log('LanguageContext: Loading language... (hasToken:', hasToken, ')');
+
         // First, check if URL has locale and use it as priority
         let urlLocale: 'cs' | 'en' | null = null;
         if (pathname.startsWith('/en/')) {
@@ -75,19 +78,19 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         } else if (pathname.startsWith('/cs/')) {
           urlLocale = 'cs';
         }
-        
+
         console.log('LanguageContext: URL locale:', urlLocale);
-        
+
         if (urlLocale) {
           // URL has priority - use it locally, but DON'T update backend
           // This prevents race conditions when user manually changes language
           console.log('LanguageContext: Using URL locale locally:', urlLocale);
           setLanguageState(urlLocale);
-          localStorage.setItem('preferred_language', urlLocale);
-          
-          // Only update backend if it's different from stored preference
+
+          // Read stored preference BEFORE overwriting it
           const storedLanguage = localStorage.getItem('preferred_language');
-          if (storedLanguage !== urlLocale) {
+          localStorage.setItem('preferred_language', urlLocale);
+          if (hasToken && storedLanguage !== urlLocale) {
             console.log('LanguageContext: Backend preference differs, updating...');
             try {
               await ApiClient.updateUserLanguage(urlLocale);
@@ -96,16 +99,16 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               console.warn('LanguageContext: Failed to update backend:', updateError);
             }
           } else {
-            console.log('LanguageContext: Backend already matches URL, skipping update');
+            console.log('LanguageContext: Backend already matches URL or no token, skipping update');
           }
-        } else {
-          // No URL locale, load from API/profile
+        } else if (hasToken) {
+          // No URL locale, load from API/profile (only if logged in)
           console.log('LanguageContext: No URL locale, loading from API...');
           const userProfile = await ApiClient.getUserProfile();
           console.log('LanguageContext: User profile from API:', userProfile);
           const apiLanguage = userProfile.preferred_language;
           console.log('LanguageContext: API language:', apiLanguage);
-          
+
           if (apiLanguage && (apiLanguage === 'cs' || apiLanguage === 'en')) {
             console.log('LanguageContext: Setting language from API:', apiLanguage);
             setLanguageState(apiLanguage);
@@ -117,6 +120,13 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             if (storedLanguage && (storedLanguage === 'cs' || storedLanguage === 'en')) {
               setLanguageState(storedLanguage as 'cs' | 'en');
             }
+          }
+        } else {
+          // No token, no URL locale - use localStorage only
+          const storedLanguage = localStorage.getItem('preferred_language');
+          console.log('LanguageContext: No token, using localStorage:', storedLanguage);
+          if (storedLanguage && (storedLanguage === 'cs' || storedLanguage === 'en')) {
+            setLanguageState(storedLanguage as 'cs' | 'en');
           }
         }
       } catch (error) {

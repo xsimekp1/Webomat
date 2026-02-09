@@ -33,4 +33,4 @@ psycopg2-binary>=2.9.9
 # PDF generation (templates)
 jinja2>=3.1.0
 qrcode[pil]>=7.4.0
-# weasyprint>=60.0  # Optional - requires system libs (cairo, pango) - disabled for now
+weasyprint>=60.0

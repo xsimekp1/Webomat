@@ -303,7 +303,69 @@ async def complete_onboarding(
         bank_account=updated.get("bank_account"),
         bank_account_iban=updated.get("bank_account_iban"),
         needs_onboarding=False,
+)
+
+
+@router.put("/users/me")
+async def update_user_profile(
+    user_update: UserUpdate,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+):
+    """Update user profile information."""
+    supabase = get_supabase()
+    
+    # Build update dict with only provided fields
+    update_data = {}
+    if user_update.first_name is not None:
+        update_data["first_name"] = user_update.first_name
+    if user_update.last_name is not None:
+        update_data["last_name"] = user_update.last_name
+    if user_update.email is not None:
+        update_data["email"] = user_update.email
+    if user_update.phone is not None:
+        update_data["phone"] = user_update.phone
+    if user_update.bank_account is not None:
+        update_data["bank_account"] = user_update.bank_account
+    if user_update.bank_account_iban is not None:
+        update_data["bank_account_iban"] = user_update.bank_account_iban
+    if user_update.preferred_language is not None:
+        update_data["preferred_language"] = user_update.preferred_language
+    
+    if not update_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No fields to update",
+        )
+    
+    # Add updated timestamp
+    update_data["updated_at"] = datetime.utcnow().isoformat()
+    
+    # Update user in sellers table
+    result = (
+        supabase.table("sellers")
+        .update(update_data)
+        .eq("id", current_user.id)
+        .execute()
     )
+    
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update user profile",
+        )
+    
+    # Log the change
+    log_entity_change(
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="profile_updated",
+        entity_type="user",
+        entity_id=current_user.id,
+        old_values={},
+        new_values=update_data,
+    )
+    
+    return {"message": "Profile updated successfully"}
 
 
 @router.put("/users/me/language")
@@ -329,5 +391,3 @@ async def update_user_language(
         )
 
     return {"message": "Language updated successfully"}
-
-    return {"preferred_language": language_data.preferred_language}

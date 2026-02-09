@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime, date, timedelta
 from typing import Annotated, Optional
 from urllib.request import urlopen
@@ -68,7 +69,7 @@ from ..schemas.crm import (
     BackgroundJobResponse,
     ProjectAssetCreate,
     ProjectAssetResponse,
-    WeeklyInvoice,
+WeeklyInvoice,
     AdminDashboardStats,
     PendingProjectInfo,
     UnpaidClientInvoice,
@@ -78,12 +79,28 @@ from ..schemas.crm import (
     LedgerEntryResponse,
     WeeklyRewardSummary,
     InvoiceIssuedResponse,
-    InvoiceIssuedCreate,
+InvoiceIssuedCreate,
     InvoiceStatusUpdate,
     AdminInvoiceListResponse,
     AdminInvoiceListItem,
     InvoiceRejectRequest,
     SellerClaimsResponse,
+)
+from ..schemas.crm import (
+    CRMStatus,
+    ActivityType,
+    BusinessBase,
+    BusinessCreate,
+    BusinessUpdate,
+    BusinessResponse,
+    BusinessListResponse,
+    ActivityCreate,
+    ActivityResponse,
+    TodayTasksResponse,
+    CRMStats,
+    ProjectStatus,
+    PackageType,
+    ProjectCreate,
     ProjectUpdate,
     ProjectResponse,
     WebsiteVersionCreate,
@@ -112,6 +129,8 @@ from ..schemas.crm import (
     WeeklyInvoice,
 )
 from ..utils.balance_calculator import calculate_seller_balance
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/crm", tags=["CRM"])
 
@@ -2865,7 +2884,7 @@ async def generate_invoice_issued_pdf_endpoint(
     Uploads to Supabase Storage and updates pdf_path in database.
     Returns the public URL of the generated PDF.
     """
-    from ..services.pdf import generate_invoice_issued_pdf, upload_pdf_to_storage
+    from ..services.pdf import generate_invoice_issued_pdf, generate_placeholder_pdf, upload_pdf_to_storage
 
     supabase = get_supabase()
 
@@ -2930,7 +2949,7 @@ async def generate_invoice_issued_pdf_endpoint(
     if settings_result.data and settings_result.data.get("value"):
         platform_billing = settings_result.data["value"]
 
-    # Generate PDF
+    # Generate PDF - try full template, fallback to placeholder
     try:
         pdf_bytes = generate_invoice_issued_pdf(
             invoice=invoice,
@@ -2938,16 +2957,18 @@ async def generate_invoice_issued_pdf_endpoint(
             platform_billing=platform_billing,
             project=project,
         )
-    except ImportError as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"PDF knihovna není nainstalována: {str(e)}",
-        )
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Chyba při generování PDF: {str(e)}",
-        )
+        logger.warning(f"Full PDF generation failed, using placeholder: {e}")
+        try:
+            pdf_bytes = generate_placeholder_pdf(
+                invoice_number=invoice.get("invoice_number", ""),
+                business_name=business.get("name", ""),
+            )
+        except Exception as e2:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Chyba při generování PDF: {str(e2)}",
+            )
 
     # Upload to storage
     year = (
@@ -2989,7 +3010,7 @@ async def download_invoice_issued_pdf(
     Download PDF for an issued invoice.
     If PDF doesn't exist, generates it first.
     """
-    from ..services.pdf import generate_invoice_issued_pdf
+    from ..services.pdf import generate_invoice_issued_pdf, generate_placeholder_pdf
 
     supabase = get_supabase()
 
@@ -3066,10 +3087,17 @@ async def download_invoice_issued_pdf(
             project=project,
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Chyba při generování PDF: {str(e)}",
-        )
+        logger.warning(f"Full PDF generation failed, using placeholder: {e}")
+        try:
+            pdf_bytes = generate_placeholder_pdf(
+                invoice_number=invoice.get("invoice_number", ""),
+                business_name=business.get("name", ""),
+            )
+        except Exception as e2:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Chyba při generování PDF: {str(e2)}",
+            )
 
     filename = f"faktura-{invoice['invoice_number']}.pdf"
     return Response(
